@@ -83,12 +83,17 @@ int main (void){
 	//print_matrix(cinverse_cholesky, nmodel_points, nmodel_points);
 
 	// the gradient in the 0 direction should be -75.0812
-	gradient_test = getGradient(cinverse, model_test, training_points, thetas, theta_index, nmodel_points, nthetas, nparams);
+
 	likelyhood_test = getLogLikelyhood(cinverse, det_cinverse, model_test, training_points, thetas, nmodel_points, nthetas, nparams);
 	
 	printf("likelyhood = %g\n", likelyhood_test);
 	printf("det_cinverse = %g\n", det_cinverse);
-	printf("theta_index = %d\tgradient = %g\n", theta_index, gradient_test);
+	
+	for(i = 0; i < nthetas; i++){
+		gradient_test = getGradient(cinverse, model_test, training_points, thetas, theta_index, nmodel_points, nthetas, nparams);
+		printf("theta_index = %d\tgradient = %g\n", theta_index, gradient_test);
+		theta_index++;
+	}
 	
 	gsl_matrix_free(model_test);
 	gsl_matrix_free(covariance_matrix);

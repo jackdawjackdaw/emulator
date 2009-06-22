@@ -219,7 +219,7 @@ double detCovFn_higher(gsl_vector *xm, gsl_vector *xn, gsl_vector* thetas, int i
 	// where thetas 4 and 5 are the length scale indicies
 	// thefore the fn will be called with index 4 or 3
 	xm_temp = gsl_vector_get(xm, index-3);
-	xm_temp = gsl_vector_get(xn, index-3);
-	covariance *= (1/gsl_vector_get(thetas, index))*(gsl_vector_get(thetas, 0))*(xm-xn)*(xm-xn);
+	xn_temp = gsl_vector_get(xn, index-3);
+	covariance *= pow(gsl_vector_get(thetas, index), -3.0)*(gsl_vector_get(thetas, 0))*(xm_temp-xn_temp)*(xm_temp-xn_temp);
 	return(covariance);
 }
