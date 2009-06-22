@@ -1,28 +1,45 @@
 #include "estimator.h"
 
-// these are the functions which we will put together to form our evalution function
-// for a single step of the maximum likelyhood estimator, we will need to create 
-// the inverse of the covariance matrix and then return the gradient vector or 
-// the loglikelyhood depending on the method used to maximise it (the log likelyhood). 
-//
-// as such:
-// these functions are VERY important since they entirely define the resulting shape 
-// of your MLE estimate, if you want to change the emulation process you may need to change
-// the getGradient function. if you use a gradient method it is clear that you WILL
-// have to change these
-// 
+/** 
+ * @file 
+ * @author Chris Coleman-Smith cec24@phy.duke.edu
+ * @version 0.1
+ * @section DESCRIPTION
+ * 
+ * these are the functions which we will put together to form our evalution function
+ * for a single step of the maximum likelyhood estimator, we will need to create 
+ * the inverse of the covariance matrix and then return the gradient vector or 
+ * the loglikelyhood depending on the method used to maximise it (the log likelyhood). 
+ *
+ * as such:
+ * these functions are VERY important since they entirely define the resulting shape 
+ * of your MLE estimate, if you want to change the emulation process you may need to change
+ * the getGradient function. if you use a gradient method it is clear that you WILL
+ * have to change these
+ */ 
 
 
 
-// i think i'm passing more arguments than i probably need to
-// oh well
-// the functions we'll need for the MLE estimation
 
 
-// @param cinverse the inverse covariance matrix for this evaluation,
-// calculated through LU decomp somewhere else, since we want to use it in getGradient too, without re-calcing it
-// 
-// @param det_cinverse the determinant, calculated at the same time as the inverse
+
+
+//! calc the log likelyhood for a given cinverse and hyperparameters
+/**
+ * calculate the log likelyhood for the system, given the inverse covariance matrix and it's determinant.
+ * If you change the covariance function around a bit this should probably still work without too much 
+ * trouble. You are advised to test this however
+ *  
+ * L = (-1/2)*Log[Det[cinverse]]  - (1/2)*trainingvector.cinverse.trainingvector - (nmodel_points/2)*Log[2*Pi]
+ * 
+ * @return the log likelyhood for a given set of hyperparams theta (and cinverse) 
+ * @param cinverse -> the inverse covariance matrix for this evaluation,
+ * calculated through LU decomp somewhere else, since we want to use it in getGradient too, without re-calcing it
+ * @param det_cinverse -> the determinant of the inverse covariance matrix, calculated at the same time as the inverse
+ * @param xmodel -> matrix of model evaluation points 
+ * @param trainingvector -> vector of model output values
+ * @param thetas  -> vector of hyperparameters, these may not be needed here, but they are what we are actually hoping to optimise 
+ */
 double getLogLikelyhood(gsl_matrix *cinverse, double det_cinverse,  gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nthetas, int nparams){
 	double the_likelyhood = 0.0;
 	double vector_matrix_vector_product = 0.0;
@@ -41,7 +58,24 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cinverse,  gsl_matrix *
 	return(the_likelyhood);
 }
 
-// get the gradient in a specific direction (given by index)
+//! get the gradient of the log likelyhood in a specific direction (given by index)
+/** 
+ * calculate the gradient of the log likleyhood in a given direction, 
+ * this is the analytical gradient, worked out for the specific form of the covariance function 
+ * (here t -> thetas)
+ * C = t1 * exp(-(x1-x2)^2/t4) + t2 + delta(x1,s2)*t3
+ * so if you change the covariance function s.t the derivatives wrt to the various tvalues changes
+ * you will have to adjust this function. 
+ * 
+ * the gradient is: (-1/2)*Tr(cinverse.dCdT) + (1/2)*trainingvector.cinverse.dCdT.cinverse.trainingvector
+ *
+ *
+ * @return the derivative of the log likelyhood, evaluated at the hyperparams theta, in the direction given by index
+ * @param cinverse -> the inverted covariance matrix
+ * @param xmodel -> the model evaluation points
+ * @param trainingvector -> vector of the model output
+ * @param index -> which direction to calculate the gradient in, i.e wrt to which theta do we differentiate the covariance_fn
+ */
 double getGradient(gsl_matrix *cinverse, gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, int index, int nmodel_points, int nthetas, int nparams){
 	int i;
 	gsl_vector *result_holder = gsl_vector_alloc(nmodel_points);
@@ -51,6 +85,7 @@ double getGradient(gsl_matrix *cinverse, gsl_matrix *xmodel, gsl_vector *trainin
 	double the_gradient = 0.0;
 	double trace = 0.0
 	getdCdt(dcdt, xmodel, thetas, index, nmodel_points, nthetas, nparams);
+
 
 	// the gradient is: (-1/2)*Tr(cinverse.dCdT) + (1/2)*trainingvector.cinverse.dCdT.cinverse.trainingvector
 	
@@ -77,6 +112,20 @@ double getGradient(gsl_matrix *cinverse, gsl_matrix *xmodel, gsl_vector *trainin
 }
 
 
+//! get differentiated covariance matrix for a direction given by index
+/** 
+ * calculate the covariance matrix in the case where we have differentiated the covariance function by 
+ * the theta parameter labelled by index. 
+ * This is incredibly covariance_fn dependant! You must look at this and adjust it if you adjust the covariance_fn!
+ * you will also need to adjust detCovFn_1 and detCovFn_higher also
+ * 
+ * of course, if you use a MLE method which does not need the gradient you can safely ignore getGradient and this function
+ * 
+ * @param dcdt -> this is set to the result of diff(C, index)
+ * @param xmodel -> the model evaluation points
+ * @param thetas -> the hyperparameters, important here as they will determine the final values of dcdt
+ * @return dcdt is set to the given derivative 
+ */
 double getdCdt(gsl_matrix* dcdt, gsl_matrix* xmodel, gsl_vector* thetas, int index, int nmodel_points, int nthetas, int nparams){
 	assert(index <= nthetas-1);
 	// declare so that they can only be called from this scope
@@ -115,11 +164,16 @@ double getdCdt(gsl_matrix* dcdt, gsl_matrix* xmodel, gsl_vector* thetas, int ind
 
 
 //! return the derivative of the covariance function with respect to the first constant theta (the amplitude) 
-//@return the derivative as a double
-//@param xm,xn -> vectors of model params to be compared
-//@param thetas -> vector of the model hyper parameters
-//@param nthetas -> length of thetas
-//@param nparams -> number of input parameters (length of the xm,xn vectors)
+/**
+ * 
+ * return diff(covariance_fn, theta0), the derivative of the covaraince fn wrt the amplitude
+ * 
+ * @return the derivative as a double
+ * @param xm,xn -> vectors of model params to be compared
+ * @param thetas -> vector of the model hyper parameters
+ * @param nthetas -> length of thetas
+ * @param nparams -> number of input parameters (length of the xm,xn vectors)
+ */
 double detCovFn_1(gsl_vector *xm, gsl_vector *xn, gsl_vector* thetas, int nthetas, int nparams){
 	int i;
 	double covariance = 0.0;
@@ -138,14 +192,17 @@ double detCovFn_1(gsl_vector *xm, gsl_vector *xn, gsl_vector* thetas, int ntheta
 }
 
 
-//! return the derivative of the covariance function with respect to the higher thetas, these 
-//! are the ones which set the correlation length etc, very important!
-//@return the derivative as a double
-//@param xm,xn -> vectors of model params to be compared
-//@param thetas -> vector of the model hyper parameters
-//@param index -> which of the higher thetas we are looking at. 
-//@param nthetas -> length of thetas
-//@param nparams -> number of input parameters (length of the xm,xn vectors)
+//! return the derivative of the covariance function with respect to the higher thetas
+/**
+ * return the deriv of covariance_fn wrt to the higher order thetas, these 
+ *  are the ones which set the correlation length etc, very important!
+ * @return the derivative as a double
+ * @param xm,xn -> vectors of model params to be compared
+ * @param thetas -> vector of the model hyper parameters
+ * @param index -> which of the higher thetas we are looking at. 
+ * @param nthetas -> length of thetas
+ * @param nparams -> number of input parameters (length of the xm,xn vectors)
+ */
 double detCovFn_higher(gsl_vector *xm, gsl_vector *xn, gsl_vector* thetas, int index, int nthetas, int nparams){
 	int i;
 	double covariance = 0.0;
