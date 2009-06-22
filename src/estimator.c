@@ -20,10 +20,6 @@
 
 
 
-
-
-
-
 //! calc the log likelyhood for a given cinverse and hyperparameters
 /**
  * calculate the log likelyhood for the system, given the inverse covariance matrix and it's determinant.
@@ -47,9 +43,9 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cinverse,  gsl_matrix *
 	gsl_vector *result_holder = gsl_vector_alloc(nmodel_points);
 	// the  log likelyhood is a given by
 	// L = (-1/2)*Log[Det[cinverse]]  - (1/2)*trainingvector.cinverse.trainingvector - (nmodel_points/2)*Log[2*Pi]
-	the_likelyhood += -(1.0/2.0)*Log(det_cinverse) -  (nnmodel_points/2.0)*log_2_pi;
+	the_likelyhood += -(1.0/2.0)*log(det_cinverse) -  (nmodel_points/2.0)*log_2_pi;
 	
-	gsl_blas_dgemv(CblasNoTrans, 1.0, inverse_cov_matrix, trainingvector, 0.0, result_holder);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, cinverse, trainingvector, 0.0, result_holder);
 	gsl_blas_ddot(trainingvector, result_holder, &vector_matrix_vector_product);
 	
 	the_likelyhood += vector_matrix_vector_product*(-1.0/2.0);
@@ -83,7 +79,7 @@ double getGradient(gsl_matrix *cinverse, gsl_matrix *xmodel, gsl_vector *trainin
 	gsl_matrix *cinverse_dcdt = gsl_matrix_alloc(nmodel_points, nmodel_points);
 	double big_matrix_product = 0.0;
 	double the_gradient = 0.0;
-	double trace = 0.0
+	double trace = 0.0;
 	getdCdt(dcdt, xmodel, thetas, index, nmodel_points, nthetas, nparams);
 
 
@@ -100,13 +96,13 @@ double getGradient(gsl_matrix *cinverse, gsl_matrix *xmodel, gsl_vector *trainin
 
 	// now do the other bit, we can recyle some of the matricies, so this will probably look a bit confusing
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, cinverse_dcdt, cinverse, 0.0, dcdt); // now dcdt holds cinverse.dCdt.cinverse
-	gsl_blas_dgemv(CblasNoTrans, 1.0, dct, training_vector, 0.0, result_holder);
-	gsl_blas_ddot(training_vector, result_holder,  &big_matrix_product);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, dcdt, trainingvector, 0.0, result_holder);
+	gsl_blas_ddot(trainingvector, result_holder,  &big_matrix_product);
 	the_gradient += big_matrix_product*(1.0/2.0);
 	
 	gsl_vector_free(result_holder);
-	gsl_vector_free(dcdt);
-	gsl_vector_free(cinvese_dcdt);
+	gsl_matrix_free(dcdt);
+	gsl_matrix_free(cinverse_dcdt);
 	return(the_gradient);
 
 }
@@ -126,7 +122,7 @@ double getGradient(gsl_matrix *cinverse, gsl_matrix *xmodel, gsl_vector *trainin
  * @param thetas -> the hyperparameters, important here as they will determine the final values of dcdt
  * @return dcdt is set to the given derivative 
  */
-double getdCdt(gsl_matrix* dcdt, gsl_matrix* xmodel, gsl_vector* thetas, int index, int nmodel_points, int nthetas, int nparams){
+void getdCdt(gsl_matrix* dcdt, gsl_matrix* xmodel, gsl_vector* thetas, int index, int nmodel_points, int nthetas, int nparams){
 	assert(index <= nthetas-1);
 	// declare so that they can only be called from this scope
 	double detCovFn_1(gsl_vector *xm, gsl_vector *xn, gsl_vector* thetas, int nthetas, int nparams);
@@ -155,7 +151,7 @@ double getdCdt(gsl_matrix* dcdt, gsl_matrix* xmodel, gsl_vector* thetas, int ind
 					gsl_matrix_set(dcdt, i, j, 0.0);
 				}
 			} else if( index >= 3){
-				gsl_matrix_set(dcdt, i, j, detCovFn_higher(&xmodel_row_i.vector, &xmodel_row_j.vector, thetats, thetas, nparams));
+				gsl_matrix_set(dcdt, i, j, detCovFn_higher(&xmodel_row_i.vector, &xmodel_row_j.vector, thetas, index, nthetas, nparams));
 			}											 
 		}
 	}		
