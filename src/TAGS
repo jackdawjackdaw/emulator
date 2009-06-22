@@ -1,0 +1,13 @@
+
+emulator.c,178
+void print_matrix(3,23
+double covariance_fn(17,314
+void makeKVector(50,1461
+void makeCovMatrix(65,2178
+double makeEmulatedMean(85,2878
+double makeEmulatedVariance(102,3887
+
+estimator.c,84
+double getLogLikelyhood(11,420
+double getGradient(30,1359
+double getdCdt(65,2838
