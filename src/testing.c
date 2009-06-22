@@ -44,7 +44,6 @@ int main (void){
 	}
 	printf("\n");
 
-
 	xm_view  = gsl_matrix_row(xmodel_test, 3);
 	xn_view = gsl_matrix_row(xmodel_test, 2);
 	test_covariance = covariance_fn(&xm_view.vector, &xn_view.vector, thetas, nthetas, nparams);
