@@ -10,6 +10,9 @@ tags:
 	$(TAGS) emulator.c 
 	$(TAGS) --append estimator.c
 
+maximise: maximise.c maximise.h
+	$(CC) -c maximise.c $(LDFLAGS) $(CFLAGS)
+
 estimator: estimator.c estimator.h
 	$(CC) -c estimator.c $(LDFLAGS) $(CFLAGS)
 

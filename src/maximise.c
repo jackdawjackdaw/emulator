@@ -45,7 +45,7 @@ void gradDesc(gsl_rng *rand, int max_tries, int nsteps, int gamma, gsl_matrix* r
 		for(i = 0; i < nsteps; i++){
 			
 			// make the covariance matrix
-			makeCovmatrix(covariance_matrix, xmodel, thetas, nmodel_points, nthetas, nparams);
+			makeCovMatrix(covariance_matrix, xmodel, thetas, nmodel_points, nthetas, nparams);
 			gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 			gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 			gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
@@ -64,7 +64,7 @@ void gradDesc(gsl_rng *rand, int max_tries, int nsteps, int gamma, gsl_matrix* r
 			// xNew = xOld + gamma*the_gradient(xold)
 			// there's probably a neat function for this but i can't be bothered
 			for(j = 0; j < nthetas; j++){
-				temp_val = gsl_vector_get(xOld, j) + gamma*gsl_vector_get(the_gradient, j);
+				temp_val = gsl_vector_get(xOld, j) + gamma*gsl_vector_get(gradient_vec, j);
 				gsl_vector_set(xNew, j, temp_val);
 			}
 			
@@ -74,11 +74,11 @@ void gradDesc(gsl_rng *rand, int max_tries, int nsteps, int gamma, gsl_matrix* r
 				for(j = 0; j < nthetas; j++){
 					gsl_vector_set(xNew, j, FAILVALUE);
 				}
-				break(); // get out of this loop, it didn't work
+				break; // get out of this loop, it didn't work
 			}
 		}
 		tries++;
-		if ( vector_components_equal(xNew, FAILVALUE) != 1){
+		if ( vector_components_equal(xNew, FAILVALUE, nthetas) != 1){
 			// the thing didn't get set to the failval
 			// now we want to calc the logLikelyhood and see how it is
 			gsl_matrix_memcpy(temp_matrix, cinverse);
@@ -116,14 +116,14 @@ void gradDesc(gsl_rng *rand, int max_tries, int nsteps, int gamma, gsl_matrix* r
  * @return returns 1 if true
  */
 int range_check(gsl_vector* x, gsl_matrix* ranges, int nthetas){
-	int i, j;
+	int i;
 	double range_min;
 	double range_max;
 	int truecount = 0;
 	for(i = 0; i < nthetas; i++){
 		range_min = gsl_matrix_get(ranges, i, 0);
 		range_max = gsl_matrix_get(ranges, i, 1);
-		if (gsl_vector_get(x, i) <= range_max && gsl_vector_get < range_min){
+		if  ((gsl_vector_get(x, i) <= range_max) && (gsl_vector_get(x,i) > range_min)){
 			truecount++;
 		}
 	}
@@ -168,8 +168,9 @@ void set_random_initial_value(gsl_rng* rand, gsl_vector* x, gsl_matrix* ranges,i
 	
 	for(i = 0; i < nthetas; i++){
 		range_min = gsl_matrix_get(ranges, i, 0);
-		range_max = gsl_matrix_geT(ranges, i, 1);
-		gsl_vector_set(x, gsl_rng_uniform(rand)*(range_max-range_min)+range_min);
+		range_max = gsl_matrix_get(ranges, i, 1);
+		// set the input vector to a random value in the range
+		gsl_vector_set(x, gsl_rng_uniform(rand)*(range_max-range_min)+range_min, i);
 	}
 }
 	
