@@ -22,10 +22,11 @@ int main (void){
 	gsl_vector *training_points = gsl_vector_alloc(nmodel_points);
 	gsl_vector *thetas = gsl_vector_alloc(nthetas);
 
+	gsl_vector *nelder_thetas = gsl_vector_alloc(nthetas);
 
 	// things for the gradient descent
-	int max_tries = 1000;
-	int number_steps = 100;
+	int max_tries = 1;
+	int number_steps = 10;
 	double gamma = 1.0e-6;
 	gsl_matrix *grad_ranges = gsl_matrix_alloc(nthetas, 2);
 
@@ -59,21 +60,31 @@ int main (void){
 	gsl_matrix_set(grad_ranges, 3, 0, 0.0);
 	gsl_matrix_set(grad_ranges, 3, 1, 0.4);
 
-	
+	/*
 	// possibly worlds most gigantic function call!
 	gradDesc(random_number, max_tries, number_steps, gamma, grad_ranges, xmodel_test, training_points, thetas, nmodel_points, nthetas, nparams);
 	
-
+	
 	printf("best thetas");
 	for(i = 0; i < nthetas; i++){
 		printf("%g\n", gsl_vector_get(thetas, i));
 	}
- 
+	*/
+
+
+	printf("NELDERMEAD METHOD\n");
+	// now do it again, but this time with neldermead
+	nelderMead(random_number, max_tries, number_steps, nelder_thetas, grad_ranges, xmodel_test, training_points, thetas, nmodel_points, nthetas, nparams);
+	
+	printf("best thetas");
+	for(i = 0; i < nthetas; i++){
+		printf("%g\n", gsl_vector_get(nelder_thetas, i));
+	}
 	
 	gsl_vector_free(xnew);
 	gsl_vector_free(training_points);
 	gsl_vector_free(thetas);
 	gsl_matrix_free(xmodel_test);
-	gsl_rng_free(random_number);
+ 	gsl_rng_free(random_number);
 	return(0);
 }
