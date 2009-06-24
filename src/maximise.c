@@ -18,10 +18,10 @@
  * @param ranges -> a matrix (nthetas * 2) where each row is the max and min allowable range to search for hyperparams in, use this to seed the 
  * initial search etc.
  */
-void gradDesc(gsl_rng *rand, int max_tries, int nsteps, int gamma, gsl_matrix* ranges,  gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nthetas, int nparams){
+void gradDesc(gsl_rng *rand, int max_tries, int nsteps, double gamma, gsl_matrix* ranges,  gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nthetas, int nparams){
 	int i,j;
 	int tries = 0;
-	double best_value = 0.0;
+	double best_value = -50.0;
 	double temp_val = 0.0;
 
 	// vectors for the grad desc
@@ -41,11 +41,12 @@ void gradDesc(gsl_rng *rand, int max_tries, int nsteps, int gamma, gsl_matrix* r
 	
 	while(tries < max_tries){
 		set_random_initial_value(rand, xOld, ranges, nthetas);
-		
+
 		for(i = 0; i < nsteps; i++){
 			
-			// make the covariance matrix
-			makeCovMatrix(covariance_matrix, xmodel, thetas, nmodel_points, nthetas, nparams);
+			// make the covariance matrix 
+			// using the random initial conditions! (xold not thetas)
+			makeCovMatrix(covariance_matrix, xmodel, xOld, nmodel_points, nthetas, nparams);
 			gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 			gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 			gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
@@ -60,6 +61,7 @@ void gradDesc(gsl_rng *rand, int max_tries, int nsteps, int gamma, gsl_matrix* r
 				the_gradient =  getGradient(cinverse, xmodel, trainingvector, xOld, j, nmodel_points, nthetas, nparams);
 				gsl_vector_set(gradient_vec, j, the_gradient);
 			}
+
 			
 			// xNew = xOld + gamma*the_gradient(xold)
 			// there's probably a neat function for this but i can't be bothered
@@ -72,8 +74,9 @@ void gradDesc(gsl_rng *rand, int max_tries, int nsteps, int gamma, gsl_matrix* r
 				gsl_vector_memcpy(xOld, xNew); // set the next xOld value
 			} else {
 				for(j = 0; j < nthetas; j++){
-					gsl_vector_set(xNew, j, FAILVALUE);
+					gsl_vector_set(xNew, j, FAILVALUE);					
 				}
+				fprintf(stderr, "gradDesc fell out of range\n");
 				break; // get out of this loop, it didn't work
 			}
 		}
@@ -86,15 +89,21 @@ void gradDesc(gsl_rng *rand, int max_tries, int nsteps, int gamma, gsl_matrix* r
 			cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
 			// temp_val is now the likelyhood for this answer
 			temp_val = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, xNew, nmodel_points, nthetas, nparams);
-			
+			printf("log likelyhood = %g\n", temp_val);
+
 			if(temp_val > best_value){
 				//debug
+				best_value = temp_val;
 				printf("best: %g\n", best_value);
 				gsl_vector_memcpy(best_vector, xNew);
 			}			
+		} else {
+			fprintf(stderr, "caught a failed run, ignoring\n");
 		}
 	}
 	
+	printf("final-best = %g\n", best_value);
+
 	// now we copy the best value into thetas
 	gsl_vector_memcpy(thetas, best_vector);
 	
@@ -165,12 +174,16 @@ void set_random_initial_value(gsl_rng* rand, gsl_vector* x, gsl_matrix* ranges,i
 	int i;
 	double range_min; 
 	double range_max;
+	double the_value;
 	
 	for(i = 0; i < nthetas; i++){
 		range_min = gsl_matrix_get(ranges, i, 0);
 		range_max = gsl_matrix_get(ranges, i, 1);
 		// set the input vector to a random value in the range
-		gsl_vector_set(x, gsl_rng_uniform(rand)*(range_max-range_min)+range_min, i);
+		the_value = gsl_rng_uniform(rand) * (range_max - range_min) + range_min;
+		//printf("theta %d set to %g\n", i, the_value);
+		//gsl_vector_set(x, gsl_rng_uniform(rand)*(range_max-range_min)+range_min, i);
+		gsl_vector_set(x, i, the_value);
 	}
 }
 	

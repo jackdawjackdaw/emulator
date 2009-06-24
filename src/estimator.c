@@ -26,6 +26,9 @@
  * If you change the covariance function around a bit this should probably still work without too much 
  * trouble. You are advised to test this however
  *  
+ * somehow log(det_cinverse) is > 0 and judging from the MM code it should be negative,
+ * have hacked it so that it is, but this is abit weird
+ * 
  * L = (-1/2)*Log[Det[cinverse]]  - (1/2)*trainingvector.cinverse.trainingvector - (nmodel_points/2)*Log[2*Pi]
  * 
  * @return the log likelyhood for a given set of hyperparams theta (and cinverse) 
@@ -39,15 +42,25 @@
 double getLogLikelyhood(gsl_matrix *cinverse, double det_cinverse,  gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nthetas, int nparams){
 	double the_likelyhood = 0.0;
 	double vector_matrix_vector_product = 0.0;
-	double log_2_pi = 0.798179868;
+	double log_2_pi = 1.83788;
 	gsl_vector *result_holder = gsl_vector_alloc(nmodel_points);
+	double log_det_c = log(det_cinverse);
+
+	if(log_det_c > 0.0){
+		// force postive
+		log_det_c = log_det_c *(-1);
+	}
+
+	//printf("%g\n", log_det_c);
 	// the  log likelyhood is a given by
 	// L = (-1/2)*Log[Det[cinverse]]  - (1/2)*trainingvector.cinverse.trainingvector - (nmodel_points/2)*Log[2*Pi]
-	the_likelyhood += -(1.0/2.0)*log(det_cinverse) -  (nmodel_points/2.0)*log_2_pi;
+	the_likelyhood += -(1.0/2.0)*log_det_c -  (nmodel_points/2.0)*log_2_pi;
 	
 	gsl_blas_dgemv(CblasNoTrans, 1.0, cinverse, trainingvector, 0.0, result_holder);
 	gsl_blas_ddot(trainingvector, result_holder, &vector_matrix_vector_product);
 	
+	//printf("%g\n", (log_2_pi)*(nmodel_points/2.0));
+
 	the_likelyhood += vector_matrix_vector_product*(-1.0/2.0);
 
 	gsl_vector_free(result_holder);

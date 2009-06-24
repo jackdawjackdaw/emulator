@@ -1,7 +1,8 @@
 
 CC = gcc
 LDFLAGS = -lgsl -lgslcblas -lm
-CFLAGS = -O0 -Wall -g
+#CFLAGS = -O0 -Wall -g
+CFLAGS = -O3 -Wall
 TAGS = etags #for emacs
 
 all: estimatortest
@@ -12,6 +13,9 @@ tags:
 
 maximise: maximise.c maximise.h
 	$(CC) -c maximise.c $(LDFLAGS) $(CFLAGS)
+
+gradtest: maximise estimator emulator
+	$(CC) grad-testing.c maximise.o estimator.o emulator.o -o grad-test.out $(LDFLAGS) $(CFLAGS)
 
 estimator: estimator.c estimator.h
 	$(CC) -c estimator.c $(LDFLAGS) $(CFLAGS)
