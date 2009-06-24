@@ -187,9 +187,72 @@ void set_random_initial_value(gsl_rng* rand, gsl_vector* x, gsl_matrix* ranges,i
 	}
 }
 	
+typedef struct evalunit {
+	int index;
+	double value;
+}evalunit;
 
 
+void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix* ranges, gsl_matrix* xmodel, gsl_vector *trainingvector, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams){
+	int i;
+	int t = 0;
+	int tries = 0;
+	int nverticies  = nthetas+1;
+	double alpha = 1.0;
+	double gamma = 2.0;
+	double rho = 0.5;
+	double sigma = 0.5;
+	evalunit* evalList;
+	gsl_vector_view vertex;
+	// simplex is nthetas+1 points (each of which have dim nthetas)
+	gsl_matrix *verticies = gsl_matrix_alloc(nverticies, nthetas);
+	
 
+	// all the crap we need for getting the likelyhood
+	gsl_matrix *covariance_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points);
+	gsl_matrix *cinverse = gsl_matrix_alloc(nmodel_points, nmodel_points);
+	gsl_matrix *temp_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points);
+	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(nmodel_points);
+	double cinverse_det = 0.0;
+	double the_likelyhood = 0.0;
+	int lu_signum = 0;
+
+	evalList = malloc(sizeof(evalunit)*nverticies);
+
+	while(tries < max_tries){
+		// assign initial values to the vertices
+		for(i = 0; i < nverticies; i++){
+			vertex = gsl_matrix_row(verticies, i);
+			set_random_initial_value(rand, &vertex.vector, ranges, nthetas);
+		}
+	
+		while(t < nsteps){
+			
+			// get ready to get the likleyhood
+						
+			// make the covariance matrix 
+			// using the random initial conditions! (xold not thetas)
+			makeCovMatrix(covariance_matrix, xmodel, xOld, nmodel_points, nthetas, nparams);
+			gsl_matrix_memcpy(temp_matrix, covariance_matrix);
+			gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
+			gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
+			// now get the determinant of the inverse			
+			gsl_matrix_memcpy(temp_matrix, cinverse);
+			gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
+			cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
+
+			// fill the evalList
+			for(i = 0; i < nverticies; i++){
+				vertex = gsl_matrix_row(verticies, i);
+				the_likelyhood = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, &vertex.vector, nmodel_points, nthetas, nparams);
+				evalList[i].index = i;
+				evalList[i].value = the_likelyhood;
+			}
+			
+			// now check things were ok (how?)
+			
+			// now we have to sort the evallist by value
+			
 
 
 
