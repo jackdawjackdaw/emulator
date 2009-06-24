@@ -189,7 +189,7 @@ void set_random_initial_value(gsl_rng* rand, gsl_vector* x, gsl_matrix* ranges,i
 	
 
 int compare_evals(const evalunit *a, const evalunit *b){
-	double temp = a->value - b->value;
+	double temp = b->value - a->value;
 	if(temp > 0){
 		return 1;
 	} else if(temp < 0){
@@ -240,27 +240,42 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			set_random_initial_value(rand, &vertex.vector, ranges, nthetas);
 		}
 		
-
-
-
-		printf("INITIAL VERTICIES\n");
-		print_matrix(verticies, nverticies, nthetas);
-		
-
-
+		//printf("INITIAL VERTICIES\n");
+		//print_matrix(verticies, nverticies, nthetas);
+		nanflag = 0;
+		t= 0;
 								
 		while(t < nsteps){				
+			// reset everything
+			gsl_vector_set_zero(com);
+			gsl_vector_set_zero(xreflected);
+			gsl_vector_set_zero(xextended);
+			gsl_vector_set_zero(xcontracted);
+			
 			// fill the evalList
 			for(i = 0; i < nverticies; i++){
 				vertex = gsl_matrix_row(verticies, i);
 				the_likelyhood = evalLikelyhood(&vertex.vector, xmodel, trainingvector, nmodel_points, nthetas, nparams);
+				//printf("%g\n", the_likelyhood);
 				evalList[i].index = i;
 				evalList[i].value = the_likelyhood;
 			}
 									
+			/*printf("PRESORT EVALS:\t");
+			for(i = 0; i < nverticies; i++){ printf("%g\t", evalList[i].value);} 
+			printf("\n");		 */
+
+
+
 			// now we have to sort the evallist by value
 			qsort(evalList, nverticies, sizeof(evalunit), (void*)compare_evals);
-			
+		
+			/*printf("EVALS:\t");
+			for(i = 0; i < nverticies; i++){ printf("%g\t", evalList[i].value);} 
+			printf("\n");		 
+			for(i = 0; i < nverticies; i++){ printf("%d\t", evalList[i].index);} 
+			printf("\n");*/
+	
 			for(i = 0; i < nverticies; i++){ 
 				if((isnan(evalList[i].value)) || isinf(evalList[i].value)){
 					fprintf(stderr, "nan!\n");
@@ -268,18 +283,22 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 				}
 			}
 			if(nanflag == 1){ break;};
-				
+			 
+			//printf("VERTICIES PRESORT\n");
+			//print_matrix(verticies, nverticies, nthetas);
 			// now we use the sorted evalList to sort the vertex matrix
 			sort_vertex_list(verticies, evalList, nverticies, nthetas);			
+
+			//printf("VERTICIES POSTSORT\n");
+			//print_matrix(verticies, nverticies, nthetas);
+
 			// calculate the com of the simplex
 			// but we have to ignore the last point
 			calc_com(verticies, com, nverticies, nthetas);
 			
-			printf("VERTICIES\n");
-			print_matrix(verticies, nverticies, nthetas);
 
-			printf("COM IS\t");
-			for(i = 0; i < nthetas; i++){ printf("%g\t", gsl_vector_get(com, i));}; printf("\n");
+			//printf("COM IS\t");
+			//for(i = 0; i < nthetas; i++){ printf("%g\t", gsl_vector_get(com, i));}; printf("\n");
 			
 			// set xreflected
 			// xreflected = com + alpha*(com - verticies[last])
@@ -290,14 +309,30 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			gsl_vector_scale(temp_vector, alpha);
 			gsl_vector_add(xreflected, temp_vector);
 			
+			//printf("xreflected:\t");
+			//vector_print(xreflected, nthetas);
+			
+			vector_rectify(xreflected, nthetas);
+
+
 			// now we have to evaluate the likelyhood of xreflected
 			evalReflected = evalLikelyhood(xreflected, xmodel, trainingvector, nmodel_points, nthetas, nparams);
+			//printf("evalReflected:%g\n", evalReflected);
+
+			if(isnan(evalReflected)){
+				fprintf(stderr, "evalReflected -> NAN!\n");
+				nanflag = 1;
+				break;
+			}
 			
 			// now the heuristics begin
-			if(evalList[0].value <= evalReflected && evalReflected <= evalList[last_vertex -1].value){
+			if(evalList[0].value >= evalReflected && evalReflected > evalList[last_vertex -1].value){
 				// so the reflected vertex is better than the worst, so we keep it
+				//printf("inserted xreflected, zero\n");
 				gsl_matrix_set_row(verticies, last_vertex, xreflected); 
-			} else if( evalReflected < evalList[0].value){
+				evalList[last_vertex].value = evalReflected;
+				//print_matrix(verticies, nverticies, nthetas);
+			} else if( evalReflected > evalList[0].value){
 				// i.e evalReflected is the best we have so far
 				// setup xExtended = com + gamma*(com-verticies[last])
 				gsl_vector_memcpy(xextended, com);
@@ -307,15 +342,34 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 				gsl_vector_scale(temp_vector, gamma);
 				gsl_vector_add(xextended, temp_vector);
 				
-				evalExtended = evalLikelyhood(xextended, xmodel, trainingvector, nmodel_points, nthetas, nparams);
+				vector_rectify(xextended, nthetas);
 				
-				if(evalExtended < evalReflected){
-					gsl_matrix_set_row(verticies, last_vertex, xextended);
-				} else {
-					gsl_matrix_set_row(verticies, last_vertex, xreflected);
+				//printf("xextended:\t");
+				//vector_print(xextended, nthetas);
+
+				evalExtended = evalLikelyhood(xextended, xmodel, trainingvector, nmodel_points, nthetas, nparams);
+
+				if(isnan(evalExtended)){
+					fprintf(stderr, "evalExtended -> NAN!\n");
+					nanflag = 1;
+					break;
 				}
-			} else if(evalReflected > evalList[last_vertex-1].value){
+
+				
+				//printf("evalExtended %g\nevalReflected %g\n", evalExtended, evalReflected);
+
+				if(evalExtended > evalReflected){
+					//printf("inserted: xextended\n");
+					gsl_matrix_set_row(verticies, last_vertex, xextended);
+					evalList[last_vertex].value = evalExtended;
+				} else {
+					//printf("inserted: xreflected\n");
+					gsl_matrix_set_row(verticies, last_vertex, xreflected);
+					evalList[last_vertex].value = evalReflected;
+				}
+			} else if(evalReflected <= evalList[last_vertex-1].value){
 				// setup xcontracted = last_vertex + rho*(com-last_vertex);
+				
 				vertex = gsl_matrix_row(verticies, last_vertex);
 				gsl_vector_memcpy(xcontracted, &vertex.vector);
 				gsl_vector_memcpy(temp_vector, com);
@@ -323,21 +377,35 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 				gsl_vector_scale(temp_vector, rho);
 				gsl_vector_add(xcontracted, temp_vector);
 				
+				vector_rectify(xcontracted, nthetas);
+
 				evalContracted = evalLikelyhood(xcontracted, xmodel, trainingvector, nmodel_points, nthetas, nparams);
-				
-				if(evalContracted < evalList[last_vertex].value){
+				//printf("evalContracted %g\n", evalContracted);
+				//printf("xcontracted:\t");
+				//vector_print(xcontracted, nthetas);
+
+				if(isnan(evalContracted)){
+					fprintf(stderr, "evalContracted -> NAN!\n");
+					nanflag = 1;
+					break;
+				}
+
+
+				if(evalContracted > evalList[last_vertex].value){
+					//printf("inserted: xcontracted\n");
 					gsl_matrix_set_row(verticies, last_vertex, xcontracted);
+					evalList[last_vertex].value = evalContracted;
 				} else {
+					//printf("making new list instead\n");
 					make_new_vlist(new_verticies, verticies, sigma, nverticies, nthetas);
+					
 				}
 			}
-				
-			t++;
-			
 			printf("EVALS:\t");
 			for(i = 0; i < nverticies; i++){ printf("%g\t", evalList[i].value);} 
 			printf("\n");		 
-		 
+						
+			t++;					 
 		}
 		// now it's done, calc the com one more time and then run with it
 		if(nanflag == 0){
@@ -353,7 +421,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 		}
 		tries++;
 	}
-	printf("final_answer = %g\n", answer_likelyhood);
+	printf("final_answer = %g\n", best_value);
 	gsl_vector_memcpy(the_answer, best_vector);
 
 	
@@ -369,6 +437,14 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 
 }
 
+
+void vector_print(gsl_vector *x, int n){
+	int i;
+	for(i =0; i < n; i++){
+		printf("%g\t", gsl_vector_get(x, i));
+	}
+	printf("\n");
+}
 
 void make_new_vlist(gsl_matrix* new_verticies, gsl_matrix* verticies, double sigma, int nverticies, int nthetas){
 	int i;
@@ -395,6 +471,17 @@ void make_new_vlist(gsl_matrix* new_verticies, gsl_matrix* verticies, double sig
 	gsl_vector_free(first_vertex);
 }
 
+
+void vector_rectify(gsl_vector *x, int n){
+	int i; 
+	double the_value;
+	for(i = 0; i < n; i++){
+		the_value = gsl_vector_get(x,i);
+		if(the_value < 0.0){
+			gsl_vector_set(x, i, -1*the_value);
+		}
+	}
+}
 
 //! get the likelyhood for a given vertex
 /**
@@ -425,6 +512,10 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
 	
 	the_likelyhood  = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, vertex, nmodel_points, nthetas, nparams);
+
+	if(isnan(the_likelyhood)){
+		fprintf(stderr, "the_likelyhood -> nan\n");
+	}
 	
 
 	gsl_matrix_free(covariance_matrix);
@@ -447,20 +538,25 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
  */
 void sort_vertex_list(gsl_matrix *verticies, evalunit* evalList, int nverticies, int nthetas){
 	gsl_matrix * temp_matrix = gsl_matrix_alloc(nverticies, nthetas);
-	gsl_vector_view vertex;
+	gsl_vector *temp_vector = gsl_vector_alloc(nthetas);
 	int i;
 	int the_index = 0;
+
+	gsl_matrix_set_zero(temp_matrix);
 	
 	// use the indicies from the sorted evallist to 
 	// copy the verticies, rowwise into the tempmatrix
 	for(i = 0; i < nverticies; i++){
 		the_index = evalList[i].index;
-		vertex = gsl_matrix_row(verticies, the_index);
-		gsl_matrix_set_row(temp_matrix, nthetas, &vertex.vector);
+		gsl_matrix_get_row(temp_vector, verticies, the_index);
+		gsl_matrix_set_row(temp_matrix, i, temp_vector);
 	}
+
+
 	// copy the sorted matrix back into the vertex list
 	gsl_matrix_memcpy(verticies, temp_matrix);
 	gsl_matrix_free(temp_matrix);
+	gsl_vector_free(temp_vector);
 }
 
 
@@ -472,15 +568,23 @@ void sort_vertex_list(gsl_matrix *verticies, evalunit* evalList, int nverticies,
  * @return com is a vector set to the centre of mass
  */
 void calc_com(gsl_matrix *verticies, gsl_vector *com, int nverticies, int nthetas){
+	//print_matrix(verticies, nverticies, nthetas);
 	int i, j;
-	double temp_val = 0.0;
+	gsl_vector *temp_vector = gsl_vector_alloc(nverticies);
+	double temp_value = 0.0;
+	//printf("\n");
 	for(i = 0; i < nthetas; i++){
+		gsl_matrix_get_col(temp_vector, verticies, i);
+		//printf("\n");
+		//vector_print(temp_vector, nverticies);
 		for(j = 0; j < (nverticies-1); j++){
-			temp_val += gsl_matrix_get(verticies, j,i);
+			temp_value += gsl_vector_get(temp_vector, j);
 		}
-		gsl_vector_set(com, i, temp_val / ((double)nverticies));
-		temp_val = 0.0;
+		temp_value /= (nverticies-1);
+		gsl_vector_set(com, i, temp_value);
+		temp_value = 0.0;
 	}
+	gsl_vector_free(temp_vector);
 }
 
 	
