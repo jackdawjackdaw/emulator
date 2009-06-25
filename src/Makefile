@@ -30,7 +30,7 @@ estimatortest:  estimator emulator
 	$(CC) estimator-test.c -o estimator-test.out estimator.o emulator.o $(LDFLAGS) $(CFLAGS)
 
 main: emulator estimator maximise
-	$(CC) main.c -o emulator.out estimator.o emulator.o maximise.o $(LDFLAGS) $(CFLAGS)
+	$(CC) main.c -o ../emulator.out estimator.o emulator.o maximise.o $(LDFLAGS) $(CFLAGS)
 
 
 clean:

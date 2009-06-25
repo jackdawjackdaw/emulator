@@ -262,6 +262,8 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 	fprintf(stderr, "best_thetas: \t");
 	print_vector_quiet(thetas, options->nthetas);
 
+	gsl_rng_free(random_number);
+	gsl_matrix_free(grad_ranges);
 }
 
 
