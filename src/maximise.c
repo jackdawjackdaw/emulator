@@ -401,9 +401,10 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 					
 				}
 			}
-			printf("EVALS:\t");
+			
+			/*printf("EVALS:\t");
 			for(i = 0; i < nverticies; i++){ printf("%g\t", evalList[i].value);} 
-			printf("\n");		 
+			printf("\n");		 */ // very verbose
 						
 			t++;					 
 		}

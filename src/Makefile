@@ -1,11 +1,11 @@
 
 CC = gcc
 LDFLAGS = -lgsl -lgslcblas -lm
-#CFLAGS = -O0 -Wall -g
-CFLAGS = -O3 -Wall
+CFLAGS = -O0 -Wall -g
+#CFLAGS = -O3 -Wall
 TAGS = etags #for emacs
 
-all: gradtest
+all: main
 
 tags:
 	$(TAGS) emulator.c 
@@ -28,6 +28,10 @@ testing: emulator
 
 estimatortest:  estimator emulator
 	$(CC) estimator-test.c -o estimator-test.out estimator.o emulator.o $(LDFLAGS) $(CFLAGS)
+
+main: emulator estimator maximise
+	$(CC) main.c -o emulator.out estimator.o emulator.o maximise.o $(LDFLAGS) $(CFLAGS)
+
 
 clean:
 	rm *.o

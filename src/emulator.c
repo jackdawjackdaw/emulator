@@ -174,7 +174,7 @@ double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_ve
 	gsl_blas_dgemv(CblasNoTrans, 1.0, inverse_cov_matrix, kplus_vector, 0.0, result_holder);
 	gsl_blas_ddot(kplus_vector, result_holder, &emulated_variance);
 	gsl_vector_free(result_holder);
-	return(emulated_variance);
+	return(kappa-emulated_variance);
 }
 
 
