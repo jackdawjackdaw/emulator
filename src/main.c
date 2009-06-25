@@ -251,11 +251,16 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 		gsl_matrix_set(grad_ranges, i, 0, 0.0);
 		gsl_matrix_set(grad_ranges, i, 1, 1.0);
 	}
+	
+	gsl_matrix_set(grad_ranges, 3, 0, 0.0);
+	gsl_matrix_set(grad_ranges, 3, 0, 0.4);
+	
+
 
 	nelderMead(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, NULL, options->nmodel_points, options->nthetas, options->nparams);
 
-	printf("best_thetas: \t");
-	vector_print(thetas, options->nthetas);
+	fprintf(stderr, "best_thetas: \t");
+	print_vector_quiet(thetas, options->nthetas);
 
 }
 
@@ -299,11 +304,11 @@ unsigned long int get_seed(void){
 	if((devrandom = fopen("/dev/random", "r")) == NULL){
 		gettimeofday(&tv, 0);
 		seed = tv.tv_sec + tv.tv_usec;
-		printf("Got seed %u from gettimeofday()\n", seed);
+		fprintf(stderr,"Got seed %u from gettimeofday()\n", seed);
 	}
 	else {
 		fread(&seed, sizeof(seed), 1, devrandom);
-		printf("Got seed %u from /dev/random\n", seed);
+		fprintf(stderr,"Got seed %u from /dev/random\n", seed);
 		fclose(devrandom);
 	}
 	return(seed);

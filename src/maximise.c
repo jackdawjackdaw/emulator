@@ -414,7 +414,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			answer_likelyhood = evalLikelyhood(com, xmodel, trainingvector, nmodel_points, nthetas, nparams);
 			if(answer_likelyhood > best_value){
 				best_value = answer_likelyhood;
-				printf("best_value = %g\n", answer_likelyhood);
+				fprintf(stderr,"best_value = %g\n", answer_likelyhood);
 				gsl_vector_memcpy(best_vector, com);
 			}
 		} else {
@@ -422,7 +422,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 		}
 		tries++;
 	}
-	printf("final_answer = %g\n", best_value);
+	fprintf(stderr, "final_answer = %g\n", best_value);
 	gsl_vector_memcpy(the_answer, best_vector);
 
 	
@@ -438,7 +438,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 
 }
 
-
+//! print a vector to stdout
 void vector_print(gsl_vector *x, int n){
 	int i;
 	for(i =0; i < n; i++){
@@ -446,6 +446,16 @@ void vector_print(gsl_vector *x, int n){
 	}
 	printf("\n");
 }
+
+//! print a vector to stderr
+void print_vector_quiet(gsl_vector *x, int n){
+int i;
+	for(i =0; i < n; i++){
+		fprintf(stderr, "%g\t", gsl_vector_get(x, i));
+	}
+	fprintf(stderr,"\n");
+}
+	
 
 void make_new_vlist(gsl_matrix* new_verticies, gsl_matrix* verticies, double sigma, int nverticies, int nthetas){
 	int i;
