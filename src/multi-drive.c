@@ -77,10 +77,10 @@ int main (void){
 	vector_print(the_options.training, number_lines);
 	//estimate_region(&the_options, random_number);
 	
-	//evaluate_region(&wholeThing, &the_options, random_number);
+	evaluate_region(&wholeThing, &the_options, random_number);
 	
 	
-	//dump_result(&wholeThing, stdout);
+	dump_result(&wholeThing, stdout);
 
 	gsl_rng_free(random_number);
 	free_eopts(&the_options);
@@ -124,8 +124,10 @@ void free_eopts(eopts* options){
 
 
 
-//! splits up the input data
+//! splits up the input data (ONLY FOR 1 PARAM)
 /**
+ * WARNING this only works for 1 param, otherwise behaviour is undefined (but probably bad)
+ * 
  * splits up the raw char input data into real things (xmodel etc)
  * this requires that the following fields in the_options be set correctly
  * nparams, nthetas, nmodel_points
@@ -150,9 +152,6 @@ void process_input_data(char** input_data, eopts* the_options){
 		sscanf(input_data[i], "%lg %lg", &junk,  &temp_value);
 		gsl_vector_set(the_options->training, i, temp_value);
 	}
-	// this is broken now, so i'm going to cheat
-
-
 		
 	
 }

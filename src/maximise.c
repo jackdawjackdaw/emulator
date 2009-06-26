@@ -199,12 +199,43 @@ int compare_evals(const evalunit *a, const evalunit *b){
 }
 
 //! a simplex method for maximis
+/**
+ *
+ * An implementation of the NelderMead method for maximisation, cribbed from the wikipedia page about same.
+ * note that there are lots of vestigial printfs, if you change something you should turn them on 
+ * and have a look at what's going on. 
+ *
+ * If any of the verticies have components out of range the evalutaion will break and stop, you could make this
+ * a bit more lax, but params of 10000 are not helpful
+ * 
+ * the 
+ *  
+ *
+ * @return the_answer is set to the best set of hyper params
+ * @param rand already setup gsl rng
+ * @param max_tries number of times to cycle through the process
+ * @param nsteps how many steps to move the simplex 
+ * @param the_answer overwritten with the final set of hyperparams, should be nthetas long
+ * @param ranges -> a matrix of ntheta rows with row having 2 entries (lower..upper), these are HARD ranges and will stop 
+ * the evaluation if the maximisations current values for theta get out of them
+ * @param xmodel -> the model parameters, used in evaluating the likelyhood
+ * @param trainingvector -> the model's output, used in evaluating the likleyhood
+ */
 void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer,  gsl_matrix* ranges, gsl_matrix* xmodel, gsl_vector *trainingvector, int nmodel_points, int nthetas, int nparams){
+	
+	assert(max_tries > 0);
+	assert(nsteps >0);
+	assert(the_answer.size == nthetas);
+	
+
+
 	int i,j;
 	int t = 0;
 	int tries = 0;
 	int nverticies  = nthetas+1;
 	int nanflag = 0;
+	int brokenflag = 0;
+	int range_broke_count = 0;
 	double alpha = 1.0;
 	double gamma = 2.0;
 	double rho = 0.5;
@@ -405,11 +436,17 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			/*printf("EVALS:\t");
 			for(i = 0; i < nverticies; i++){ printf("%g\t", evalList[i].value);} 
 			printf("\n");		 */ // very verbose
-						
+			if(test_ranges(verticies, nverticies, ranges,  nthetas) != 1){
+				// oh dear, gone out of range
+				fprintf(stderr, "vertex fell out of ranges\n");
+				brokenflag = 1;
+				range_broke_count++;
+				break;
+			}
 			t++;					 
 		}
 		// now it's done, calc the com one more time and then run with it
-		if(nanflag == 0){
+		if(nanflag == 0 && brokenflag == 0){
 			calc_com(verticies, com, nverticies, nthetas);
 			answer_likelyhood = evalLikelyhood(com, xmodel, trainingvector, nmodel_points, nthetas, nparams);
 			if(answer_likelyhood > best_value){
@@ -419,6 +456,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			}
 		} else {
 			nanflag = 0;
+			brokenflag = 0;
 		}
 		tries++;
 	}
@@ -426,6 +464,10 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	gsl_vector_memcpy(the_answer, best_vector);
 
 	
+	if(range_broke_count > (int)(max_tries/2)){
+		fprintf(stderr, "evaluation fell out of range quite a lot, adjust the range matrix when calling this function\n");
+	}
+
 	free(evalList);
 	gsl_vector_free(best_vector);
 	gsl_vector_free(com);
@@ -437,6 +479,36 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	gsl_matrix_free(new_verticies);
 
 }
+
+//! check that the verticies are in the ranges
+/**
+ * test that the verticies in the simplex are in the ranges given to the max code
+ * @return 2 if out of range, 1 if in range
+ */
+int test_ranges(gsl_matrix* verticies, int nverticies, gsl_matrix *ranges, int nthetas){
+	int i,j;
+	gsl_vector_view vertex;
+	int bad_flag = 0;
+	double temp_val;
+	for(i = 0; i < nverticies; i++){
+		vertex = gsl_matrix_row(verticies, i);
+		for(j = 0; j < nthetas; j++){
+			temp_val = gsl_vector_get(&vertex.vector, j);
+			if( temp_val < gsl_matrix_get(ranges, j, 0) || temp_val > gsl_matrix_get(ranges, j, 1)){
+			bad_flag = 1;
+			break;
+			}
+		}
+		if(bad_flag == 1) break;
+	}
+	
+	if(bad_flag == 1) { 
+		return(2);
+	} else {
+		return(1);
+	}
+}
+			
 
 //! print a vector to stdout
 void vector_print(gsl_vector *x, int n){
