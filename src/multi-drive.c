@@ -74,7 +74,7 @@ int main (void){
 	process_input_data(input_data, &the_options);
 
 	print_matrix(the_options.xmodel, number_lines, 1);
-
+	vector_print(the_options.training, number_lines);
 	//estimate_region(&the_options, random_number);
 	
 	//evaluate_region(&wholeThing, &the_options, random_number);
@@ -132,7 +132,9 @@ void free_eopts(eopts* options){
  */
 void process_input_data(char** input_data, eopts* the_options){
 	int i,j;
-	double temp_value = 0.0;
+	double temp_value;
+	double junk;
+	
 	assert(the_options->nmodel_points > 0); 
 	// first allocate the buffers in options
 	the_options->xmodel = gsl_matrix_alloc(the_options->nmodel_points, the_options->nparams);
@@ -141,12 +143,16 @@ void process_input_data(char** input_data, eopts* the_options){
 
 	for(i = 0; i < the_options->nmodel_points; i++){
 		for( j = 0; j < the_options->nparams; j++){
-			sscanf(input_data[i], "%lg", &temp_value);
+			sscanf(input_data[i], "%lg", &temp_value); 		
 			gsl_matrix_set(the_options->xmodel, i, j, temp_value);
-		}
-		sscanf(input_data[i], "%lg", &temp_value);
+	 }
+		// HACK HACK HACK, only works for 1 param
+		sscanf(input_data[i], "%lg %lg", &junk,  &temp_value);
 		gsl_vector_set(the_options->training, i, temp_value);
 	}
+	// this is broken now, so i'm going to cheat
+
+
 		
 	
 }
