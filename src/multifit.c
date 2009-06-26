@@ -1,15 +1,17 @@
 
-typedef struct eopts{
-	int nmodel_points;
-	int nemu_points;
-	int nparams;
-	int nthetas;
-	double range_min;
-	double range_max;
-	gsl_matrix *xmodel;
-	gsl_vector *training;
-	gsl_vector *thetas;
-} eopts;
+#include "multifit.h"
+
+/* typedef struct eopts{ */
+/* 	int nmodel_points; */
+/* 	int nemu_points; */
+/* 	int nparams; */
+/* 	int nthetas; */
+/* 	double range_min; */
+/* 	double range_max; */
+/* 	gsl_matrix *xmodel; */
+/* 	gsl_vector *training; */
+/* 	gsl_vector *thetas; */
+/* } eopts; */
 
 // this will only work in 1d for now
 //! emulate the given region, returning the new_x, emulated_mean and emulated_variances
@@ -18,10 +20,12 @@ typedef struct eopts{
  * the hyperparameters have to have been set
  * @return new_x are the emulated points, emulated_mean is the mean at these points
  * and emualted_variance is the variance at these points */
-void emulate_region(gsl_vector *new_x, gsl_vector* emulated_mean, gsl_vector* emulated_variance , eopts* options){
+void emulate_region(gsl_matrix *new_x, gsl_vector* emulated_mean, gsl_vector* emulated_variance , eopts* options){
 	int i, j;
 	double kappa = 0.0;
 	double step_size = (options->range_max - options->range_min) /((double)(options->nemu_points));
+	double temp_mean = 0.0;
+	double temp_var = 0.0;
 	gsl_matrix *c_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
 	gsl_matrix *cinverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
 	gsl_vector *kplus = gsl_vector_alloc(options->nmodel_points);
@@ -39,8 +43,8 @@ void emulate_region(gsl_vector *new_x, gsl_vector* emulated_mean, gsl_vector* em
 	// set the new_x values
 	for(i = 0; i < options->nemu_points; i++){
 		// this doesn't make sense for many params!
-		for(j = 0; j < options->nparams; j++){
-			gsl_matrix_set(new_x, i, j,step_size*((double)i)+options->range_min);
+		for(j = 0; j < options->nparams; j++){	
+			gsl_matrix_set(new_x, i, j,step_size*((double)i)+options->range_min);			
 		}
 	}
 	
@@ -70,30 +74,39 @@ void estimate_region(eopts* options, gsl_rng *random){
 	int max_tries = 20;
 	int i;
 	int number_steps = 40;
-	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas);
+	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas,2);
   
 	for(i = 0; i < options->nthetas; i++){
 		gsl_matrix_set(grad_ranges, i, 0, 0.0);
 		gsl_matrix_set(grad_ranges, i, 1, 1.0);
 	}
-	
-	nelderMead(random, max_tries, number_steps, options->thetas, grad_rangers, options->xmodel, options->training, null, options->nmodel_points, options->nthetas, options->nparams);
+
+	gsl_matrix_set(grad_ranges, 3, 0, 0.0);
+	gsl_matrix_set(grad_ranges, 3,1, 0.4);
+ 		
+	nelderMead(random, max_tries, number_steps, options->thetas, grad_ranges, options->xmodel, options->training, options->nmodel_points, options->nthetas, options->nparams);
 	
 	fprintf(stderr, "in range: %g..%g\n", options->range_min, options->range_max);
 	fprintf(stderr, "best thetas: \t"); 
-	print_vector_quet(options->thetas, options->nthetas);
+	print_vector_quiet(options->thetas, options->nthetas);
 	
 	gsl_matrix_free(grad_ranges);
 }
 
 //! do the estimation and emulation for a region
-void evaluate_region(gsl_vector* new_x, gsl_vector* new_mean, gsl_vector* new_variance, eopts* options, gsl_rng * random){
+/*void evaluate_region(gsl_matrix* new_x, gsl_vector* new_mean, gsl_vector* new_variance, eopts* options, gsl_rng * random){
 	estimate_region(options, random);
 	emulate_region(new_x, new_mean, new_variance, options);
+	}*/
+
+void evaluate_region(emuResult *results, eopts* options, gsl_rng* random){
+	estimate_region(options, random);
+	emulate_region(results->new_x, results->new_mean, results->new_var, options);
 }
 
 //! see if a region is smooth
-int is_smooth(double smooth_val, gsl_vector* xemu, gsl_vector* mean_emu, gsl_vector* var_emu, eopts* options){
+//! this is stupid at the moment
+/*int is_smooth(double smooth_val, gsl_vector* xemu, gsl_vector* mean_emu, gsl_vector* var_emu, eopts* options){
 	int i; 
 	double mse = malloc(sizeof(double)*(options->nemu_points));
 	double var = 0.0;
@@ -111,7 +124,7 @@ int is_smooth(double smooth_val, gsl_vector* xemu, gsl_vector* mean_emu, gsl_vec
 		return(0);
 	}
 	
-}
+	}*/
 
 
 double get_mse( double mean, double variance){

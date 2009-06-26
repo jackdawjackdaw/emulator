@@ -257,7 +257,7 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 	
 
 
-	nelderMead(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, NULL, options->nmodel_points, options->nthetas, options->nparams);
+	nelderMead(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams);
 
 	fprintf(stderr, "best_thetas: \t");
 	print_vector_quiet(thetas, options->nthetas);

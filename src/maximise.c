@@ -199,7 +199,7 @@ int compare_evals(const evalunit *a, const evalunit *b){
 }
 
 //! a simplex method for maximis
-void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer,  gsl_matrix* ranges, gsl_matrix* xmodel, gsl_vector *trainingvector, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams){
+void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer,  gsl_matrix* ranges, gsl_matrix* xmodel, gsl_vector *trainingvector, int nmodel_points, int nthetas, int nparams){
 	int i,j;
 	int t = 0;
 	int tries = 0;

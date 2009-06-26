@@ -5,7 +5,15 @@ CFLAGS = -O0 -Wall -g
 #CFLAGS = -O3 -Wall
 TAGS = etags #for emacs
 
-all: main
+all: multidrive
+
+
+multifit:
+	$(CC) -c multifit.c $(CFLAGS) $(LDFLAGS)
+
+multidrive: multifit emulator estimator maximise
+	$(CC) multi-drive.c -o multi-drive.out estimator.o emulator.o maximise.o multifit.o $(LDFLAGS) $(CFLAGS)
+
 
 tags:
 	$(TAGS) emulator.c 

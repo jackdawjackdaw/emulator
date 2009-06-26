@@ -19,7 +19,7 @@ void print_vector_quiet(gsl_vector *x, int n);
 void vector_rectify(gsl_vector *x, int n);
 void vector_print(gsl_vector *x, int n);
 int compare_evals(const evalunit *a, const evalunit *b);
-void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer,  gsl_matrix* ranges, gsl_matrix* xmodel, gsl_vector *trainingvector, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams);
+void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer,  gsl_matrix* ranges, gsl_matrix* xmodel, gsl_vector *trainingvector, int nmodel_points, int nthetas, int nparams);
 void make_new_vlist(gsl_matrix* new_verticies, gsl_matrix* verticies, double sigma, int nverticies, int nthetas);
 double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *trainingvector, int nmodel_points, int nthetas, int nparams);
 void sort_vertex_list(gsl_matrix *verticies, evalunit* evalList, int nverticies, int nthetas);
