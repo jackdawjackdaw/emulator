@@ -81,7 +81,7 @@ int main (void){
 	//evaluate_region(&wholeThing, &the_options, random_number);		
 	//dump_result(&wholeThing, stdout);
 
-	evaluate_region(region1, &region_1_options, random_number);
+	//evaluate_region(region1, &region_1_options, random_number);
 
 	gsl_rng_free(random_number);
 	free_eopts(&the_options);
@@ -121,7 +121,7 @@ void alloc_region_options(eopts *result, eopts *parent, double lower, double upp
 	// grow split low to the last_xmodel value before the split
 	for(i = 0; i < parent->nmodel_points; i++){
 		// look at the first value in xmodel only
-		if(gsl_matrix_get(parent->xmodel, i, 0,) <= lower){
+		if(gsl_matrix_get(parent->xmodel, i, 0) <= lower){
 			split_low++; // don't split at this i
 		} 
 	}
@@ -129,7 +129,7 @@ void alloc_region_options(eopts *result, eopts *parent, double lower, double upp
 
 	// shrink split high to the xmodel value to the right of the upper split
 	for(i = parent->nmodel_points-1; i >= 0; i--){
-		if(gsl_matrix_get(parent->xmodel, i, 0, ) > upper){
+		if(gsl_matrix_get(parent->xmodel, i, 0) > upper){
 			split_high--;
 		}
 	}
@@ -159,7 +159,7 @@ void alloc_region_options(eopts *result, eopts *parent, double lower, double upp
 		// set everything up
 		result->nmodel_points = new_nmodel_points;
 		result->nparams = parent->nparams;
-		result->ntheats = parent->nthetas;
+		result->nthetas = parent->nthetas;
 		result->range_min = lower;
 		result->range_max = upper;
 		result->nemu_points = new_nemu_points;
@@ -175,7 +175,7 @@ void alloc_region_options(eopts *result, eopts *parent, double lower, double upp
 				gsl_matrix_set(result->xmodel, i, j, temp_val);
 			}
 			temp_val = gsl_vector_get(parent->training, offset);
-			gsl_vector_set(result->training, i);
+			gsl_vector_set(result->training, i, temp_val);
 		}
 		
 	} else if(bad_flag == 1){
@@ -281,11 +281,12 @@ char** unconstrained_read(char* filename, int* line_count_final){
 	int i;
 	FILE *fptr;
 	char** input_data;
-	char** temp_buffer;
+	char** temp_buffer; 
 	int init_number_lines = 20;
 	int actual_number_lines = init_number_lines;
 	int previous_number_lines;
 	int line_width = 256; // assume that lines are not wider than this... (right?)
+	char temp_line[line_width];
 	int line_count = 0;
 	char* is_end = 0;
 	int buffer_size;
@@ -294,6 +295,8 @@ char** unconstrained_read(char* filename, int* line_count_final){
 		fprintf(stderr, "could not open inputfile\n");
 		exit(1);
 	}
+
+
 
 	input_data = malloc(sizeof(char*)*actual_number_lines);
 	for(i = 0; i < actual_number_lines; i++){
@@ -312,7 +315,17 @@ char** unconstrained_read(char* filename, int* line_count_final){
 	do{
 		// read line_width chars or up to EOF or EOL
 		// if read EOF then is_end == NULL
-		is_end = fgets(input_data[line_count], line_width, fptr);
+		is_end = fgets(temp_line, line_width, fptr);
+		
+		if(strncmp(temp_line, "#", 1) != 0){
+			// not a comment so set the input_data part
+			memcpy(input_data[line_count], temp_line, line_width);
+			line_count++;
+		} else {
+			fprintf(stderr, "comment!\n");
+		}
+			
+
 		if(line_count > actual_number_lines-1){
 			// i.e next read will drop us off the world
 			fprintf(stderr, "allocating more space!\n");
@@ -341,7 +354,7 @@ char** unconstrained_read(char* filename, int* line_count_final){
 			}
 						
 		}
-	  line_count++;
+	  
 	} while (is_end != NULL);
 	line_count--; // (reading EOF overcounts by one)
 
