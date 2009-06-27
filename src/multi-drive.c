@@ -38,7 +38,9 @@ int main (void){
 	const gsl_rng_type *T;
 
 	emuResult wholeThing;
-
+	emuResult region1;
+	emuResult region2;
+	emuResult region3;
 
 
 	// hand pick the input
@@ -75,12 +77,11 @@ int main (void){
 
 	print_matrix(the_options.xmodel, number_lines, 1);
 	vector_print(the_options.training, number_lines);
-	//estimate_region(&the_options, random_number);
 	
-	evaluate_region(&wholeThing, &the_options, random_number);
-	
-	
-	dump_result(&wholeThing, stdout);
+	//evaluate_region(&wholeThing, &the_options, random_number);		
+	//dump_result(&wholeThing, stdout);
+
+	evaluate_region(region1, &region_1_options, random_number);
 
 	gsl_rng_free(random_number);
 	free_eopts(&the_options);
@@ -96,6 +97,96 @@ void dump_result(emuResult *res, FILE *fptr){
 	}
 }
 
+
+//! creates a new region from lower and upper in the first parameter of the xmodel parts of the parent
+/**
+ * if the split doesn't work, result => NULL
+ */
+void alloc_region_options(eopts *result, eopts *parent, double lower, double upper){
+	assert(lower < upper);
+	
+	int i,j;
+	int split_low = 0;// the index at which to split the model, training vecs etc
+	int split_high=  parent->nmodel_points;
+	int new_nemu_points = 0;
+	int new_nmodel_points = 0;
+	int min_model_points = 3;
+	int offset = 0;
+	int bad_flag = 0;
+	double temp_val;
+	
+	// set the basic things
+	new_nemu_points = 40; //(fudge)
+	
+	// grow split low to the last_xmodel value before the split
+	for(i = 0; i < parent->nmodel_points; i++){
+		// look at the first value in xmodel only
+		if(gsl_matrix_get(parent->xmodel, i, 0,) <= lower){
+			split_low++; // don't split at this i
+		} 
+	}
+	
+
+	// shrink split high to the xmodel value to the right of the upper split
+	for(i = parent->nmodel_points-1; i >= 0; i--){
+		if(gsl_matrix_get(parent->xmodel, i, 0, ) > upper){
+			split_high--;
+		}
+	}
+
+	fprintf(stderr, "split_low = %d, split_high = %d\n", split_low, split_high);
+
+	// now we can figure everything else out
+	if(split_low == split_high){
+		fprintf(stderr, "bad split\n");
+		bad_flag = 1;
+	}
+
+	if(lower < parent->range_min || upper > parent->range_max){
+		fprintf(stderr, "doing a split out of range\n");
+		bad_flag = 1;
+	}
+	
+	new_nmodel_points = (split_high - split_low);
+
+	if(new_nmodel_points < min_model_points){
+		fprintf(stderr, "bad split, not enough new points\n");
+		//exit(1);
+		bad_flag = 1;
+	}
+	
+	if(bad_flag != 1){
+		// set everything up
+		result->nmodel_points = new_nmodel_points;
+		result->nparams = parent->nparams;
+		result->ntheats = parent->nthetas;
+		result->range_min = lower;
+		result->range_max = upper;
+		result->nemu_points = new_nemu_points;
+		result->xmodel = gsl_matrix_alloc(new_nmodel_points, parent->nparams);
+		result->training = gsl_vector_alloc(new_nmodel_points);
+		result->thetas = gsl_vector_alloc(parent->nthetas); 
+		
+		// copyin the new data
+		for(i = 0; i < new_nmodel_points; i++){
+			offset = i + split_low;
+			for(j = 0; j < parent->nparams;  j++){
+				temp_val = gsl_matrix_get(parent->xmodel, offset, j);
+				gsl_matrix_set(result->xmodel, i, j, temp_val);
+			}
+			temp_val = gsl_vector_get(parent->training, offset);
+			gsl_vector_set(result->training, i);
+		}
+		
+	} else if(bad_flag == 1){
+		result = NULL;
+	}
+
+	
+}
+	
+
+	
 
 //! setup an emuResult struct from the given options 
 void alloc_emuRes(emuResult *thing, eopts *options){

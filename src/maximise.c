@@ -225,7 +225,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	
 	assert(max_tries > 0);
 	assert(nsteps >0);
-	assert(the_answer.size == nthetas);
+	assert(the_answer->size == nthetas);
 	
 
 

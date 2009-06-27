@@ -78,11 +78,11 @@ void estimate_region(eopts* options, gsl_rng *random){
   
 	for(i = 0; i < options->nthetas; i++){
 		gsl_matrix_set(grad_ranges, i, 0, 0.0);
-		gsl_matrix_set(grad_ranges, i, 1, 1.0);
+		gsl_matrix_set(grad_ranges, i, 1, 1.1);
 	}
 
 	gsl_matrix_set(grad_ranges, 3, 0, 0.0);
-	gsl_matrix_set(grad_ranges, 3,1, 0.4);
+	gsl_matrix_set(grad_ranges, 3,1, 1.1);
  		
 	nelderMead(random, max_tries, number_steps, options->thetas, grad_ranges, options->xmodel, options->training, options->nmodel_points, options->nthetas, options->nparams);
 	
