@@ -15,7 +15,7 @@ typedef struct evalunit {
 }evalunit;
 
 void print_vector_quiet(gsl_vector *x, int n);
-
+int test_ranges(gsl_matrix* verticies, int nverticies, gsl_matrix *ranges, int nthetas);
 void vector_rectify(gsl_vector *x, int n);
 void vector_print(gsl_vector *x, int n);
 int compare_evals(const evalunit *a, const evalunit *b);

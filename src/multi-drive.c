@@ -19,6 +19,7 @@ void dump_result(emuResult *res, FILE *fptr);
 void alloc_emuRes(emuResult *thing, eopts *options);
 void free_eopts(eopts* options);
 void free_emuRes(emuResult *thing);
+void alloc_region_options(eopts *result, eopts *parent, double lower, double upper);
 /* typedef struct emuResult{ */
 /* 	int nemu_points; */
 /* 	int nparams; */
@@ -30,6 +31,7 @@ void free_emuRes(emuResult *thing);
 
 int main (void){
 	int i;
+	FILE *fptr;
 	char inputfile[128];
 	eopts the_options;
 	char** input_data;
@@ -41,6 +43,10 @@ int main (void){
 	emuResult region1;
 	emuResult region2;
 	emuResult region3;
+
+	eopts region_1_options;
+	eopts region_2_options;
+	eopts region_3_options;
 
 
 	// hand pick the input
@@ -65,6 +71,7 @@ int main (void){
 
 
 	// we kind of have to hope that the inputfile is sorted, could sort it...
+	// have to free input data after this
 	input_data =  unconstrained_read(inputfile, &number_lines);
 
 	fprintf(stderr, "read in %d lines\n", number_lines);
@@ -78,14 +85,56 @@ int main (void){
 	print_matrix(the_options.xmodel, number_lines, 1);
 	vector_print(the_options.training, number_lines);
 	
+	fptr = fopen("../output/whole-thing.txt", "w");	
+
 	evaluate_region(&wholeThing, &the_options, random_number);		
-	dump_result(&wholeThing, stdout);
+	dump_result(&wholeThing, fptr);
 
-	//evaluate_region(region1, &region_1_options, random_number);
+	fclose(fptr);
+	fptr = fopen("../output/region1-fit.txt", "w");
 
+	alloc_region_options(&region_1_options, &the_options, 0.0, 2.1);	
+	// now we have to allocate the result for this
+	alloc_emuRes(&region1, &region_1_options);
+	if(&region_1_options != NULL){ // gets set to null if the copy doesn't work
+		evaluate_region(&region1, &region_1_options, random_number);
+		dump_result(&region1, fptr);
+	}
+
+	fclose(fptr);
+	fptr = fopen("../output/region2-fit.txt", "w");
+
+	alloc_region_options(&region_2_options, &the_options, 2.0, 3.0);
+	alloc_emuRes(&region2, &region_2_options);
+	if(&region_2_options != NULL){
+		evaluate_region(&region2, &region_2_options, random_number);
+		dump_result(&region2, fptr);
+	}
+	
+	fclose(fptr);
+	fptr = fopen("../output/region3-fit.txt", "w");
+
+	alloc_region_options(&region_3_options, &the_options, 2.5, 4.0);
+	alloc_emuRes(&region3, &region_3_options);
+	if(&region_3_options != NULL){
+		evaluate_region(&region3, &region_3_options, random_number);
+		dump_result(&region3, fptr);
+	}
+
+
+	fclose(fptr);
 	gsl_rng_free(random_number);
 	free_eopts(&the_options);
 	free_emuRes(&wholeThing);
+	
+	free_eopts(&region_1_options);
+	free_eopts(&region_2_options);
+	free_eopts(&region_3_options);
+
+	free_emuRes(&region3);
+	free_emuRes(&region2);	
+	free_emuRes(&region1);
+	free_char_array(input_data, 128, number_lines);
 	return(0);
 }
 

@@ -457,8 +457,10 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 		} else {
 			nanflag = 0;
 			brokenflag = 0;
+			tries--; // don't increment the counter if the run didn't work
 		}
 		tries++;
+		//DEBUG printf("%d\n", tries);
 	}
 	fprintf(stderr, "final_answer = %g\n", best_value);
 	gsl_vector_memcpy(the_answer, best_vector);
