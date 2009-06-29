@@ -23,9 +23,11 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
 	int i,j;
 	for(i = 0; i < nx; i++){
 		for(j= 0; j < ny; j++){
-			printf("%g ", gsl_matrix_get(m, i, j));
+			//printf("%g ", gsl_matrix_get(m, i, j));
+			fprintf(stderr, "%g ", gsl_matrix_get(m,i,j));
 		}
-		printf("\n");
+		//printf("\n");
+		fprintf(stderr, "\n");
  	}
 }
 

@@ -78,8 +78,8 @@ int main (void){
 	print_matrix(the_options.xmodel, number_lines, 1);
 	vector_print(the_options.training, number_lines);
 	
-	//evaluate_region(&wholeThing, &the_options, random_number);		
-	//dump_result(&wholeThing, stdout);
+	evaluate_region(&wholeThing, &the_options, random_number);		
+	dump_result(&wholeThing, stdout);
 
 	//evaluate_region(region1, &region_1_options, random_number);
 
@@ -92,8 +92,11 @@ int main (void){
 
 void dump_result(emuResult *res, FILE *fptr){
 	int i;
+	double goodness = 0.0;
 	for(i = 0; i < res->nemu_points; i++){
-		fprintf(fptr, "%g\t%g\t%g\n", gsl_matrix_get(res->new_x, i, 0), gsl_vector_get(res->new_mean, i), gsl_vector_get( res->new_var, i));
+		fprintf(fptr, "%g\t%g\t%g\t", gsl_matrix_get(res->new_x, i, 0), gsl_vector_get(res->new_mean, i), gsl_vector_get( res->new_var, i));
+		goodness = 1 / pow(gsl_vector_get(res->new_var, i), 2.0);
+		fprintf(fptr, "%g\n", goodness);
 	}
 }
 
@@ -267,12 +270,14 @@ void read_input_from_file(char* filename, eopts* options){
 	printf("read the following input matrix: %d x %d\n", options->nmodel_points, options->nparams);
 	print_matrix(options->xmodel, options->nmodel_points, options->nparams);
 	printf("the training data is:\n");
-	vector_print(options->training, options->nmodel_points);
+	print_vector_quiet(options->training, options->nmodel_points);
 }
 
 
 //! read a file of unknown length
 /**
+ * the file can have comments in it, as long as they are preceeded by #s
+ *
  * @return the read in data
  * @param line_count thenumebr of lines we read
  */
