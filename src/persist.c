@@ -34,10 +34,11 @@ void dump_emuresult(emuResult* eres, FILE* fptr){
 	// write out the basic info
 	out_int(fptr, eres->nemu_points);
 	out_int(fptr, eres->nparams);
+
 	
 	// now drop the new_x matrix
 	for(i = 0; i < eres->nemu_points; i++){
-		for(j = 0; i < eres->nparams; j++){
+		for(j = 0; j < eres->nparams; j++){
 			out_double(fptr, gsl_matrix_get(eres->new_x, i, j));
 		}
 	}
@@ -114,7 +115,7 @@ void load_emuresult(emuResult* eres, FILE* fptr){
  * dump the given struct to the fptr given, as a binary file. The 
  * struct is written in the order it is defined, 
  */
-void dump_eopts(eopts* the_struct, file* fptr){
+void dump_eopts(eopts* the_struct, FILE* fptr){
 	int i, j;
 	assert(fptr != NULL); // check it's at least vaguely right
 
@@ -148,7 +149,7 @@ void dump_eopts(eopts* the_struct, file* fptr){
  * This method allocates the memory for xmodel, training and thetas and so 
  * one must free them when you're done.
  */
-void load_eopts(eopts* the_struct, file *fptr){
+void load_eopts(eopts* the_struct, FILE* fptr){
 	int i,j;
 	int temp_int;
 	double temp_double;
@@ -189,7 +190,7 @@ void load_eopts(eopts* the_struct, file *fptr){
 
 	// not fast, could read blocks buuuut...
 	for(i = 0; i < the_struct->nmodel_points; i++){
-		for(j = 0; j < the_struct->nemu_points; j++){
+		for(j = 0; j < the_struct->nparams; j++){
 			in_double(fptr, &temp_double);
 			gsl_matrix_set(the_struct->xmodel, i,j, temp_double);
 		}

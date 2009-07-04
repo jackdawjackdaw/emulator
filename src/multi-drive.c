@@ -96,23 +96,18 @@ int main (void){
 
 	fclose(fptr);
 	
-	// test the persist.c functions
-	fptr = fopen("bin-dump.dat", "w");
-	dump_emuresult(&wholeThing, fptr); // write the emuResult and then the options
-	dump_eopts(&the_options, fptr);
-	fclose(fptr);
-
-	// now read the stuff back in
+	/* // test the persist.c functions */
+	/* 	fptr = fopen("bin-dump.dat", "w"); */
+	/* 	dump_emuresult(&wholeThing, fptr); // write the emuResult and then the options */
+	/* 	dump_eopts(&the_options, fptr); */
+	/* 	fclose(fptr); */
+	/* 	// now read the stuff back in */	
+	/* 	fptr = fopen("bin-dump.dat", "r"); */
+	/* 	load_emuresult(&res_dumpTest, fptr); */
+	/* 	load_eopts(&opts_dumpTest, fptr); */
+	/* 	fclose(fptr); */
+	/* 	dump_result(&res_dumpTest, stdout); */
 	
-	fptr = fopen("bin-dump.dat", "r");
-	load_emuresult(&res_dumpTest, fptr);
-	load_eopts(&opts_dumpTest, fptr);
-	fclose(fptr);
-
-	dump_result(&res_dumpTest, stdout);
-
-
-	/*
 	fptr = fopen("../output/region1-fit.txt", "w");
 
 	alloc_region_options(&region_1_options, &the_options, 0.0, 2.1);	
@@ -142,9 +137,9 @@ int main (void){
 		evaluate_region(&region3, &region_3_options, random_number);
 		dump_result(&region3, fptr);
 	}
-	*/
+ 
 
-	fclose(fptr);
+	//fclose(fptr);
 	gsl_rng_free(random_number);
 	free_eopts(&the_options);
 	free_emuRes(&wholeThing);
@@ -270,6 +265,7 @@ void alloc_emuRes(emuResult *thing, eopts *options){
 	thing->new_x = gsl_matrix_alloc(n, np);
 	thing->new_mean = gsl_vector_alloc(n);
 	thing->new_var = gsl_vector_alloc(n);
+	thing->nparams = np;
 }
 
 

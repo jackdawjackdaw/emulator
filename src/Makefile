@@ -11,8 +11,11 @@ all: multidrive
 multifit:
 	$(CC) -c multifit.c $(CFLAGS) $(LDFLAGS)
 
-multidrive: multifit emulator estimator maximise
-	$(CC) multi-drive.c -o multi-drive.out estimator.o emulator.o maximise.o multifit.o $(LDFLAGS) $(CFLAGS)
+multidrive: multifit emulator estimator maximise persist
+	$(CC) multi-drive.c -o multi-drive.out estimator.o persist.o emulator.o maximise.o multifit.o $(LDFLAGS) $(CFLAGS)
+
+persist:
+	$(CC) -c persist.c $(CFLAGS) $(LDFLAGS)
 
 
 tags:

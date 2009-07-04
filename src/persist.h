@@ -25,9 +25,9 @@ void out_int(FILE *fptr, int);
 void out_double(FILE *fptr, double);
 void out_vector(FILE *fptr, double*);
 
-
-
-
-
+void dump_emuresult(emuResult* eres, FILE* fptr);
+void load_emuresult(emuResult* eres, FILE* fptr);
+void dump_eopts(eopts* the_struct, FILE* fptr);
+void load_eopts(eopts* the_struct, FILE *fptr);
 
 #endif
