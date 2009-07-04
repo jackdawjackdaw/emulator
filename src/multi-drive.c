@@ -7,6 +7,7 @@
 #include "maximise.h"
 #include "multifit.h"
 #include "sys/time.h"
+#include "persist.h"
 
 
 
@@ -40,10 +41,12 @@ int main (void){
 	const gsl_rng_type *T;
 
 	emuResult wholeThing;
+	emuResult res_dumpTest;
 	emuResult region1;
 	emuResult region2;
 	emuResult region3;
 
+	eopts opts_dumpTest;
 	eopts region_1_options;
 	eopts region_2_options;
 	eopts region_3_options;
@@ -85,12 +88,31 @@ int main (void){
 	print_matrix(the_options.xmodel, number_lines, 1);
 	vector_print(the_options.training, number_lines);
 	
+	// \todo check that output exists?	
 	fptr = fopen("../output/whole-thing.txt", "w");	
 
 	evaluate_region(&wholeThing, &the_options, random_number);		
-	dump_result(&wholeThing, fptr);
+	dump_result(&wholeThing, stdout);
 
 	fclose(fptr);
+	
+	// test the persist.c functions
+	fptr = fopen("bin-dump.dat", "w");
+	dump_emuresult(&wholeThing, fptr); // write the emuResult and then the options
+	dump_eopts(&the_options, fptr);
+	fclose(fptr);
+
+	// now read the stuff back in
+	
+	fptr = fopen("bin-dump.dat", "r");
+	load_emuresult(&res_dumpTest, fptr);
+	load_eopts(&opts_dumpTest, fptr);
+	fclose(fptr);
+
+	dump_result(&res_dumpTest, stdout);
+
+
+	/*
 	fptr = fopen("../output/region1-fit.txt", "w");
 
 	alloc_region_options(&region_1_options, &the_options, 0.0, 2.1);	
@@ -120,7 +142,7 @@ int main (void){
 		evaluate_region(&region3, &region_3_options, random_number);
 		dump_result(&region3, fptr);
 	}
-
+	*/
 
 	fclose(fptr);
 	gsl_rng_free(random_number);
