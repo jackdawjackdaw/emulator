@@ -93,12 +93,13 @@ void estimate_region(eopts* options, gsl_rng *random){
 	gsl_matrix_free(grad_ranges);
 }
 
-//! do the estimation and emulation for a region
+
 /*void evaluate_region(gsl_matrix* new_x, gsl_vector* new_mean, gsl_vector* new_variance, eopts* options, gsl_rng * random){
 	estimate_region(options, random);
 	emulate_region(new_x, new_mean, new_variance, options);
 	}*/
 
+//! do the estimation and emulation for a region
 void evaluate_region(emuResult *results, eopts* options, gsl_rng* random){
 	estimate_region(options, random);
 	emulate_region(results->new_x, results->new_mean, results->new_var, options);

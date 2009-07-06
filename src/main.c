@@ -133,13 +133,14 @@ int main (int argc, char ** argv){
 	char* split_string;
 	int i,j;
 	double temp_value;
-	parse_arguments(argc, argv, &options);	
 	gsl_matrix* xmodel_input;
 	gsl_vector* training_vector;
 	gsl_vector* thetas;	
 	char input_file[128];
 	char** input_data;
 	int number_lines = 0;
+
+	parse_arguments(argc, argv, &options);	
 
 	//sprintf(input_file, "%s",  "../tiny.dat");
 	sprintf(input_file, "%s",  "stdin");

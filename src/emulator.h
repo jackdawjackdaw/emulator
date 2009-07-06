@@ -5,8 +5,8 @@
 #include <math.h>
 #include <assert.h>
 #include <gsl/gsl_matrix.h>
-#include <gsl/gsl_blas.h> // high level interface to blas
-#include <gsl/gsl_linalg.h> // lapack
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_linalg.h> 
 
 void print_matrix(gsl_matrix* m, int nx, int ny);
 double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);

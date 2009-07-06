@@ -136,7 +136,7 @@ double getGradient(gsl_matrix *cinverse, gsl_matrix *xmodel, gsl_vector *trainin
  * @return dcdt is set to the given derivative 
  */
 void getdCdt(gsl_matrix* dcdt, gsl_matrix* xmodel, gsl_vector* thetas, int index, int nmodel_points, int nthetas, int nparams){
-	assert(index <= nthetas-1);
+
 	// declare so that they can only be called from this scope
 	double detCovFn_1(gsl_vector *xm, gsl_vector *xn, gsl_vector* thetas, int nthetas, int nparams);
 	double detCovFn_higher(gsl_vector *xm, gsl_vector *xn, gsl_vector* thetas, int index, int nthetas, int nparams);
@@ -149,6 +149,9 @@ void getdCdt(gsl_matrix* dcdt, gsl_matrix* xmodel, gsl_vector* thetas, int index
 	int i, j;
 	gsl_vector_view xmodel_row_i;
 	gsl_vector_view xmodel_row_j;
+
+	assert(index <= nthetas-1);
+
 	for(i = 0; i < nmodel_points; i++){
 		for(j=0; j < nmodel_points; j++){
 			xmodel_row_i = gsl_matrix_row(xmodel, i);

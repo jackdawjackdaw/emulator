@@ -438,7 +438,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			printf("\n");		 */ // very verbose
 			if(test_ranges(verticies, nverticies, ranges,  nthetas) != 1){
 				// oh dear, gone out of range
-				fprintf(stderr, "vertex fell out of ranges\n");
+				// ANNOYING fprintf(stderr, "vertex fell out of ranges\n");
 				brokenflag = 1;
 				range_broke_count++;
 				break;

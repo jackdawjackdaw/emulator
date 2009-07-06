@@ -10,7 +10,7 @@
 #include "persist.h"
 #include "ioread.h"
 
-
+#include "gsl/gsl_statistics.h"
 
 
 void process_input_data(char** input_data, eopts* the_options);
@@ -20,8 +20,10 @@ void dump_result(emuResult *res, FILE *fptr);
 void alloc_emuRes(emuResult *thing, eopts *options);
 void free_eopts(eopts* options);
 void free_emuRes(emuResult *thing);
-void alloc_region_options(eopts *result, eopts *parent, double lower, double upper);
+void split_region_options(eopts *result, eopts *parent, double lower, double upper);
 void read_input_from_file(char* filename, eopts* options);
+double score_region(emuResult *res);
+void smasher(gsl_matrix *split_ranges, int* nsplits, eopts* toplevel, int max_depth, int min_points, gsl_rng* random_number);
 /* typedef struct emuResult{ */
 /* 	int nemu_points; */
 /* 	int nparams; */
@@ -42,7 +44,7 @@ int main (void){
 	const gsl_rng_type *T;
 
 	emuResult wholeThing;
-	emuResult res_dumpTest;
+	/*emuResult res_dumpTest;
 	emuResult region1;
 	emuResult region2;
 	emuResult region3;
@@ -50,8 +52,11 @@ int main (void){
 	eopts opts_dumpTest;
 	eopts region_1_options;
 	eopts region_2_options;
-	eopts region_3_options;
+	eopts region_3_options;*/
 
+
+	int nsplits = 0;
+	gsl_matrix *split_result;
 
 	// hand pick the input
 	sprintf(inputfile, "../model-cut.dat");
@@ -69,7 +74,7 @@ int main (void){
 	the_options.nthetas = 4;
 	the_options.nemu_points = 100;
 	the_options.range_min = 0.0;
-	the_options.range_max = 4.0;
+	the_options.range_max = 2.0;
 
 	alloc_emuRes(&wholeThing, &the_options);
 
@@ -87,57 +92,10 @@ int main (void){
 	process_input_data(input_data, &the_options);
 
 	print_matrix(the_options.xmodel, number_lines, 1);
-	vector_print(the_options.training, number_lines);
+	vector_print(the_options.training, number_lines); 
 	
-	// \todo check that output exists?	
-	fptr = fopen("../output/whole-thing.txt", "w");	
-
-	evaluate_region(&wholeThing, &the_options, random_number);		
-	dump_result(&wholeThing, stdout);
-
-	fclose(fptr);
-	
-	/* // test the persist.c functions */
-	/* 	fptr = fopen("bin-dump.dat", "w"); */
-	/* 	dump_emuresult(&wholeThing, fptr); // write the emuResult and then the options */
-	/* 	dump_eopts(&the_options, fptr); */
-	/* 	fclose(fptr); */
-	/* 	// now read the stuff back in */	
-	/* 	fptr = fopen("bin-dump.dat", "r"); */
-	/* 	load_emuresult(&res_dumpTest, fptr); */
-	/* 	load_eopts(&opts_dumpTest, fptr); */
-	/* 	fclose(fptr); */
-	/* 	dump_result(&res_dumpTest, stdout); */
-	
-	fptr = fopen("../output/region1-fit.txt", "w");
-
-	alloc_region_options(&region_1_options, &the_options, 0.0, 2.1);	
-	// now we have to allocate the result for this
-	alloc_emuRes(&region1, &region_1_options);
-	if(&region_1_options != NULL){ // gets set to null if the copy doesn't work
-		evaluate_region(&region1, &region_1_options, random_number);
-		dump_result(&region1, fptr);
-	}
-
-	fclose(fptr);
-	fptr = fopen("../output/region2-fit.txt", "w");
-
-	alloc_region_options(&region_2_options, &the_options, 2.0, 3.0);
-	alloc_emuRes(&region2, &region_2_options);
-	if(&region_2_options != NULL){
-		evaluate_region(&region2, &region_2_options, random_number);
-		dump_result(&region2, fptr);
-	}
-	
-	fclose(fptr);
-	fptr = fopen("../output/region3-fit.txt", "w");
-
-	alloc_region_options(&region_3_options, &the_options, 2.5, 4.0);
-	alloc_emuRes(&region3, &region_3_options);
-	if(&region_3_options != NULL){
-		evaluate_region(&region3, &region_3_options, random_number);
-		dump_result(&region3, fptr);
-	}
+	smasher(split_result, &nsplits, &the_options, 1, 1, random_number);
+	printf("made %d splits\n", nsplits);
  
 
 	//fclose(fptr);
@@ -145,16 +103,44 @@ int main (void){
 	free_eopts(&the_options);
 	free_emuRes(&wholeThing);
 	
-	free_eopts(&region_1_options);
-	free_eopts(&region_2_options);
-	free_eopts(&region_3_options);
-
-	free_emuRes(&region3);
-	free_emuRes(&region2);	
-	free_emuRes(&region1);
 	free_char_array(input_data, 128, number_lines);
 	return(0);
 }
+
+#define VERYGOOD 1E-10
+// runs the whole splitting thing
+void smasher(gsl_matrix *split_ranges, int* nsplits, eopts* toplevel, int max_depth, int min_points, gsl_rng* random_number){
+	int i;
+	int depth;
+	double best_goodness;
+	double temp_goodness;
+	emuResult temp_result;
+	// eval the toplevel
+	alloc_emuRes( &temp_result, toplevel);
+	evaluate_region(&temp_result, toplevel,  random_number);
+	temp_goodness = score_region(&temp_result);
+	fprintf(stderr, "in %g..%g goodness = %g\n", toplevel->range_min, toplevel->range_max, temp_goodness);
+	if(temp_goodness < VERYGOOD){
+		fprintf(stderr, "no need to split, this is a good fit!\n");
+		*nsplits = 1;
+		split_ranges = gsl_matrix_alloc(1, 2);
+		gsl_matrix_set(split_ranges, 0,0, toplevel->range_min);
+		gsl_matrix_set(split_ranges, 0,1, toplevel->range_max);
+	}
+}
+	
+double score_region(emuResult *res){
+	int i;
+	double goodness = 0.0;
+	double *temp_array;
+	temp_array = malloc(sizeof(double)*res->nemu_points);
+	for(i = 0; i < res->nemu_points;i++){temp_array[i] = gsl_vector_get(res->new_var,i);}
+	goodness = gsl_stats_variance(temp_array, 1, res->nemu_points);
+	free(temp_array);
+	return(1/goodness);
+}
+	
+
 
 
 void dump_result(emuResult *res, FILE *fptr){
@@ -172,7 +158,7 @@ void dump_result(emuResult *res, FILE *fptr){
 /**
  * if the split doesn't work, result => NULL
  */
-void alloc_region_options(eopts *result, eopts *parent, double lower, double upper){
+void split_region_options(eopts *result, eopts *parent, double lower, double upper){
 	assert(lower < upper);
 	
 	int i,j;
@@ -311,12 +297,12 @@ void process_input_data(char** input_data, eopts* the_options){
 		split_string = strtok(input_data[i], "\t ");
 		for( j = 0; j < the_options->nparams; j++){
 			assert(split_string != NULL);
-			sscanf(input_data[i], "%lg", &temp_value); 		
+			sscanf(split_string, "%lg", &temp_value); 		
 			gsl_matrix_set(the_options->xmodel, i, j, temp_value);
-			splti_string = strtok(NULL, "\t ");
+			split_string = strtok(NULL, "\t ");
 	 }
 		assert(split_string != NULL);		
-		sscanf(input_data[i], "%lg %lg", &junk,  &temp_value);
+		sscanf(split_string, "%lg", &temp_value);
 		gsl_vector_set(the_options->training, i, temp_value);
 	}
 		
