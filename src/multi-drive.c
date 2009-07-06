@@ -8,11 +8,11 @@
 #include "multifit.h"
 #include "sys/time.h"
 #include "persist.h"
+#include "ioread.h"
 
 
 
-char** unconstrained_read(char* filename, int* line_count);
-void free_char_array(char** array, int lx, int ly);
+
 void process_input_data(char** input_data, eopts* the_options);
 void free_eopts(eopts* options);
 unsigned long int get_seed(void);
@@ -21,6 +21,7 @@ void alloc_emuRes(emuResult *thing, eopts *options);
 void free_eopts(eopts* options);
 void free_emuRes(emuResult *thing);
 void alloc_region_options(eopts *result, eopts *parent, double lower, double upper);
+void read_input_from_file(char* filename, eopts* options);
 /* typedef struct emuResult{ */
 /* 	int nemu_points; */
 /* 	int nparams; */
@@ -285,9 +286,10 @@ void free_eopts(eopts* options){
 
 
 
-//! splits up the input data (ONLY FOR 1 PARAM)
+//! splits up the input data 
 /**
- * WARNING this only works for 1 param, otherwise behaviour is undefined (but probably bad)
+ * fixed to work with multiple params using strtok
+ * input data is split on tabs and spaces
  * 
  * splits up the raw char input data into real things (xmodel etc)
  * this requires that the following fields in the_options be set correctly
@@ -295,6 +297,7 @@ void free_eopts(eopts* options){
  */
 void process_input_data(char** input_data, eopts* the_options){
 	int i,j;
+	char* split_string;
 	double temp_value;
 	double junk;
 	
@@ -305,11 +308,14 @@ void process_input_data(char** input_data, eopts* the_options){
 	the_options->thetas = gsl_vector_alloc(the_options->nthetas);
 
 	for(i = 0; i < the_options->nmodel_points; i++){
+		split_string = strtok(input_data[i], "\t ");
 		for( j = 0; j < the_options->nparams; j++){
+			assert(split_string != NULL);
 			sscanf(input_data[i], "%lg", &temp_value); 		
 			gsl_matrix_set(the_options->xmodel, i, j, temp_value);
+			splti_string = strtok(NULL, "\t ");
 	 }
-		// HACK HACK HACK, only works for 1 param
+		assert(split_string != NULL);		
 		sscanf(input_data[i], "%lg %lg", &junk,  &temp_value);
 		gsl_vector_set(the_options->training, i, temp_value);
 	}
@@ -317,8 +323,11 @@ void process_input_data(char** input_data, eopts* the_options){
 	
 }
 
-
 //! read from a file of fixed length
+/**
+ * reads from a file of fixed length and fills the eopts struct
+ * not a very portable function
+ */
 void read_input_from_file(char* filename, eopts* options){
 	int i = 0; 
 	int j = 0;
@@ -341,129 +350,6 @@ void read_input_from_file(char* filename, eopts* options){
 }
 
 
-//! read a file of unknown length
-/**
- * the file can have comments in it, as long as they are preceeded by #s
- *
- * @return the read in data
- * @param line_count thenumebr of lines we read
- */
-char** unconstrained_read(char* filename, int* line_count_final){
-	void copy_char_arrays(char** dest, char** source, int lx, int ly);
-	int i;
-	FILE *fptr;
-	char** input_data;
-	char** temp_buffer; 
-	int init_number_lines = 20;
-	int actual_number_lines = init_number_lines;
-	int previous_number_lines;
-	int line_width = 256; // assume that lines are not wider than this... (right?)
-	char temp_line[line_width];
-	int line_count = 0;
-	char* is_end = 0;
-	int buffer_size;
-	fptr = fopen(filename, "r");
-	if(fptr == NULL){
-		fprintf(stderr, "could not open inputfile\n");
-		exit(1);
-	}
-
-
-
-	input_data = malloc(sizeof(char*)*actual_number_lines);
-	for(i = 0; i < actual_number_lines; i++){
-		input_data[i] = malloc(sizeof(char)*line_width);
-	}
-	
-	buffer_size = (sizeof(char*)*actual_number_lines)*sizeof(char)*line_width;
-	fprintf(stderr, "buffer_size is %d\n", buffer_size);
-
-	temp_buffer = malloc(sizeof(char*)*actual_number_lines);
-	for(i = 0; i < actual_number_lines; i++){
-		temp_buffer[i] = malloc(sizeof(char)*line_width);
-	}
-		
-
-	do{
-		// read line_width chars or up to EOF or EOL
-		// if read EOF then is_end == NULL
-		is_end = fgets(temp_line, line_width, fptr);
-		
-		if(strncmp(temp_line, "#", 1) != 0){
-			// not a comment so set the input_data part
-			memcpy(input_data[line_count], temp_line, line_width);
-			line_count++;
-		} else {
-			fprintf(stderr, "comment!\n");
-		}
-			
-
-		if(line_count > actual_number_lines-1){
-			// i.e next read will drop us off the world
-			fprintf(stderr, "allocating more space!\n");
-			copy_char_arrays(temp_buffer, input_data, line_width, actual_number_lines);			
-			// free the old space, this is a bit tricky since we are trying to use structured data
-			free_char_array(input_data, line_width, actual_number_lines);		
-			
-			previous_number_lines = actual_number_lines;
-
-			actual_number_lines = actual_number_lines + init_number_lines; // grow the size
-			buffer_size = (sizeof(char*)*actual_number_lines)*sizeof(char)*line_width;
-			// reallocate the buffer
-			input_data = malloc(sizeof(char*)*actual_number_lines);
-			for(i = 0; i < actual_number_lines; i++){
-				input_data[i] = malloc(sizeof(char)*line_width);
-			}
-			
-			// copy the data back in 
-			copy_char_arrays(input_data, temp_buffer, line_width, previous_number_lines);
-			// finally we have to free and realloc the temp buffer
-			free_char_array(temp_buffer, line_width, previous_number_lines);
-			// and allocate it again
-			temp_buffer = malloc(sizeof(char*)*actual_number_lines);
-			for(i = 0; i < actual_number_lines; i++){
-				temp_buffer[i] = malloc(sizeof(char)*line_width);
-			}
-						
-		}
-	  
-	} while (is_end != NULL);
-	line_count--; // (reading EOF overcounts by one)
-
-	fprintf(stderr, "read %d\n", line_count);
-	free_char_array(temp_buffer, line_width, actual_number_lines);
-
-	// realloc temp to be just big enough
-	temp_buffer = malloc(sizeof(char*)*line_count);
-	for(i = 0; i < line_count; i++){
-		temp_buffer[i]  = malloc(sizeof(char)*line_width);
-	}
-	// copy in the final data
-	copy_char_arrays(temp_buffer, input_data, line_width, line_count); 
-
-	free_char_array(input_data, line_width, actual_number_lines);
-	fclose(fptr);
-	*line_count_final = line_count;
-	return(temp_buffer);
-}
-
-	
-//! copy char_arrays of length lx,ly
-void copy_char_arrays(char** dest, char** src, int lx, int ly){
-	int i;
-	for(i = 0; i < ly; i++){
-		memcpy(dest[i], src[i], lx);
-	}
-}
-
-//! free a 2d array
-void free_char_array(char** array, int lx, int ly){
-	int i;
-	for(i = 0; i < ly;i++){
-		free(array[i]);
-	}
-	free(array);
-}
 
 // RNG 
 // tries to read from /dev/random, or otherwise uses the system time

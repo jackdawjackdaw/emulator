@@ -4,8 +4,20 @@
 #include "estimator.h"
 #include "emulator.h"
 #include "maximise.h"
+#include "ioread.h"
 #include "sys/time.h"
 
+
+/**
+ * @file
+ * @author Chris Coleman-Smith cec24@phy.duke.edu
+ * @version 0.1
+ * @section Description
+ * 
+ * The main apparatus to run the emulator, reads in options from the command line and
+ * reads the actual data points from the given filename
+ */
+ 
 
 /* 
  * 1 -> read command line parameters
@@ -118,39 +130,79 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 
 int main (int argc, char ** argv){
 	optstruct options;
+	char* split_string;
+	int i,j;
+	double temp_value;
 	parse_arguments(argc, argv, &options);	
 	gsl_matrix* xmodel_input;
 	gsl_vector* training_vector;
-	gsl_vector* thetas;
-	
-	if(options.nmodel_points != 0){
-		assert(options.nmodel_points >0);
-		assert(options.nthetas >0);
-		xmodel_input = gsl_matrix_alloc(options.nmodel_points, options.nmodel_points);
-		training_vector = gsl_vector_alloc(options.nmodel_points);
-		thetas = gsl_vector_alloc(options.nthetas);
-		//read_input_fromfile(xmodel_input, training_vector, &options);
-		read_input_bounded(xmodel_input, training_vector, &options); //(i'm too stupid for this)
-	} else {
-		//\todo write this
-		//read_input_unbounded(xmodel_input, training_vector, options);
-		exit(1);
+	gsl_vector* thetas;	
+	char input_file[128];
+	char** input_data;
+	int number_lines = 0;
+
+	//sprintf(input_file, "%s",  "../tiny.dat");
+	sprintf(input_file, "%s",  "stdin");
+
+	assert(options.nthetas >0);
+	assert(options.nparams >0);
+
+	input_data = unconstrained_read(input_file, &number_lines); 
+	fprintf(stderr, "read in %d lines\n", number_lines);
+
+	assert(number_lines >0);
+
+	if(options.nmodel_points != number_lines){
+		fprintf(stderr, "options.nmodel_points = %d but read in %d\n", options.nmodel_points, number_lines);
+		fprintf(stderr, "redfining options.nmodel_points to reflect read in value\n");
+		// change the value to match what we actually read
+		options.nmodel_points = number_lines;
 	}
+	
+	xmodel_input = gsl_matrix_alloc(options.nmodel_points, options.nparams);
+	training_vector = gsl_vector_alloc(options.nmodel_points);
+	thetas = gsl_vector_alloc(options.nthetas);
+	
+	// proc the input_data
+	for(i = 0; i < options.nmodel_points; i++){
+		split_string = strtok(input_data[i], "\t ");
+		for(j=0; j < options.nparams; j++){
+			// split string into tab or space tokens
+			// each time you do it split_string is pointed to the next block
+			// it will come up null when you're done
+			assert(split_string != NULL);
+			sscanf(split_string, "%lg", &temp_value);
+			fprintf(stderr,"param: %s\n", split_string);
+			gsl_matrix_set(xmodel_input, i, j, temp_value);
+			split_string = strtok(NULL, "\t ");
+		}
+		assert(split_string != NULL);
+		sscanf(split_string,"%lg", &temp_value);
+		fprintf(stderr,"train: %s\n", split_string);
+		gsl_vector_set(training_vector, i, temp_value);
+		}
+
+	printf("read the following input matrix: %d x %d\n", options.nmodel_points, options.nparams);
+	print_matrix(xmodel_input, options.nmodel_points, options.nparams);
+	printf("the training data is:\n");
+	print_vector_quiet(training_vector, options.nmodel_points);
+
 
 	estimate_thetas(xmodel_input, training_vector, thetas, &options);
 
 	// calc the new means, new variance and dump to stdout
 	emulate_model(xmodel_input, training_vector, thetas, &options);
-
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
 	gsl_matrix_free(xmodel_input);
+	free_char_array(input_data, 128, number_lines);
+	//exit(1);
 	return(0);
 }
 
 
 void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *options){
-	int i = 0; 
+	int i = 0;
 	int j = 0;
 	double temp_value = 0.0;
 	FILE *fptr;
@@ -268,30 +320,28 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 
 
 
+//! reads nmodel_points from the stdin
+/* void read_input_bounded(gsl_matrix* model, gsl_vector* training, optstruct * options){ */
+/* 	int i = 0; */
+/* 	int j = 0; */
+/* 	double temp_value;	  */
+/* 	while(i < options->nmodel_points){ */
+/* 		for(j = 0; j < options->nparams; j++){ */
+/* 			scanf("%lg", &temp_value); */
+/* 			//printf("%lg\n", temp_value); */
+/* 			gsl_matrix_set(model, i, j, temp_value); */
+/* 		} */
+/* 		scanf("%lg", &temp_value); */
+/* 		//printf("%lg\n", temp_value); */
+/* 		gsl_vector_set(training, i, temp_value); */
+/* 		i++; */
+/* 	}; */
 
-void read_input_bounded(gsl_matrix* model, gsl_vector* training, optstruct * options){
-	int i = 0;
-	int j = 0;
-	double temp_value;	 
-	while(i < options->nmodel_points){
-		for(j = 0; j < options->nparams; j++){
-			scanf("%lg", &temp_value);
-			//printf("%lg\n", temp_value);
-			gsl_matrix_set(model, i, j, temp_value);
-		}
-		scanf("%lg", &temp_value);
-		//printf("%lg\n", temp_value);
-		gsl_vector_set(training, i, temp_value);
-		i++;
-	};
-
-	//printf("read in xmodel:\n");
-	//print_matrix(model, options->nmodel_points, options->nparams);
-	//printf("read in training_vec:\n");
-	//vector_print(training, options->nmodel_points);
-
-
-}
+/* 	printf("read in xmodel:\n"); */
+/* 	print_matrix(model, options->nmodel_points, options->nparams); */
+/* 	printf("read in training_vec:\n"); */
+/* 	vector_print(training, options->nmodel_points); */
+/* } */
 
 
 

@@ -11,13 +11,16 @@
 /**
  * the file can have comments in it, as long as they are preceeded by #s
  *
- * @return the read in data
+ * 
+ * @filename if this is "stdin" then we'll read directly from stdin instead
+ * @return the read in data which is line_width wide and line_count_final long
  * @param line_count thenumebr of lines we read
  */
 char** unconstrained_read(char* filename, int* line_count_final){
 	void copy_char_arrays(char** dest, char** source, int lx, int ly);
 	int i;
 	FILE *fptr;
+	char buffer[128];
 	char** input_data;
 	char** temp_buffer; 
 	int init_number_lines = 20;
@@ -28,12 +31,17 @@ char** unconstrained_read(char* filename, int* line_count_final){
 	int line_count = 0;
 	char* is_end = 0;
 	int buffer_size;
-	fptr = fopen(filename, "r");
-	if(fptr == NULL){
-		fprintf(stderr, "could not open inputfile\n");
-		exit(1);
-	}
 
+	if(strcmp(filename, "stdin") == 0){
+		fptr = stdin;
+	} else{
+		sprintf(buffer, "%s", filename);
+		fptr = fopen(buffer, "r");
+		if(fptr == NULL){
+			fprintf(stderr, "could not open inputfile: %s \n", filename);
+			exit(1);
+		}
+	}
 
 
 	input_data = malloc(sizeof(char*)*actual_number_lines);
@@ -108,7 +116,9 @@ char** unconstrained_read(char* filename, int* line_count_final){
 	copy_char_arrays(temp_buffer, input_data, line_width, line_count); 
 
 	free_char_array(input_data, line_width, actual_number_lines);
-	fclose(fptr);
+	if(strcmp(filename, "stdin") != 0){ // i.e we're not using stdin
+		fclose(fptr);
+	}
 	*line_count_final = line_count;
 	return(temp_buffer);
 }

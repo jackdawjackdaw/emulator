@@ -1,22 +1,25 @@
 
 CC = gcc
 LDFLAGS = -lgsl -lgslcblas -lm
-CFLAGS = -O0 -Wall -g
+CFLAGS = -O0 -Wall -g 
 #CFLAGS = -O3 -Wall
 TAGS = etags #for emacs
 
-all: multidrive
+all: main
 
 
 multifit:
 	$(CC) -c multifit.c $(CFLAGS) $(LDFLAGS)
 
-multidrive: multifit emulator estimator maximise persist
-	$(CC) multi-drive.c -o multi-drive.out estimator.o persist.o emulator.o maximise.o multifit.o $(LDFLAGS) $(CFLAGS)
+multidrive: multifit emulator estimator maximise persist ioread
+	$(CC) multi-drive.c -o multi-drive.out estimator.o persist.o ioread.o emulator.o maximise.o multifit.o $(LDFLAGS) $(CFLAGS)
 
 persist:
 	$(CC) -c persist.c $(CFLAGS) $(LDFLAGS)
 
+
+ioread:
+	$(CC) -c ioread.c $(CFLAGS) 
 
 tags:
 	$(TAGS) emulator.c 
@@ -40,8 +43,8 @@ testing: emulator
 estimatortest:  estimator emulator
 	$(CC) estimator-test.c -o estimator-test.out estimator.o emulator.o $(LDFLAGS) $(CFLAGS)
 
-main: emulator estimator maximise
-	$(CC) main.c -o ../emulator.out estimator.o emulator.o maximise.o $(LDFLAGS) $(CFLAGS)
+main: emulator estimator maximise ioread persist
+	$(CC) main.c -o emulator.out  estimator.o emulator.o maximise.o ioread.o persist.o $(LDFLAGS) $(CFLAGS)
 
 
 clean:
