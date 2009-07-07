@@ -44,17 +44,17 @@ char** unconstrained_read(char* filename, int* line_count_final){
 	}
 
 
-	input_data = malloc(sizeof(char*)*actual_number_lines);
+	input_data = MallocChecked(sizeof(char*)*actual_number_lines);
 	for(i = 0; i < actual_number_lines; i++){
-		input_data[i] = malloc(sizeof(char)*line_width);
+		input_data[i] = MallocChecked(sizeof(char)*line_width);
 	}
 	
 	buffer_size = (sizeof(char*)*actual_number_lines)*sizeof(char)*line_width;
 	fprintf(stderr, "buffer_size is %d\n", buffer_size);
 
-	temp_buffer = malloc(sizeof(char*)*actual_number_lines);
+	temp_buffer = MallocChecked(sizeof(char*)*actual_number_lines);
 	for(i = 0; i < actual_number_lines; i++){
-		temp_buffer[i] = malloc(sizeof(char)*line_width);
+		temp_buffer[i] = MallocChecked(sizeof(char)*line_width);
 	}
 		
 
@@ -77,26 +77,26 @@ char** unconstrained_read(char* filename, int* line_count_final){
 			fprintf(stderr, "allocating more space!\n");
 			copy_char_arrays(temp_buffer, input_data, line_width, actual_number_lines);			
 			// free the old space, this is a bit tricky since we are trying to use structured data
-			free_char_array(input_data, line_width, actual_number_lines);		
+			free_char_array(input_data, actual_number_lines);		
 			
 			previous_number_lines = actual_number_lines;
 
 			actual_number_lines = actual_number_lines + init_number_lines; // grow the size
 			buffer_size = (sizeof(char*)*actual_number_lines)*sizeof(char)*line_width;
 			// reallocate the buffer
-			input_data = malloc(sizeof(char*)*actual_number_lines);
+			input_data = MallocChecked(sizeof(char*)*actual_number_lines);
 			for(i = 0; i < actual_number_lines; i++){
-				input_data[i] = malloc(sizeof(char)*line_width);
+				input_data[i] = MallocChecked(sizeof(char)*line_width);
 			}
 			
 			// copy the data back in 
 			copy_char_arrays(input_data, temp_buffer, line_width, previous_number_lines);
 			// finally we have to free and realloc the temp buffer
-			free_char_array(temp_buffer, line_width, previous_number_lines);
+			free_char_array(temp_buffer, previous_number_lines);
 			// and allocate it again
-			temp_buffer = malloc(sizeof(char*)*actual_number_lines);
+			temp_buffer = MallocChecked(sizeof(char*)*actual_number_lines);
 			for(i = 0; i < actual_number_lines; i++){
-				temp_buffer[i] = malloc(sizeof(char)*line_width);
+				temp_buffer[i] = MallocChecked(sizeof(char)*line_width);
 			}
 						
 		}
@@ -105,17 +105,17 @@ char** unconstrained_read(char* filename, int* line_count_final){
 	line_count--; // (reading EOF overcounts by one)
 
 	fprintf(stderr, "read %d\n", line_count);
-	free_char_array(temp_buffer, line_width, actual_number_lines);
+	free_char_array(temp_buffer,  actual_number_lines);
 
 	// realloc temp to be just big enough
-	temp_buffer = malloc(sizeof(char*)*line_count);
+	temp_buffer = MallocChecked(sizeof(char*)*line_count);
 	for(i = 0; i < line_count; i++){
-		temp_buffer[i]  = malloc(sizeof(char)*line_width);
+		temp_buffer[i]  = MallocChecked(sizeof(char)*line_width);
 	}
 	// copy in the final data
 	copy_char_arrays(temp_buffer, input_data, line_width, line_count); 
 
-	free_char_array(input_data, line_width, actual_number_lines);
+	free_char_array(input_data, actual_number_lines);
 	if(strcmp(filename, "stdin") != 0){ // i.e we're not using stdin
 		fclose(fptr);
 	}
@@ -133,7 +133,7 @@ void copy_char_arrays(char** dest, char** src, int lx, int ly){
 }
 
 //! free a 2d array
-void free_char_array(char** array, int lx, int ly){
+void free_char_array(char** array,  int ly){
 	int i;
 	for(i = 0; i < ly;i++){
 		free(array[i]);

@@ -1,6 +1,33 @@
 // some useful things
 #include "useful.h"
 
+
+//! checks for null
+void *MallocChecked(size_t size){
+	void *r = malloc(size);
+	
+	if( r == NULL)
+		unix_error("memory wasn't allocated");
+	
+	return(r);
+}
+
+// unix error fn
+void unix_error(char *msg){
+	fprintf(stderr, "%s: %s\n", msg, strerror(errno));
+	exit(0);
+}
+
+
+void posix_error(int code, char* msg){
+	fprintf(stderr, "%s: %s\n", msg, strerror(code));
+}
+
+void error(char *msg){
+	fprintf(stderr, "%s\n", msg);
+	exit(0);
+}
+
 // memory management
 
 /** allocates a 2d array of ints
@@ -13,11 +40,7 @@ int* alloc_2d_int_array(int size_x, int size_y, int init_val){
 	int i;
 	int *the_array;
 	int the_total_size = size_x*size_y;
-	the_array = malloc(sizeof(int)*the_total_size);
-	if(the_array == NULL){
-		fprintf(stderr, "cannot allocate array\n");
-		exit(1);
-	}
+	the_array = MallocChecked(sizeof(int)*the_total_size);
 	
 	for (i = 0; i < the_total_size; i++){
 		the_array[i] = init_val;
@@ -36,10 +59,7 @@ double* alloc_2d_double_array( int size_x, int size_y, double init_val){
 	double *local_array;
 	int i;
 	int the_total_size = size_x*size_y;
-	if((local_array = malloc(sizeof(double)*the_total_size)) == NULL){
-		fprintf(stderr, "cannot allocate array\n");
-		exit(1);
-	}
+	local_array = MallocChecked(sizeof(double)*the_total_size);
 	
 	for(i = 0; i < the_total_size; i++){
 		local_array[i] = init_val;
@@ -93,32 +113,28 @@ unsigned long int get_seed(void){
 /* binary io routines */
 // input
 void in_int(FILE *fptr, int *iptr){
-	if (fread((void*) iptr, sizeof(int), 1, fptr) != 1) {
-		fprintf(stderr, "in_int: fread failed!\n"); 
-		exit(1);
+	if (fread((void*) iptr, sizeof(int), 1, fptr) != 1) {		
+		error( "in_int: fread failed!"); 
 	}
 }
 
 
 void in_double(FILE *fptr, double *dptr){
 	if (fread((void*) dptr, sizeof(double), 1, fptr) != 1){
-		fprintf(stderr, "in_double: fread failed!\n"); 
-		exit(1);
+		error("in_double: fread failed!\n");
 	}
 }
 
 
 void in_vector(FILE *fptr, double *vec){ // reads in a 3d vector
 	if (fread((void*) vec, sizeof(double), NDIM, fptr) != NDIM){
-		fprintf(stderr, "in_vec: fread failed!\n"); 
-		exit(1);
+		error( "in_vec: fread failed!\n"); 
 	}
 }
 
 void in_blob(FILE *fptr, int n_things, double *vec){ // reads in n_things doubles
 	if (fread((void*) vec, sizeof(double), n_things, fptr) != n_things){
-		fprintf(stderr, "in_blob: fread_failed!\n");
-		exit(1);
+		error( "in_blob: fread_failed!\n");
 	}
 }
 
@@ -126,22 +142,19 @@ void in_blob(FILE *fptr, int n_things, double *vec){ // reads in n_things double
 // output
 void out_int(FILE* fptr, int ival){
 	if(fwrite((void*) &ival, sizeof(int), 1, fptr) != 1){
-		fprintf(stderr, "out_int: fwrite failed!\n"); 
-		exit(1);
+		error( "out_int: fwrite failed!\n"); 
 	}
 }
 
 void out_double(FILE* fptr, double dval){
 	if(fwrite((void*) &dval, sizeof(double), 1, fptr) != 1){
-		fprintf(stderr, "out_double: fwrite failed!\n"); 
-		exit(1);
+		error( "out_double: fwrite failed!\n"); 
 	}
 }
 	
 void out_vector(FILE* fptr, double* vec){
 	if(fwrite((void*) vec, sizeof(double), NDIM, fptr) != NDIM){
-		fprintf(stderr, "out_vec: fwrite failed!\n"); 
-		exit(1);
+		error( "out_vec: fwrite failed!\n"); 
 	}
 }
 

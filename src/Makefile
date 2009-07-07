@@ -11,12 +11,14 @@ all: multidrive
 multifit:
 	$(CC) -c multifit.c $(CFLAGS) $(LDFLAGS)
 
-multidrive: multifit emulator estimator maximise persist ioread
-	$(CC) multi-drive.c -o multi-drive.out estimator.o persist.o ioread.o emulator.o maximise.o multifit.o $(LDFLAGS) $(CFLAGS)
+multidrive: multifit emulator estimator maximise persist ioread useful
+	$(CC) multi-drive.c -o multi-drive.out estimator.o persist.o ioread.o useful.o emulator.o maximise.o multifit.o $(LDFLAGS) $(CFLAGS)
 
 persist:
 	$(CC) -c persist.c $(CFLAGS) $(LDFLAGS)
 
+useful:
+	$(CC) -c useful.c $(CFLAGS) $(LDFLAGS)
 
 ioread:
 	$(CC) -c ioread.c $(CFLAGS) 
@@ -43,8 +45,8 @@ testing: emulator
 estimatortest:  estimator emulator
 	$(CC) estimator-test.c -o estimator-test.out estimator.o emulator.o $(LDFLAGS) $(CFLAGS)
 
-main: emulator estimator maximise ioread persist
-	$(CC) main.c -o emulator.out  estimator.o emulator.o maximise.o ioread.o persist.o $(LDFLAGS) $(CFLAGS)
+main: emulator estimator maximise ioread persist useful
+	$(CC) main.c -o emulator.out  estimator.o emulator.o maximise.o ioread.o persist.o useful.o $(LDFLAGS) $(CFLAGS)
 
 
 clean:
