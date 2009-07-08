@@ -309,7 +309,7 @@ void copy_region_array(region* target, region* source, int length){
 
 
 //! take an emulator result and come up with a region list of clusters.
-void create_clusters_1d(emuResult *res, region* region_list){
+void create_clusters_1d(emuResult *res, region** region_list, int* number_regions){
 	int i;
 	double *diff_goodness;
 	double *the_goodness;
@@ -346,6 +346,8 @@ void create_clusters_1d(emuResult *res, region* region_list){
 		printf("%d\t%d\t%d\t%g\t%g\n", rtemp->region_start, rtemp->region_stop, rtemp->region_length, rtemp->emu_x_start, rtemp->emu_x_stop);
 	}
 	
-	// blind to the very horror of this sorry life
+	*region_list = MallocChecked(sizeof(region)*number_clusters);
+	*number_regions = number_clusters;
+	copy_region_array(*region_list, local_region_list, number_clusters);
 	free(local_region_list);
 }

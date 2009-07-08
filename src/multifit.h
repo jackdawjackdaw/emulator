@@ -82,6 +82,6 @@ double get_mse( double mean, double variance);
 void checkup(emuResult *res, double* goodness, double* diff_goodness, int*cluster);
 int resize_region_array(region* the_array, int current_length, int grow_length);
 void assign_clusters(emuResult *res, int *cluster, int cluster_min, region** region_array, int* nclusters);
-void create_clusters_1d(emuResult *res, region* region_list);
+void create_clusters_1d(emuResult *res, region** region_list, int* number_regions);
 void copy_region_array(region* target, region* source, int length);
 #endif
