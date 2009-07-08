@@ -9,6 +9,7 @@ void set_random_initial_value(gsl_rng* rand, gsl_vector* x, gsl_matrix* ranges,i
 int range_check(gsl_vector* x, gsl_matrix* ranges, int nthetas);
 int vector_components_equal(gsl_vector *x, double test_value, int nthetas);
 
+//! used to store the evaluations in the neldermead alg
 typedef struct evalunit {
 	int index;
 	double value;

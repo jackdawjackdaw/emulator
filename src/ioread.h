@@ -8,10 +8,12 @@
 #include "gsl/gsl_vector.h"
 #include "emulator.h"
 #include "maximise.h"
+#include "useful.h"
+
 
 char** unconstrained_read(char* filename, int* line_count_final);
 void copy_char_arrays(char** dest, char** src, int lx, int ly);
-void free_char_array(char** array, int lx, int ly);
+void free_char_array(char** array, int ly);
 
 
 #endif
