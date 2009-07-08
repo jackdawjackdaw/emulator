@@ -1,4 +1,3 @@
-
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -107,115 +106,108 @@ int main (void){
 	return(0);
 }
 
-#define VERYGOOD 1E-10
+
 // runs the whole splitting thing
 void smasher(gsl_matrix *split_ranges, int* nsplits, eopts* toplevel, int max_depth, int min_points, gsl_rng* random_number){
 	int depth;
 	double best_goodness;
 	double temp_goodness;
 	emuResult temp_result;
+	region* region_list;
 	// eval the toplevel
 	alloc_emuRes( &temp_result, toplevel);
 	evaluate_region(&temp_result, toplevel,  random_number);
-	temp_goodness = score_region(&temp_result);
-	fprintf(stderr, "in %g..%g goodness = %g\n", toplevel->range_min, toplevel->range_max, temp_goodness);
-	if(temp_goodness < VERYGOOD){
-		fprintf(stderr, "no need to split, this is a good fit!\n");
-		*nsplits = 1;
-		split_ranges = gsl_matrix_alloc(1, 2);
-		gsl_matrix_set(split_ranges, 0,0, toplevel->range_min);
-		gsl_matrix_set(split_ranges, 0,1, toplevel->range_max);
-	}
+
+	create_clusters_1d(&temp_result, region_list);
+
+
+	
+
+	//free(region_list);
 }
 	
-double score_region(emuResult *res){
-	int i;
-	double goodness = 0.0;
-<<<<<<< HEAD:src/multi-drive.c
-	double *inverse_error;
-	double *diff_error;
-	// this probably has to be tuned 
-	double diff_thresh = 1.0; // this means, aer they in 1 efolding?
-	int total_cluster_count =0;
-	int temp_cluster_count = 0;
-	int total_cluster_lengths = 0;
-	int cluster_min = 5; // how many successive emupoints -> cluster
-	double *reduced_inverse_error;
-	int *cluster;
-	int cluster_begin = 0;
-	int cluster_end = 0;
-	// start by calculating 1/dy^2
-	inverse_error = MallocChecked(sizeof(double)*res->nemu_points);
-	diff_error = MallocChecked(sizeof(double)*res->nemu_points);
-	cluster = MallocChecked(sizeof(int)*res->nemu_points);
+/* double score_region(emuResult *res){ */
+/* 	int i; */
+/* 	double goodness = 0.0; */
+/* 	double *inverse_error; */
+/* 	double *diff_error; */
+/* 	// this probably has to be tuned  */
+/* 	double diff_thresh = 1.0; // this means, aer they in 1 efolding? */
+/* 	int total_cluster_count =0; */
+/* 	int temp_cluster_count = 0; */
+/* 	int total_cluster_lengths = 0; */
+/* 	int cluster_min = 5; // how many successive emupoints -> cluster */
+/* 	double *reduced_inverse_error; */
+/* 	int *cluster; */
+/* 	int cluster_begin = 0; */
+/* 	int cluster_end = 0; */
+/* 	// start by calculating 1/dy^2 */
+/* 	inverse_error = MallocChecked(sizeof(double)*res->nemu_points); */
+/* 	diff_error = MallocChecked(sizeof(double)*res->nemu_points); */
+/* 	cluster = MallocChecked(sizeof(int)*res->nemu_points); */
 
-	for(i = 0; i < res->nemu_points; i++){
-		diff_error[i] = 0.0;
-		cluster[i] = 0.0;
-	}
+/* 	for(i = 0; i < res->nemu_points; i++){ */
+/* 		diff_error[i] = 0.0; */
+/* 		cluster[i] = 0.0; */
+/* 	} */
 
-	for(i= 0; i < res->nemu_points; i++){
-		inverse_error[i] = (1.0)/(pow(gsl_vector_get(res->new_var, i), 2.0));
-		inverse_error[i] = log(inverse_error[i]);
-		//reduced_inverse_error[i] = inverse_error[i]*(gsl_vector_get(res->new_mean, i));
-		if(i > 0)
-			diff_error[i] = fabs(inverse_error[i]-inverse_error[i-1]);
-	}
+/* 	for(i= 0; i < res->nemu_points; i++){ */
+/* 		inverse_error[i] = (1.0)/(pow(gsl_vector_get(res->new_var, i), 2.0)); */
+/* 		inverse_error[i] = log(inverse_error[i]); */
+/* 		//reduced_inverse_error[i] = inverse_error[i]*(gsl_vector_get(res->new_mean, i)); */
+/* 		if(i > 0) */
+/* 			diff_error[i] = fabs(inverse_error[i]-inverse_error[i-1]); */
+/* 	} */
 	
-	// now look to see if successive diff_errors are less than the thresh and if so we have a cluster?
-	for(i = 0; i< res->nemu_points-1; i++){
-		if(fabs(diff_error[i+1]-diff_error[i]) < diff_thresh)
-			cluster[i] = 1;
-	}
+/* 	// now look to see if successive diff_errors are less than the thresh and if so we have a cluster? */
+/* 	for(i = 0; i< res->nemu_points-1; i++){ */
+/* 		if(fabs(diff_error[i+1]-diff_error[i]) < diff_thresh) */
+/* 			cluster[i] = 1; */
+/* 	} */
 
-	for(i =0; i < res->nemu_points; i++){
-		printf("%d:%g\t%g\t%g\t%g\t%g\t%d\n", i,gsl_matrix_get(res->new_x, i,0), gsl_vector_get(res->new_mean, i), gsl_vector_get(res->new_var, i), inverse_error[i], diff_error[i], cluster[i]);
-	}
+/* 	for(i =0; i < res->nemu_points; i++){ */
+/* 		printf("%d:%g\t%g\t%g\t%g\t%g\t%d\n", i,gsl_matrix_get(res->new_x, i,0), gsl_vector_get(res->new_mean, i), gsl_vector_get(res->new_var, i), inverse_error[i], diff_error[i], cluster[i]); */
+/* 	} */
 	
-	for(i = 0; i < res->nemu_points-1; i++){
-		if(cluster[i] == 1){
-			if(cluster[i+1] == 1){
-				temp_cluster_count++;
-				if(i>0 && cluster[i-1] ==0){
-					cluster_begin = i;
-				}
-			} else if(cluster[i+1] == 0){
-				// i.e we're at the end of a cluster
-				if (temp_cluster_count > cluster_min){
-					total_cluster_count++;					
-					cluster_end = i;
-					total_cluster_lengths += (cluster_end - cluster_begin);
-					printf("cluster: %d %d len=%d\n", cluster_begin, cluster_end, (cluster_end-cluster_begin));
-					temp_cluster_count = 0;
-				}
-				else {
-					temp_cluster_count = 0;
-					cluster_begin = 0;
-					cluster_end = 0;
-				}
-			}
-		}
-	}
+/* 	for(i = 0; i < res->nemu_points-1; i++){ */
+/* 		if(cluster[i] == 1){ */
+/* 			if(cluster[i+1] == 1){ */
+/* 				temp_cluster_count++; */
+/* 				if(i>0 && cluster[i-1] ==0){ */
+/* 					cluster_begin = i; */
+/* 				} */
+/* 			} else if(cluster[i+1] == 0){ */
+/* 				// i.e we're at the end of a cluster */
+/* 				if (temp_cluster_count > cluster_min){ */
+/* 					total_cluster_count++;					 */
+/* 					cluster_end = i; */
+/* 					total_cluster_lengths += (cluster_end - cluster_begin); */
+/* 					printf("cluster: %d %d len=%d\n", cluster_begin, cluster_end, (cluster_end-cluster_begin)); */
+/* 					temp_cluster_count = 0; */
+/* 				} */
+/* 				else { */
+/* 					temp_cluster_count = 0; */
+/* 					cluster_begin = 0; */
+/* 					cluster_end = 0; */
+/* 				} */
+/* 			} */
+/* 		} */
+/* 	} */
 				
 
-	printf("found %d clusters\n", total_cluster_count);
+/* 	printf("found %d clusters\n", total_cluster_count); */
 
-	if((double)(res->nemu_points - total_cluster_lengths)/(double)(res->nemu_points) < 0.2){
-		printf("this whole thing is probably one cluster");
-	}
-
-
-	free(inverse_error);
-	//free(reduced_inverse_error);
-	return(goodness);
+/* 	if((double)(res->nemu_points - total_cluster_lengths)/(double)(res->nemu_points) < 0.2){ */
+/* 		printf("this whole thing is probably one cluster"); */
+/* 	} */
 
 
+/* 	free(inverse_error); */
+/* 	//free(reduced_inverse_error); */
+/* 	return(goodness); */
 
-}
 
-
-	
-
+/* } */
 
 
 void dump_result(emuResult *res, FILE *fptr){
