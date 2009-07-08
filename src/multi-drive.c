@@ -146,13 +146,9 @@ int smasher(gsl_matrix *split_ranges, int* nsplits, eopts* toplevel, int max_dep
 	// sort the regions on length, descending order
 	qsort(region_list, nregions, sizeof(region), (void*)compare_regions);
 	
-
-
-
-	
-
-
-	 
+	for(i = 0; i < nregions;i++){
+		assign_model_point(toplevel, &(region_list[i]));
+	}
 	
 
 	free(region_list);

@@ -70,6 +70,12 @@ typedef struct region{
 	double emu_x_start;
 	//! the value of new_x at region_stop
 	double emu_x_stop;
+	//! the location of the first model_x point in the region
+	double model_x_start;
+	//! the location of the last model_x point in the region
+	double model_x_stop;
+	//! how many model points there are
+	int model_x_span;
 } region;
 
 
@@ -84,4 +90,5 @@ int resize_region_array(region* the_array, int current_length, int grow_length);
 void assign_clusters(emuResult *res, int *cluster, int cluster_min, region** region_array, int* nclusters);
 void create_clusters_1d(emuResult *res, region** region_list, int* number_regions);
 void copy_region_array(region* target, region* source, int length);
+void assign_model_point(eopts* regionOpts, region* the_region);
 #endif

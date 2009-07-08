@@ -351,3 +351,48 @@ void create_clusters_1d(emuResult *res, region** region_list, int* number_region
 	copy_region_array(*region_list, local_region_list, number_clusters);
 	free(local_region_list);
 }
+
+//! only works for 1d
+/** 
+ * looking at the output of this, it seems like we can get a span of -1, 
+ * i guess this means that the high and low index are essentially ontop of each other
+ * a good way to reject a split methinks
+ */
+void assign_model_point(eopts* regionOpts, region* the_region){
+	int i;
+	double region_min = the_region->emu_x_start;
+	double region_max = the_region->emu_x_stop;
+	double temp_val;
+	int low_index = 0;
+	int high_index = regionOpts->nmodel_points-1;
+
+	temp_val = gsl_matrix_get(regionOpts->xmodel, low_index, 0);
+	if(temp_val != region_min){
+		while(temp_val < region_min){
+			low_index++;
+			temp_val = gsl_matrix_get(regionOpts->xmodel, low_index, 0);
+		}
+	}
+
+
+	
+
+
+
+	temp_val = gsl_matrix_get(regionOpts->xmodel, high_index, 0);
+	if(temp_val != region_max){
+		while(temp_val > region_max){
+			high_index--;
+			temp_val = gsl_matrix_get(regionOpts->xmodel, high_index, 0);
+		}
+	}
+		
+
+	// set the values 
+	the_region->model_x_start = gsl_matrix_get(regionOpts->xmodel, low_index, 0);
+	the_region->model_x_stop = gsl_matrix_get(regionOpts->xmodel, high_index, 0);
+	the_region->model_x_span = high_index - low_index;
+	fprintf(stderr, "low_index = %d\n", low_index);
+	fprintf(stderr, "high_index = %d\n", high_index);
+	fprintf(stderr, "span = %d\n", high_index - low_index);
+}
