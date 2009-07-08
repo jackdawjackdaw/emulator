@@ -208,6 +208,7 @@ double score_region(emuResult *res){
 	free(inverse_error);
 	//free(reduced_inverse_error);
 	return(goodness);
+
 }
 
 
