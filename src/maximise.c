@@ -229,7 +229,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	
 
 
-	int i;
+	int i,j;
 	int t = 0;
 	int tries = 0;
 	int nverticies  = nthetas+1;

@@ -41,10 +41,3 @@ void out_vector(FILE *fptr, double*);
 
 // this will change the way that out vec and in vec work
 #define NDIM 3
-
-
-// errors
-void *MallocChecked(size_t size);
-void posix_error(int code, char* msg);
-void unix_error(char *msg);
-void error(char *msg);

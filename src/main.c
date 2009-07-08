@@ -6,7 +6,7 @@
 #include "maximise.h"
 #include "ioread.h"
 #include "sys/time.h"
-#include "useful.h"
+
 
 /**
  * @file
@@ -54,6 +54,7 @@ void parse_arguments(int argc, char** argv, optstruct* options);
 void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, optstruct* options);
 void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options);
 void read_input_bounded(gsl_matrix* model, gsl_vector* training, optstruct * options);
+unsigned long int get_seed(void);
 void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *options);
 
 //! print the short-option switches
@@ -195,7 +196,7 @@ int main (int argc, char ** argv){
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
 	gsl_matrix_free(xmodel_input);
-	free_char_array(input_data, number_lines);
+	free_char_array(input_data, 128, number_lines);
 	//exit(1);
 	return(0);
 }
@@ -345,3 +346,23 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 
 
 
+
+// RNG 
+// tries to read from /dev/random, or otherwise uses the system time
+unsigned long int get_seed(void){
+	unsigned int seed;
+	struct timeval tv;
+	FILE *devrandom;
+
+	if((devrandom = fopen("/dev/random", "r")) == NULL){
+		gettimeofday(&tv, 0);
+		seed = tv.tv_sec + tv.tv_usec;
+		fprintf(stderr,"Got seed %u from gettimeofday()\n", seed);
+	}
+	else {
+		fread(&seed, sizeof(seed), 1, devrandom);
+		fprintf(stderr,"Got seed %u from /dev/random\n", seed);
+		fclose(devrandom);
+	}
+	return(seed);
+}

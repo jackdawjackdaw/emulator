@@ -9,7 +9,7 @@
 #include "sys/time.h"
 #include "persist.h"
 #include "ioread.h"
-#include "useful.h"
+
 #include "gsl/gsl_statistics.h"
 
 
@@ -103,13 +103,14 @@ int main (void){
 	free_eopts(&the_options);
 	free_emuRes(&wholeThing);
 	
-	free_char_array(input_data, number_lines);
+	free_char_array(input_data, 128, number_lines);
 	return(0);
 }
 
 #define VERYGOOD 1E-10
 // runs the whole splitting thing
 void smasher(gsl_matrix *split_ranges, int* nsplits, eopts* toplevel, int max_depth, int min_points, gsl_rng* random_number){
+	int i;
 	int depth;
 	double best_goodness;
 	double temp_goodness;
@@ -132,7 +133,7 @@ double score_region(emuResult *res){
 	int i;
 	double goodness = 0.0;
 	double *temp_array;
-	temp_array = MallocChecked(sizeof(double)*res->nemu_points);
+	temp_array = malloc(sizeof(double)*res->nemu_points);
 	for(i = 0; i < res->nemu_points;i++){temp_array[i] = gsl_vector_get(res->new_var,i);}
 	goodness = gsl_stats_variance(temp_array, 1, res->nemu_points);
 	free(temp_array);
@@ -336,3 +337,22 @@ void read_input_from_file(char* filename, eopts* options){
 
 
 
+// RNG 
+// tries to read from /dev/random, or otherwise uses the system time
+unsigned long int get_seed(void){
+	unsigned int seed;
+	struct timeval tv;
+	FILE *devrandom;
+
+	if((devrandom = fopen("/dev/random", "r")) == NULL){
+		gettimeofday(&tv, 0);
+		seed = tv.tv_sec + tv.tv_usec;
+		fprintf(stderr,"Got seed %u from gettimeofday()\n", seed);
+	}
+	else {
+		fread(&seed, sizeof(seed), 1, devrandom);
+		fprintf(stderr,"Got seed %u from /dev/random\n", seed);
+		fclose(devrandom);
+	}
+	return(seed);
+}

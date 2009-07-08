@@ -207,3 +207,57 @@ void load_eopts(eopts* the_struct, FILE* fptr){
 	}
 }
 
+/* binary io routines */
+// input
+void in_int(FILE *fptr, int *iptr){
+	if (fread((void*) iptr, sizeof(int), 1, fptr) != 1) {
+		fprintf(stderr, "in_int: fread failed!\n"); 
+		exit(1);
+	}
+}
+
+
+void in_double(FILE *fptr, double *dptr){
+	if (fread((void*) dptr, sizeof(double), 1, fptr) != 1){
+		fprintf(stderr, "in_double: fread failed!\n"); 
+		exit(1);
+	}
+}
+
+
+void in_vector(FILE *fptr, double *vec){ // reads in a 3d vector
+	if (fread((void*) vec, sizeof(double), NDIM, fptr) != NDIM){
+		fprintf(stderr, "in_vec: fread failed!\n"); 
+		exit(1);
+	}
+}
+
+void in_blob(FILE *fptr, int n_things, double *vec){ // reads in n_things doubles
+	if (fread((void*) vec, sizeof(double), n_things, fptr) != n_things){
+		fprintf(stderr, "in_blob: fread_failed!\n");
+		exit(1);
+	}
+}
+
+
+// output
+void out_int(FILE* fptr, int ival){
+	if(fwrite((void*) &ival, sizeof(int), 1, fptr) != 1){
+		fprintf(stderr, "out_int: fwrite failed!\n"); 
+		exit(1);
+	}
+}
+
+void out_double(FILE* fptr, double dval){
+	if(fwrite((void*) &dval, sizeof(double), 1, fptr) != 1){
+		fprintf(stderr, "out_double: fwrite failed!\n"); 
+		exit(1);
+	}
+}
+	
+void out_vector(FILE* fptr, double* vec){
+	if(fwrite((void*) vec, sizeof(double), NDIM, fptr) != NDIM){
+		fprintf(stderr, "out_vec: fwrite failed!\n"); 
+		exit(1);
+	}
+}
