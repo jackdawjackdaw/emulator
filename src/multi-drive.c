@@ -40,6 +40,7 @@ int main (void){
 	eopts the_options;
 	char** input_data;
 	int number_lines;
+	int nregions;
 	gsl_rng *random_number;
 	const gsl_rng_type *T;
 
@@ -94,8 +95,9 @@ int main (void){
 	print_matrix(the_options.xmodel, number_lines, 1);
 	vector_print(the_options.training, number_lines); 
 	
-	nsplits = smasher(split_result, &nsplits, &the_options, 1, 1, random_number);
-	printf("made %d splits\n", nsplits);
+	nregions = smasher(split_result, &nsplits, &the_options, 1, 1, random_number);
+	printf("found %d winner(s)\n", nsplits);
+	printf("found %d region(s)\n", nregions);
  
 
 	//fclose(fptr);

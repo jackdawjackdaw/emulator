@@ -68,7 +68,7 @@ char** unconstrained_read(char* filename, int* line_count_final){
 			memcpy(input_data[line_count], temp_line, line_width);
 			line_count++;
 		} else {
-			fprintf(stderr, "comment!\n");
+			//fprintf(stderr, "comment!\n");
 		}
 			
 
