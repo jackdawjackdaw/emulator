@@ -321,6 +321,7 @@ void create_clusters_1d(emuResult *res, region** region_list, int* number_region
 	region* local_region_list;
 	region* rtemp;
 
+
 	the_goodness = MallocChecked(sizeof(double)*npoints);
 	diff_goodness = MallocChecked(sizeof(double)*npoints);
 	cluster = MallocChecked(sizeof(int)*npoints);
@@ -334,8 +335,11 @@ void create_clusters_1d(emuResult *res, region** region_list, int* number_region
 	make_diff(res, the_goodness, diff_goodness); // take a crappy derivative of the goodness
 	prepare_cluster(res, diff_goodness, cluster, diff_thresh); // lump regions which change slowly enough together
 
-	//DEBUG checkup(res, the_goodness, diff_goodness, cluster); // print out what you've got so far
+	checkup(res, the_goodness, diff_goodness, cluster); // print out what you've got so far
 	assign_clusters(res, cluster, cluster_min, &local_region_list, &number_clusters);
+	
+	
+
 	
 	for(i = 0; i < number_clusters; i++){
 		rtemp = &(local_region_list[i]);
@@ -370,6 +374,11 @@ void assign_model_point(eopts* regionOpts, region* the_region){
 		}
 	}
 
+
+	
+
+
+
 	temp_val = gsl_matrix_get(regionOpts->xmodel, high_index, 0);
 	if(temp_val != region_max){
 		while(temp_val > region_max){
@@ -378,6 +387,7 @@ void assign_model_point(eopts* regionOpts, region* the_region){
 		}
 	}
 		
+
 	// set the values 
 	the_region->model_x_start = gsl_matrix_get(regionOpts->xmodel, low_index, 0);
 	the_region->model_x_stop = gsl_matrix_get(regionOpts->xmodel, high_index, 0);
