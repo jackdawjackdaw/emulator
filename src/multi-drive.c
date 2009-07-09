@@ -128,12 +128,15 @@ int smasher(gsl_matrix *split_ranges, int* nsplits, eopts* toplevel, int max_dep
 	emuResult temp_result;
 	region* region_list;
 	int nregions;
+	int ngoodregions = 0;
 	int retval = 0;
 	int min_model_points = 5;
+	int init_split_ranges_length = 10;
+	int split_ranges_length = init_split_ranges_length;
+	split_ranges = gsl_matrix_alloc(split_ranges_length, 2);
 	// eval the toplevel
 	alloc_emuRes( &temp_result, toplevel);
 	evaluate_region(&temp_result, toplevel,  random_number);
-
 	create_clusters_1d(&temp_result, &region_list, &nregions);
 	
 	if(nregions == 0){
@@ -148,9 +151,21 @@ int smasher(gsl_matrix *split_ranges, int* nsplits, eopts* toplevel, int max_dep
 	
 	for(i = 0; i < nregions;i++){
 		assign_model_point(toplevel, &(region_list[i]));
+		if(region_list[i].model_x_span > min_model_points){
+			fprintf(stderr, "winner! Span: %d\t%g\t%g\n", region_list[i].model_x_span, region_list[i].model_x_start, region_list[i].model_x_stop);
+			if(ngoodregions > split_ranges_length){
+				fprintf(stderr, "too many split_ranges, need to realloc\n");
+				exit(1);
+			}
+			// push to split_ranges
+			gsl_matrix_set(split_ranges, ngoodregions, 0, region_list[i].model_x_start);
+			gsl_matrix_set(split_ranges, ngoodregions, 1, region_list[i].model_x_stop);
+			ngoodregions++;
+		}
+
 	}
 	
-
+	*nsplits = ngoodregions;
 	free(region_list);
 	return(nregions);
 }
