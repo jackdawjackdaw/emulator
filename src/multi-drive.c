@@ -34,6 +34,26 @@ void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * 
 /* 	gsl_vector* new_var; */
 /* } emuResult; */
 
+/** 
+ * @file
+ * @author Chris Coleman-Smith cec24@phy.duke.edu
+ * @version 0.1
+ * @section DESCRIPTION
+ * 
+ * This program attempts to fit a region by splitting that region into a set of subregions  
+ * where the splitting is determined by selecting regions which are well fitted and then splitting 
+ * around their ends. 
+ * I.e 
+ * start.......|smoooth...|......|smoooooth...|.......end
+ * 
+ * Then all of the resulting regions are re-fitted and dumped to a binary file. 
+ * 
+ * Note that only one level of subdivision takes place and there is almost no sensible flow control, so if something 
+ * doesn't work then you might end up with crappy results and have to run again. 
+ * In particular the parameter estimation is quite non-deterministic, the best parameters are taken from many runs of the neldermead
+ * algorithm for random starting points. 
+ */
+
 
 int main (void){
 	int i;
@@ -158,9 +178,9 @@ void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl
 }
 	
 	
-
+//! debugging
 void print_splits(gsl_matrix* splits, int n){
-	int i;
+	int i =0;
 	for(i = 0; i < n; i++){
 		printf("%d (%g..%g)\n", i, gsl_matrix_get(splits, i, 0), gsl_matrix_get(splits, i, 1));
 	}
@@ -181,6 +201,21 @@ int compare_regions(const region* a, const region* b){
 //! runs the whole splitting thing
 /**
  * @return 0 if failed, >0  (number of regions otherwise)
+ * 
+ * Takes toplevel and attempts to split it up into regions which are "good" i.e the emulator works well here. 
+ * Then the rest of the interval is filled in with blank regions by fill_split_ranges so that on return split_ranges can be pushed
+ * straight into process splits, and each subrange can be evaluated.
+ * 
+ * There is very little flow control right now,if things go wrong errors may spring up but the whole process may or may not terminate, 
+ * this is stupid. I hope to make another driving routine ontop of this to automate exploration of various alternative splits and such.
+ *
+ * @split_ranges -> a set of ranges which fully span the range of toplevel
+ * @nsplits -> how long split_ranges is
+ * @toplevel -> specifies the model and how it is to be cut up.
+ * @max_depth -> unused yet
+ * @min_points -> sets the minimum number of model points for a region to be accepted
+ * @random_number -> a gsl_rng used to evaluate regions
+ *
  */
 int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_depth, int min_points, gsl_rng* random_number){
 	int i;
@@ -190,10 +225,13 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_de
 	int ngoodregions = 0;
 	int number_final_splits = 0;
 	int retval = 0;
-	int min_model_points = 5;
+	int min_model_points = min_points;
 	int init_split_ranges_length = 10;
 	int split_ranges_length = init_split_ranges_length;
 	gsl_matrix *local_split_ranges; // we'll do the whole store and grow and then finish the final set
+	
+	assert(min_model_points >0);
+
 	local_split_ranges = gsl_matrix_alloc(split_ranges_length, 2);
 	// eval the toplevel
 	alloc_emuRes( &temp_result, toplevel);
@@ -266,6 +304,16 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_de
 
 
 //!  transforms local_split_ranges, the set of ranges with gaps into split_ranges the continuous set of ranges
+/**
+ * Takes a set of split ranges: local_split_ranges which have been pre-caculated and fills the gaps between them so that
+ * the result: split_ranges is a set of continuous points which span the whole range of toplevel.
+ * 
+ * a bad diagram:
+ * local_split_ranges:  start............|region 1 ..|...............|region 2..|......stop
+ * split_ranges:        start|region 0...|region 1...|region 2.......|region 3..|region 4 stop
+ * 
+ * Ther are no gaps by the end.
+ */
 void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * local_split_ranges, eopts* toplevel){
 	int i;
 	int split_count =0;
@@ -334,6 +382,12 @@ void dump_result(emuResult *res, FILE *fptr){
 
 //! creates a new region from lower and upper in the first parameter of the xmodel parts of the parent
 /**
+ * Creates a new eopts result from the parent but only includes the data which lies within the range  
+ * lower..upper. 
+ * 
+ * This method can then be used on the same parent multiple times with different lower and upper values
+ * to carve up the parent into a series of child regions which can then be evaluated etc. 
+ * 
  * if the split doesn't work, result => NULL
  */
 void split_region_options(eopts *result, eopts *parent, double lower, double upper){
@@ -414,6 +468,8 @@ void split_region_options(eopts *result, eopts *parent, double lower, double upp
 		
 	} else if(bad_flag == 1){
 		result = NULL;
+		fprintf(stderr, "bad splits\n");
+		exit(1);
 	}
 
 	
@@ -421,7 +477,13 @@ void split_region_options(eopts *result, eopts *parent, double lower, double upp
 	
 
  
-//! setup an emuResult struct from the given options 
+//! setup an emuResult struct from the given options
+/**
+ * copy the right parts of the options into the result and alloc the data structures inside.
+ * after this the emuResult has to be freed with free_emuRes or you'll leak the arrays inside. 
+ * 
+ * Also note that the gsl allocs are not checked.
+ */ 
 void alloc_emuRes(emuResult *thing, eopts *options){
 	int n = options->nemu_points;
 	int np = options->nparams;
@@ -432,7 +494,7 @@ void alloc_emuRes(emuResult *thing, eopts *options){
 	thing->nparams = np;
 }
 
-
+//! frees an emures struct
 void free_emuRes(emuResult *thing){
 	gsl_matrix_free(thing->new_x);
 	gsl_vector_free(thing->new_mean);

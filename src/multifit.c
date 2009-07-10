@@ -150,6 +150,13 @@ void make_goodness(emuResult *res, double* the_goodness){
 }
 
 //! calculate the local diffs in the goodness
+/**
+ * Takes a forward derivative on the vector the_goodness and returns the absolute value as diff_goodness. 
+ * The emulator result is needed only to provide the number of points.
+ *
+ * \note for many dimensions this should be adjusted to something like 
+ * (x(i) - x(i+1)) + (x(i) - x(i-1))/ 2 for each dimension, a grad basically
+ */
 void make_diff(emuResult *res, double* the_goodness, double* diff_goodness){
 	int i;
 	for(i =0; i < res->nemu_points; i++){
@@ -161,7 +168,7 @@ void make_diff(emuResult *res, double* the_goodness, double* diff_goodness){
 //! compare successive differences, if they are small enough put a 1 in the cluster vector
 void prepare_cluster(emuResult *res, double* diff_goodness, int* cluster, double diff_threshold){
 	int i;
-	for(i =0; i < res->nemu_points; i++){
+	for(i =0; i < res->nemu_points-1; i++){
 		// this is a simple forwards derivative, 
 		// for higher dims it'll make sense to go for an arbitrary star-type finite diffs methinks
 		// i.e find the gradient at this point
@@ -199,14 +206,14 @@ void checkup(emuResult *res, double* goodness, double* diff_goodness, int*cluste
  * @param grow_length how much to grow it by
  * @return the new length (current_length+grow_length)
  */
-int resize_region_array(region* the_array, int current_length, int grow_length){
-	size_t current_size = sizeof(region)*current_length;
+int resize_region_array(region** the_array, int current_length, int grow_length){
+	size_t current_size = current_length*sizeof(region);
 	size_t new_size = current_size + sizeof(region)*grow_length; // the grown array
 	region* buffer = MallocChecked(current_size);
-	copy_region_array(buffer, the_array, current_length);
-	free(the_array);
-	the_array = MallocChecked(new_size);
-	copy_region_array(the_array, buffer, current_size);
+	copy_region_array(buffer, *the_array, current_length);
+	free(*the_array);
+	*the_array = MallocChecked(new_size);
+	copy_region_array(*the_array, buffer, current_length);
 	free(buffer);
 	// and return the new length
 	return(current_length+grow_length);
@@ -232,7 +239,7 @@ void assign_clusters(emuResult *res, int *cluster, int cluster_min, region** reg
 	int total_cluster_lengths = 0;
 
 	// this was a humerously hard variable name to spell
-	int rarray_length = 10;
+	int rarray_length = 1;
 	int rarray_size = rarray_length*sizeof(region);
 	int rarray_grow_offset = 10;
 	region temp_region; 
@@ -254,10 +261,10 @@ void assign_clusters(emuResult *res, int *cluster, int cluster_min, region** reg
 
 					
 					// ugly put this somewhere else
-					if(total_cluster_count > rarray_length){
+					if(total_cluster_count + 1 > rarray_length){
 						fprintf(stderr, "reallocating rarray");
 						// resize
-						rarray_length = resize_region_array(temp_region_array, rarray_length, rarray_grow_offset);
+						rarray_length = resize_region_array(&temp_region_array, rarray_length, rarray_grow_offset);
 					}
 
 					// push temp_region onto the array
@@ -296,6 +303,12 @@ void assign_clusters(emuResult *res, int *cluster, int cluster_min, region** reg
 	free(temp_region_array);
 }
 				
+
+//! copy source->target
+/**
+ * copies the contents of the source region into the target region, useful because i can't make memcpy just take a 
+ * block of these guys and do it for me.
+ */
 void copy_region_array(region* target, region* source, int length){
 	int i;
 	for (i = 0; i < length; i++){
@@ -309,6 +322,22 @@ void copy_region_array(region* target, region* source, int length){
 
 
 //! take an emulator result and come up with a region list of clusters.
+/**
+ * Find subregions of a result which are relatively similar and smooth and then group them together,
+ * if they are large enough they will be pushed into region_list.
+ * 
+ * Regions are found by: 
+ * - Allocating a goodness to all of the points in the result via make_goodness
+ * - Taking a simple forwards derivative of this goodness with make_diff
+ * - Lumping together parts of the resulting list of derivatives which change slowly enough to be considered similar. 
+ * - assign_clusters then takes the prepared list of regions checks if the clusters are long enoguh and if so adds them to the region array
+ * 
+ * The resulting array of "good" regions from assign_clusters is then copied into the region_list and returned.
+ *
+ * @param a result to be processed
+ * @param region_list: will be filled with a list of regions which represent good clusters, That is clusters which have at least the minimum number of points within them. Given by cluster_min.
+ * @param number_regions: set to the final number of regions found.
+ */
 void create_clusters_1d(emuResult *res, region** region_list, int* number_regions){
 	int i;
 	double *diff_goodness;
@@ -351,8 +380,12 @@ void create_clusters_1d(emuResult *res, region** region_list, int* number_region
 	free(cluster);
 }
 
-//! only works for 1d
+//! take a region and find the model points which are contained within that region. 1d only
 /** 
+ * Iterate through a given region and find what subset of the model-points it represents. 
+ * Quite primative and only works in 1d,need to use something like a voroni hull to make this work 
+ * In higher dimensions.
+ *
  * looking at the output of this, it seems like we can get a span of -1, 
  * i guess this means that the high and low index are essentially ontop of each other
  * a good way to reject a split methinks
