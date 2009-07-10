@@ -1,0 +1,21 @@
+Emulator
+
+C.Coleman-Smith, cec24@phy.duke.edu
+Summer  09
+
+One line: A method to interpolate results from expensive simulations. 
+
+Brief:
+This is a project to implement a gaussian process based emulator. An emulator being a statistical model for some process. This code supposes that you wish to emulate the output of some complicated computer code, which takes any number of inputs and produces a single scalar output for each vector of inputs. 
+
+The points in the input-space and the output of the model are used to train a gaussian process to produce points which will interpolate the initial training points. 
+
+With some fiddling it should be possible to extrapolate some small distance from the training points.
+
+Things to know:
+			
+Emulator: Supports many inputs, single output models
+multifit: Will only multi-region on 1d input models
+
+Dependancies:
+The gsl
