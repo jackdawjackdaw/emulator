@@ -346,9 +346,6 @@ void create_clusters_1d(emuResult *res, region** region_list, int* number_region
 	*number_regions = number_clusters;
 	copy_region_array(*region_list, local_region_list, number_clusters);
 	free(local_region_list);
-	free(diff_goodness);
-	free(cluster);
-	free(the_goodness);
 }
 
 //! only works for 1d

@@ -1,8 +1,8 @@
 
 CC = gcc
 LDFLAGS = -lgsl -lgslcblas -lm
-#CFLAGS = -O0 -Wall -g -pedantic -Wextra -std=gnu99
-CFLAGS = -O3 -Wall
+CFLAGS = -O0 -Wall -g -pedantic -Wextra -std=gnu99
+#CFLAGS = -O3 -Wall
 TAGS = etags #for emacs
 
 all: multidrive

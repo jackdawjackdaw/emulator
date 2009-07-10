@@ -92,9 +92,8 @@ int main (void){
 
 	process_input_data(input_data, &the_options);
 
-	// debug
-	//print_matrix(the_options.xmodel, number_lines, 1);
-	//vector_print(the_options.training, number_lines); 
+	print_matrix(the_options.xmodel, number_lines, 1);
+	vector_print(the_options.training, number_lines); 
 	
 	nregions = smasher(&split_result, &nsplits, &the_options, 1, 1, random_number);
 	printf("found %d region(s)\n", nregions);
@@ -102,14 +101,14 @@ int main (void){
  
 	print_splits(split_result, nsplits);
 
-	process_splits(split_result, nsplits, &the_options, random_number);
+	process_splits(split_result, nsplits, &the_options);
 
 
 	//fclose(fptr);
 	gsl_rng_free(random_number);
 	free_eopts(&the_options);
 	free_emuRes(&wholeThing);
-	gsl_matrix_free(split_result);
+	
 	free_char_array(input_data, number_lines);
 	return(0);
 }
@@ -123,16 +122,9 @@ void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl
 	emuResult* results_array = MallocChecked(sizeof(emuResult)*nsplits);
 	eopts* options_array = MallocChecked(sizeof(eopts)*nsplits);
 	
-	//print_splits(the_splits, nsplits);
-
-
 	// make the new options
 	for(i = 0; i < nsplits;i++){
 		split_region_options(&options_array[i], the_options, gsl_matrix_get(the_splits, i, 0), gsl_matrix_get(the_splits, i, 1));
-		if(&(options_array[i]) == NULL){
-			fprintf(stderr, "bad split, break\n");
-			exit(1);
-		}
 		alloc_emuRes(&results_array[i], &options_array[i]);
 	}
 											
@@ -146,7 +138,7 @@ void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl
 	fptr = fopen("output.dat", "w");
 	for( i = 0; i < nsplits; i++){
 		dump_eopts(&options_array[i], fptr);
-		dump_emuresult(&results_array[i], fptr);
+		dump_emuresult(&options_array[i], fptr);
 	}
 	
 	for(i = 0; i < nsplits;i++){
@@ -154,8 +146,7 @@ void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl
 		free_eopts(&options_array[i]);
 	}
 	
-	free(results_array);
-	free(options_array);
+	
 }
 	
 	
@@ -242,7 +233,6 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_de
 		number_final_splits++;
 	}
 	// does the final winner run to the end of the total range?
-	// BAD JUMP -> from valgrind
 	if(gsl_matrix_get(local_split_ranges, ngoodregions, 1) != toplevel->range_max){
 		number_final_splits++;
 	}
@@ -312,13 +302,20 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_de
 				}
 				// do nothing otherwise
 			}
+
+
 			printf("split_count = %d\n", split_count);
 	}
+		
+			
+					
+									 
+
+			 
+
 	*nsplits = number_final_splits;
 	gsl_matrix_free(local_split_ranges);
 	free(region_list);
-	free_emuRes(&temp_result);
-
 	return(nregions);
 }
 
@@ -339,8 +336,6 @@ void dump_result(emuResult *res, FILE *fptr){
  */
 void split_region_options(eopts *result, eopts *parent, double lower, double upper){
 	assert(lower < upper);
-
-	//printf("%g..%g\n", lower, upper);
 	
 	int i,j;
 	int split_low = 0;// the index at which to split the model, training vecs etc
@@ -384,14 +379,13 @@ void split_region_options(eopts *result, eopts *parent, double lower, double upp
 		bad_flag = 1;
 	}
 	
-	
 	new_nmodel_points = (split_high - split_low);
 
-	/*if(new_nmodel_points < min_model_points){
+	if(new_nmodel_points < min_model_points){
 		fprintf(stderr, "bad split, not enough new points\n");
 		//exit(1);
 		bad_flag = 1;
-	} */
+	}
 	
 	if(bad_flag != 1){
 		// set everything up
