@@ -24,6 +24,8 @@ void read_input_from_file(char* filename, eopts* options);
 double score_region(emuResult *res);
 int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_depth, int min_points, gsl_rng* random_number);
 void print_splits(gsl_matrix* splits, int n);
+void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * local_split_ranges, eopts* toplevel);
+
 /* typedef struct emuResult{ */
 /* 	int nemu_points; */
 /* 	int nparams; */
@@ -92,8 +94,8 @@ int main (void){
 
 	process_input_data(input_data, &the_options);
 
-	print_matrix(the_options.xmodel, number_lines, 1);
-	vector_print(the_options.training, number_lines); 
+	//print_matrix(the_options.xmodel, number_lines, 1);
+	//vector_print(the_options.training, number_lines); 
 	
 	nregions = smasher(&split_result, &nsplits, &the_options, 1, 1, random_number);
 	printf("found %d region(s)\n", nregions);
@@ -101,11 +103,12 @@ int main (void){
  
 	print_splits(split_result, nsplits);
 
-	process_splits(split_result, nsplits, &the_options);
+	process_splits(split_result, nsplits, &the_options, random_number);
 
 
 	//fclose(fptr);
 	gsl_rng_free(random_number);
+	gsl_matrix_free(split_result);
 	free_eopts(&the_options);
 	free_emuRes(&wholeThing);
 	
@@ -125,6 +128,10 @@ void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl
 	// make the new options
 	for(i = 0; i < nsplits;i++){
 		split_region_options(&options_array[i], the_options, gsl_matrix_get(the_splits, i, 0), gsl_matrix_get(the_splits, i, 1));
+		if(&(options_array[i])==NULL){
+			fprintf(stderr, "bad split\n");
+			exit(1);
+		}
 		alloc_emuRes(&results_array[i], &options_array[i]);
 	}
 											
@@ -138,7 +145,7 @@ void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl
 	fptr = fopen("output.dat", "w");
 	for( i = 0; i < nsplits; i++){
 		dump_eopts(&options_array[i], fptr);
-		dump_emuresult(&options_array[i], fptr);
+		dump_emuresult(&results_array[i], fptr);
 	}
 	
 	for(i = 0; i < nsplits;i++){
@@ -146,7 +153,8 @@ void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl
 		free_eopts(&options_array[i]);
 	}
 	
-	
+	free(results_array);
+	free(options_array);
 }
 	
 	
@@ -178,7 +186,6 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_de
 	int i;
 	emuResult temp_result;
 	region* region_list;
-	int split_count = 0;
 	int nregions;
 	int ngoodregions = 0;
 	int number_final_splits = 0;
@@ -203,7 +210,7 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_de
 	// sort the regions on length, descending order
 	// actually don't this messes up things afterwards
 	//qsort(region_list, nregions, sizeof(region), (void*)compare_regions);
-	
+
 	for(i = 0; i < nregions;i++){
 		assign_model_point(toplevel, &(region_list[i]));
 		if(region_list[i].model_x_span > min_model_points){
@@ -248,45 +255,48 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_de
 	printf("number_final_splits %d\n", number_final_splits);
 	*split_ranges = gsl_matrix_alloc(number_final_splits, 2);
 	
-/* 	// now allocate the ranges properly */
-/* 	// do the zero */
-/* 	gsl_matrix_set(split_ranges, 0, 0, toplevel->range_min); */
-/* 	// is there a gap? */
-/* 	if(gsl_matrix_get(local_split_ranges, 0, 0) > toplevel->range_min){ */
-/* 		// yes there is, the first split doesn't start at the min of the range */
-/* 		gsl_matrix_set(split_ranges, 0, 1, gsl_matrix_get(local_split_ranges, 0, 0)); */
-/* 		split_count++; */
-/* 	} */
-	
+	fill_split_ranges(*split_ranges, ngoodregions, local_split_ranges, toplevel);
 
-	
+	*nsplits = number_final_splits;
+	gsl_matrix_free(local_split_ranges);
+	free(region_list);
+	free_emuRes(&temp_result);
+	return(nregions);
+}
+
+
+//!  transforms local_split_ranges, the set of ranges with gaps into split_ranges the continuous set of ranges
+void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * local_split_ranges, eopts* toplevel){
+	int i;
+	int split_count =0;
+
 	// start from 0 
 	for(i = 0; i < ngoodregions; i++){
 		if(i == 0){
 			//printf("first!\n");
-			gsl_matrix_set(*split_ranges, 0,0, toplevel->range_min);
+			gsl_matrix_set(split_ranges, 0,0, toplevel->range_min);
 			if(gsl_matrix_get(local_split_ranges, 0, 0) == toplevel->range_min){				
 				// there is no gap
 				//printf("no gap\n");
-				gsl_matrix_set(*split_ranges,0, 1, gsl_matrix_get(local_split_ranges, 0, 1));
+				gsl_matrix_set(split_ranges,0, 1, gsl_matrix_get(local_split_ranges, 0, 1));
 				split_count++;
 			} else {
 				// there is a gap
 				//printf("initial gap\n");
-				gsl_matrix_set(*split_ranges, 0,1, gsl_matrix_get(local_split_ranges, 0, 0));
+				gsl_matrix_set(split_ranges, 0,1, gsl_matrix_get(local_split_ranges, 0, 0));
 				split_count++;
 			}
 		}
 		//printf("middling: ");
 			// now add the winner
-			gsl_matrix_set(*split_ranges, split_count, 0, gsl_matrix_get(local_split_ranges, i, 0));
-			gsl_matrix_set(*split_ranges, split_count, 1, gsl_matrix_get(local_split_ranges, i, 1));
+			gsl_matrix_set(split_ranges, split_count, 0, gsl_matrix_get(local_split_ranges, i, 0));
+			gsl_matrix_set(split_ranges, split_count, 1, gsl_matrix_get(local_split_ranges, i, 1));
 			split_count++;
 			// now we have to add a blank again
 			if((i < ngoodregions -1) && (gsl_matrix_get(local_split_ranges, i+1, 0) > gsl_matrix_get(local_split_ranges, i, 1))){
 				// there is another gap!
-				gsl_matrix_set(*split_ranges, split_count+1,  0, gsl_matrix_get(local_split_ranges, i, 1));
-				gsl_matrix_set(*split_ranges, split_count+1,  1, gsl_matrix_get(local_split_ranges, i+1, 1));
+				gsl_matrix_set(split_ranges, split_count+1,  0, gsl_matrix_get(local_split_ranges, i, 1));
+				gsl_matrix_set(split_ranges, split_count+1,  1, gsl_matrix_get(local_split_ranges, i+1, 1));
 				split_count++;
 			}
 		
@@ -296,8 +306,8 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_de
 				if(gsl_matrix_get(local_split_ranges, i, 1) < toplevel->range_max){
 					// there is a gap before the end
 					//printf("final one\n");
-					gsl_matrix_set(*split_ranges, split_count, 0, gsl_matrix_get(local_split_ranges, i, 1));
-					gsl_matrix_set(*split_ranges, split_count, 1, toplevel->range_max);
+					gsl_matrix_set(split_ranges, split_count, 0, gsl_matrix_get(local_split_ranges, i, 1));
+					gsl_matrix_set(split_ranges, split_count, 1, toplevel->range_max);
 					split_count++;
 				}
 				// do nothing otherwise
@@ -308,15 +318,7 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_de
 	}
 		
 			
-					
-									 
 
-			 
-
-	*nsplits = number_final_splits;
-	gsl_matrix_free(local_split_ranges);
-	free(region_list);
-	return(nregions);
 }
 
 void dump_result(emuResult *res, FILE *fptr){
@@ -381,11 +383,11 @@ void split_region_options(eopts *result, eopts *parent, double lower, double upp
 	
 	new_nmodel_points = (split_high - split_low);
 
-	if(new_nmodel_points < min_model_points){
+	/*if(new_nmodel_points < min_model_points){
 		fprintf(stderr, "bad split, not enough new points\n");
 		//exit(1);
 		bad_flag = 1;
-	}
+		}*/
 	
 	if(bad_flag != 1){
 		// set everything up
