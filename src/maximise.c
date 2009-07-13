@@ -225,7 +225,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	
 	assert(max_tries > 0);
 	assert(nsteps >0);
-	assert(the_answer->size == nthetas);
+	assert(the_answer->size == (unsigned)nthetas);
 	
 
 
@@ -299,7 +299,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 
 
 			// now we have to sort the evallist by value
-			qsort(evalList, nverticies, sizeof(evalunit), (void*)compare_evals);
+			qsort(evalList, nverticies, sizeof(evalunit), (__compar_fn_t)compare_evals);
 		
 			/*printf("EVALS:\t");
 			for(i = 0; i < nverticies; i++){ printf("%g\t", evalList[i].value);} 

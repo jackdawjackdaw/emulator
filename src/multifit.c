@@ -391,7 +391,6 @@ void create_clusters_1d(emuResult *res, region** region_list, int* number_region
  * a good way to reject a split methinks
  */
 void assign_model_point(eopts* regionOpts, region* the_region){
-	int i;
 	double region_min = the_region->emu_x_start;
 	double region_max = the_region->emu_x_stop;
 	double temp_val;

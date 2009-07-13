@@ -22,9 +22,10 @@ void free_emuRes(emuResult *thing);
 void split_region_options(eopts *result, eopts *parent, double lower, double upper);
 void read_input_from_file(char* filename, eopts* options);
 double score_region(emuResult *res);
-int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_depth, int min_points, gsl_rng* random_number);
+int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int min_points, gsl_rng* random_number);
 void print_splits(gsl_matrix* splits, int n);
 void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * local_split_ranges, eopts* toplevel);
+void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl_rng* random_number);
 
 /* typedef struct emuResult{ */
 /* 	int nemu_points; */
@@ -56,8 +57,6 @@ void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * 
 
 
 int main (void){
-	int i;
-	FILE *fptr;
 	char inputfile[128];
 	eopts the_options;
 	char** input_data;
@@ -117,7 +116,7 @@ int main (void){
 	//print_matrix(the_options.xmodel, number_lines, 1);
 	//vector_print(the_options.training, number_lines); 
 	
-	nregions = smasher(&split_result, &nsplits, &the_options, 1, 1, random_number);
+	nregions = smasher(&split_result, &nsplits, &the_options, 1, random_number);
 	printf("found %d region(s)\n", nregions);
 	printf("made %d splits\n", nsplits);
  
@@ -217,7 +216,7 @@ int compare_regions(const region* a, const region* b){
  * @random_number -> a gsl_rng used to evaluate regions
  *
  */
-int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int max_depth, int min_points, gsl_rng* random_number){
+int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int min_points, gsl_rng* random_number){
 	int i;
 	emuResult temp_result;
 	region* region_list;
@@ -398,7 +397,7 @@ void split_region_options(eopts *result, eopts *parent, double lower, double upp
 	int split_high=  parent->nmodel_points;
 	int new_nemu_points = 0;
 	int new_nmodel_points = 0;
-	int min_model_points = 3;
+	//int min_model_points = 3; // don't need this, already set by the clustering alg
 	int offset = 0;
 	int bad_flag = 0;
 	double temp_val;
@@ -524,7 +523,6 @@ void process_input_data(char** input_data, eopts* the_options){
 	int i,j;
 	char* split_string;
 	double temp_value;
-	double junk;
 	
 	assert(the_options->nmodel_points > 0); 
 	// first allocate the buffers in options

@@ -133,7 +133,7 @@ void in_vector(FILE *fptr, double *vec){ // reads in a 3d vector
 }
 
 void in_blob(FILE *fptr, int n_things, double *vec){ // reads in n_things doubles
-	if (fread((void*) vec, sizeof(double), n_things, fptr) != n_things){
+	if (fread((void*) vec, sizeof(double), n_things, fptr) != (unsigned)n_things){
 		error( "in_blob: fread_failed!\n");
 	}
 }
