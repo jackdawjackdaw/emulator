@@ -27,7 +27,7 @@ test-resize:
 	$(CC) test-resize.c -o test-resize.out $(CFLAGS)
 
 array-test:
-	$(CC) array-test.c -o array-test.out $(CFLAGS)
+	$(CC) array-test.c -o array-test.out $(CFLAGS) $(LDFLAGS)
 
 list-test:
 	$(CC) list-test.c -o list-test.out $(CFLAGS)

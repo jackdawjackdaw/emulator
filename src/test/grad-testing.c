@@ -75,7 +75,7 @@ int main (void){
 	
 	printf("NELDERMEAD METHOD\n");
 	// now do it again, but this time with neldermead
-	nelderMead(random_number, max_tries, number_steps, nelder_thetas, grad_ranges, xmodel_test, training_points, thetas, nmodel_points, nthetas, nparams);
+	nelderMead(random_number, max_tries, number_steps, nelder_thetas, grad_ranges, xmodel_test, training_points, nmodel_points, nthetas, nparams);
 	
 	printf("best thetas");
 	for(i = 0; i < nthetas; i++){
