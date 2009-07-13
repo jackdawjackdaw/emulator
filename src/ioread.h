@@ -6,8 +6,6 @@
 #include "string.h"
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
-#include "emulator.h"
-#include "maximise.h"
 #include "useful.h"
 
 

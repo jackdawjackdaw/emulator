@@ -1,18 +1,24 @@
-
 CC = gcc
 LDFLAGS = -lgsl -lgslcblas -lm
-CFLAGS = -O0 -Wall -g -pedantic -Wextra -std=gnu99
+CFLAGS = -O0 -Wall -g -pedantic -Wextra -std=gnu99 -I$(PWD)/libEmu
 #CFLAGS = -O3 -Wall
 TAGS = etags #for emacs
+LTOOL = libtool
+LINK = --mode=link gcc
 
-all: multidrive
 
+
+all: main multidrive
 
 multifit:
 	$(CC) -c multifit.c $(CFLAGS) $(LDFLAGS)
 
-multidrive: multifit emulator estimator maximise persist ioread useful
-	$(CC) multi-drive.c -o multi-drive.out estimator.o persist.o ioread.o useful.o emulator.o maximise.o multifit.o $(LDFLAGS) $(CFLAGS)
+multidrive: multifit  persist ioread useful libEmulator
+	$(LTOOL) $(LINK) multi-drive.c -o multi-drive.out ./libEmu/libEmu.la  persist.o ioread.o useful.o  multifit.o $(LDFLAGS) $(CFLAGS)
+
+
+libEmulator:
+	$(MAKE) -C libEmu
 
 persist:
 	$(CC) -c persist.c $(CFLAGS) $(LDFLAGS)
@@ -27,26 +33,17 @@ tags:
 	$(TAGS) emulator.c 
 	$(TAGS) --append estimator.c
 
-maximise: maximise.c maximise.h
-	$(CC) -c maximise.c $(LDFLAGS) $(CFLAGS)
-
 gradtest: maximise estimator emulator
 	$(CC) grad-testing.c maximise.o estimator.o emulator.o -o grad-test.out $(LDFLAGS) $(CFLAGS)
 
-estimator: estimator.c estimator.h
-	$(CC) -c estimator.c $(LDFLAGS) $(CFLAGS)
-
-emulator: emulator.c emulator.h
-	$(CC) -c emulator.c $(LDFLAGS) $(CFLAGS)
-
-testing: emulator 
+testing:  
 	$(CC) testing.c -o testing.out emulator.o $(LDFLAGS) $(CFLAGS)
 
-estimatortest:  estimator emulator
+estimatortest:  
 	$(CC) estimator-test.c -o estimator-test.out estimator.o emulator.o $(LDFLAGS) $(CFLAGS)
 
-main: emulator estimator maximise ioread persist useful
-	$(CC) main.c -o emulator.out  estimator.o emulator.o maximise.o ioread.o persist.o useful.o $(LDFLAGS) $(CFLAGS)
+main:  ioread persist useful libEmulator
+	$(LTOOL) $(LINK) main.c -o emulator.out  ./libEmu/libEmu.la ioread.o persist.o useful.o $(LDFLAGS) $(CFLAGS)
 
 
 clean:
