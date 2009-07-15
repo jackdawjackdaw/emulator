@@ -70,27 +70,19 @@ int main (void){
 	int nregions;
 	gsl_rng *random_number;
 	const gsl_rng_type *T;
+	FILE *fptr;
 
+	// used if there is only to be one MEGA region
 	emuResult wholeThing;
-	/*emuResult res_dumpTest;
-	emuResult region1;
-	emuResult region2;
-	emuResult region3;
-
-	eopts opts_dumpTest;
-	eopts region_1_options;
-	eopts region_2_options;
-	eopts region_3_options;*/
-
-
+	
 
 	int nsplits = 0;
 	gsl_matrix *split_result;
 
 	// hand pick the input
 	//sprintf(inputfile, "../model-cut.dat");
-	sprintf(inputfile, "breaksit.dat");
-	//sprintf(inputfile, "STDIN");
+	//sprintf(inputfile, "tests/reflected.dat");
+	sprintf(inputfile, "STDIN");
 
 	T = gsl_rng_default;
 	random_number = gsl_rng_alloc(T);
@@ -116,7 +108,7 @@ int main (void){
 	
 	the_options.nmodel_points = number_lines;
 
-	alloc_emuRes(&wholeThing, &the_options);
+
 
 	process_input_data(input_data, &the_options);
 
@@ -126,21 +118,29 @@ int main (void){
 	//exit(1);
 
 
-	nregions = smasher(&split_result, &nsplits, &the_options, 1, random_number);
-	printf("found %d region(s)\n", nregions);
-	printf("made %d splits\n", nsplits);
- 
-	print_splits(split_result, nsplits);
+	nregions = smasher(&temp_result, &nsplits, &the_options, 1, random_number);
 
-	process_splits(split_result, nsplits, &the_options, random_number);
+	if(nregions == 1){
+		// only one region,don't need to split
+		printf("only one region\n");
+		fptr = fopen("output/wholeThing.txt", "w");
+		alloc_emuRes(&wholeThing, &the_options);
+		evaluate_region(&wholeThing, &the_options, random_number);
+		dump_result(&wholeThing, fptr);		
+		fclose(fptr);
+	} else {
+		// lots of regions
+		printf("found %d region(s)\n", nregions);
+		printf("made %d splits\n", nsplits); 
+		print_splits(split_result, nsplits);
+		process_splits(split_result, nsplits, &the_options, random_number);
+		gsl_matrix_free(split_result);
+	}
 
 
-	//fclose(fptr);
 	gsl_rng_free(random_number);
-	gsl_matrix_free(split_result);
 	free_eopts(&the_options);
-	free_emuRes(&wholeThing);
-	
+	free_emuRes(&wholeThing);	
 	free_char_array(input_data, number_lines);
 	return(0);
 }
@@ -259,6 +259,7 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int min_po
 	int init_split_ranges_length = 10;
 	int split_ranges_length = init_split_ranges_length;
 	gsl_matrix *local_split_ranges; // we'll do the whole store and grow and then finish the final set
+	double toplevel_length = toplevel->range_max - toplevel->range_min;
 	
 	assert(min_model_points >0);
 
@@ -273,6 +274,16 @@ int smasher(gsl_matrix **split_ranges, int* nsplits, eopts* toplevel, int min_po
 		retval = 0;
 		return(retval);
 	}
+
+	// check to see if any of the regions span almost the entire toplevel, if so we should not split
+	for(i = 0; i < nregions; i++){
+		if ((region_list[i].emu_x_stop - region_list[i].emu_x_start)  > toplevel_length  * (5.0/6.0)){
+			fprintf(stderr, "region %d is 5/6 of whole thing, no point dividing\n", i);
+			retval = 1;
+			return(retval); // only 1 region, stop
+		}
+	}
+
 	
 	assert(nregions > 0);
 	// sort the regions on length, descending order
