@@ -32,7 +32,7 @@ char** unconstrained_read(char* filename, int* line_count_final){
 	char* is_end = 0;
 	int buffer_size;
 
-	if(strcmp(filename, "stdin") == 0){
+	if((strcmp(filename, "stdin") == 0) || (strcmp(filename, "STDIN") == 0)){
 		fptr = stdin;
 	} else{
 		sprintf(buffer, "%s", filename);

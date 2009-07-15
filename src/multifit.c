@@ -363,7 +363,8 @@ void create_clusters_1d(emuResult *res, region** region_list, int* number_region
 	make_diff(res, the_goodness, diff_goodness); // take a crappy derivative of the goodness
 	prepare_cluster(res, diff_goodness, cluster, diff_thresh); // lump regions which change slowly enough together
 
-	//DEBUG checkup(res, the_goodness, diff_goodness, cluster); // print out what you've got so far
+	//DEBUG 
+	checkup(res, the_goodness, diff_goodness, cluster); // print out what you've got so far
 	assign_clusters(res, cluster, cluster_min, &local_region_list, &number_clusters);
 	
 	for(i = 0; i < number_clusters; i++){

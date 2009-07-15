@@ -8,13 +8,13 @@ LINK = --mode=link gcc
 
 
 
-all: main multidrive
+all: multidrive
 
 multifit:
 	$(CC) -c multifit.c $(CFLAGS) $(LDFLAGS)
 
-multidrive: multifit  persist ioread useful libEmulator
-	$(LTOOL) $(LINK) multi-drive.c -o multi-drive.out ./libEmu/libEmu.la  persist.o ioread.o useful.o  multifit.o $(LDFLAGS) $(CFLAGS)
+multidrive: multifit  persist ioread useful
+	$(LTOOL) $(LINK) multi-drive.c -o ../multi-drive.out ./libEmu/libEmu.la  persist.o ioread.o useful.o  multifit.o $(LDFLAGS) $(CFLAGS)
 
 libEmulator:
 	$(MAKE) -C libEmu
