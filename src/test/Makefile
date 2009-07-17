@@ -13,14 +13,14 @@ all: gradtest testing estimatortest test-resize list-test array-test
 libEmulator:
 	$(MAKE) -C ../libEmu
 
-gradtest: libEmulator
+gradtest: 
 	$(LTOOL) $(LINK) grad-testing.c $(LIBEMU) -o grad-test.out $(LDFLAGS) $(CFLAGS)
 
 ## this is a gsl test mainly
-testing:  libEmulator
+testing:  
 	$(LTOOL) $(LINK) testing.c $(LIBEMU) -o testingGSL.out  $(LDFLAGS) $(CFLAGS)
 
-estimatortest:  libEmulator
+estimatortest:  
 	$(LTOOL) $(LINK) estimator-test.c -o estimator-test.out $(LIBEMU) $(LDFLAGS) $(CFLAGS)
 
 test-resize:

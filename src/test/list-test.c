@@ -1,6 +1,31 @@
 #include "stdio.h"
 #include "stdlib.h"
 
+/**
+ * have another look at search.h
+ * this implements a binary search tree, 
+ * and includes fns for building, stripping down and various traversal algs
+ * the breakdown of regions can of course be rep'd as a bin search tree 
+ * sorted on start of region
+ *
+ * root -> region1 (0,0)
+ *      |
+ *      -> node1(0.1, 1) -> region2 (0.1, 0.5)
+ *                       |
+ *                       -> node2(0.5, 1) -> region3(0.5, 0.8)
+ *                       |
+ *                       -> region4(0.8, 1.0)
+ *                       
+ * 
+ * This is not quite as easy to deal with an unsorted linked list
+ * head-> region1 -> region3 -> region2 -> region4 -> end
+ * 
+ * But it's implicitly sorted by left-rightness so it makes postprocessing easier
+ * otherwise we have to sort the linked list , or more simply transfer the final
+ * list into a fixed size array and then qsort on that. 
+ *
+ */
+
 //! for a linked list of regions
 typedef struct region{
 	int region_start;
@@ -56,7 +81,7 @@ void append_region(region x, list* the_list){
 	while (temp->next != NULL){
 		temp = temp->next;
 	} 
-	// now it's the last one
+ 	// now it's the last one
 	tailval = get_node();
 	tailval->next = NULL;
 	tailval->the_region = x;
@@ -75,9 +100,10 @@ region tail_pull(list* the_list){
 	// get the last region
 	temp_region = temp->next->the_region;
 	// tell this penulatimate region it's now the end
-	temp->next = NULL;
+
 	// ditch the end
 	return_node(temp->next->next);
+	temp->next = NULL;
 	return(temp_region);
 }
 
@@ -161,7 +187,7 @@ int main (void){
 
 	walknprint(test, lptr);
 
-	printf("list is %d long\n", get_length(test));
+ 	printf("list is %d long\n", get_length(test));
 	
 	//printf("found important: 0x%x %d %d\n", lptr, lptr->the_region.region_start, lptr->the_region.region_stop);
 
