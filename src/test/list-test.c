@@ -25,12 +25,13 @@ region top_region(list* the_list);
 void remove_list(list* the_list);
 list* get_node();
 void return_node(list* the_node);
-
+void append_region(region x, list* the_list);
 
 list *create_list(void){
 	list* l;
 	l = get_node();
 	l->next = NULL;
+	l->prev = NULL;
 	return(l);
 }
 
@@ -46,6 +47,51 @@ void push_region( region x, list* the_list){
 	temp->next = the_list->next;
 	the_list->next = temp;
 }
+
+// add to the tail
+void append_region(region x, list* the_list){
+	list* temp;
+	list* tailval;
+	temp = the_list->next;
+	while (temp->next != NULL){
+		temp = temp->next;
+	} 
+	// now it's the last one
+	tailval = get_node();
+	tailval->next = NULL;
+	tailval->the_region = x;
+	temp->next = tailval;
+}
+	
+// remove from tail
+region tail_pull(list* the_list){
+	list* temp;
+	region temp_region;
+	temp = the_list->next;
+	// while you're not the one before the end
+	while (temp->next->next != NULL){
+		temp = temp->next;
+	}
+	// get the last region
+	temp_region = temp->next->the_region;
+	// tell this penulatimate region it's now the end
+	temp->next = NULL;
+	// ditch the end
+	return_node(temp->next->next);
+	return(temp_region);
+}
+
+int get_length(list* the_list){
+	list *temp;
+	int count = 0;
+	temp = the_list;
+	while (temp->next != NULL){
+		temp = temp->next;
+		count++;
+	}
+	return(count);
+}
+
 
 region pop_region(list* the_list){
 	list* temp;
@@ -106,14 +152,22 @@ int main (void){
 		temp_region.region_stop = i+1;	
 		push_region(temp_region, test);
 	}
+	
+	temp_region.region_start = 100;
+	temp_region.region_stop = 200;
+	append_region(temp_region, test);
 
-	printf("top->%d %d\n", top_region(test).region_start, top_region(test).region_stop);
+	//printf("top->%d %d\n", top_region(test).region_start, top_region(test).region_stop);
 
 	walknprint(test, lptr);
+
+	printf("list is %d long\n", get_length(test));
 	
-	printf("found important: 0x%x %d %d\n", lptr, lptr->the_region.region_start, lptr->the_region.region_stop);
+	//printf("found important: 0x%x %d %d\n", lptr, lptr->the_region.region_start, lptr->the_region.region_stop);
 
-
+	temp_region = tail_pull(test);
+	printf("pulled tail: %d %d\n", temp_region.region_start, temp_region.region_stop);
+	
 
 	for(i = 0; i < 10; i++){
 		temp_region = pop_region(test);
