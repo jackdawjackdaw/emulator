@@ -66,6 +66,14 @@ double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nth
 		r_temp = r_temp * r_temp; 
 		// gaussian term
 		// the type coersion here is VERY bad, if you use a rational 1/2 then death
+		
+		/**
+		 * 
+		 * going to need to change the power of the covariance fn to something 
+		 * that isn't 2. make sure to carry this through also.
+		 *
+		 */			 
+		
 		covariance += exp((-1.0/2.0)*((xm_temp-xn_temp)*(xm_temp-xn_temp))/(r_temp));
 		//DEBUGprintf("%g\n", covariance);
 		/*
