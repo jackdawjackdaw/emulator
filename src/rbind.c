@@ -1,8 +1,8 @@
-#include "emulator.h"
-#include "estimator.h"
-#include "maximise.h"
-#include "../multifit.h"
-#include "../useful.h"
+#include "libEmu/emulator.h"
+#include "libEmu/estimator.h"
+#include "libEmu/maximise.h"
+#include "multifit.h"
+#include "useful.h"
 
 /**
  * just enough setup and teardown to call the emulator directly from R
@@ -16,7 +16,7 @@
  * as such anything which is canonically a 2d array (such as xmodel) will be passed 
  * in and out as a flat vector.
  */
-void callEmulator(double* xmodel, int* nparams_in,  double* training, int *nmodelpts, int* nthetas_in, double* final_emulated_x, int *nemupts_in, double* final_emulated_y, double* final_emulated_variance , double* range_min_in, double* range_max_in ){
+void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int *nmodelpts, int* nthetas_in, double* final_emulated_x, int *nemupts_in, double* final_emulated_y, double* final_emulated_variance , double* range_min_in, double* range_max_in ){
 	int i, j;
 	int nmodel_points = *nmodelpts;
 	int nparams = *nparams_in;
@@ -37,21 +37,21 @@ void callEmulator(double* xmodel, int* nparams_in,  double* training, int *nmode
 	eopts theOptions;
 
 	// setup the rng
-	T = gsl_rng_default;
-	random_number = gsl_rng_alloc(T);
+	rng_type = gsl_rng_default;
+	random = gsl_rng_alloc(rng_type);
 	gsl_rng_set(random, get_seed());
 
 	// fill in xmodel 
 	// you have to do this to new_x at the end
 	for(j=0; j < nparams; j++){
-		for(i = 0; i < nmodelpts; i++){
-			gsl_matrix_set(xmodel, i, j, xmodel[i+j*nmodelpts]);
+		for(i = 0; i < nmodel_points; i++){
+			gsl_matrix_set(xmodel, i, j, xmodel_in[i+j*nmodel_points]);
 		}
 	}
 	// fill in the training vec
-	for(i = 0; i < nmodelpts; i++){
-		gsl_vector_set(training_vec, training[i]);
- 
+	for(i = 0; i < nmodel_points; i++){
+		gsl_vector_set(training_vec, i, training_in[i]);
+	}
 
 	// fill in the options
 	theOptions.nmodel_points = nmodel_points;
@@ -68,12 +68,14 @@ void callEmulator(double* xmodel, int* nparams_in,  double* training, int *nmode
 	theResult.nparams = nparams;
 	theResult.new_x = new_x;
 	theResult.new_mean = emulated_y; 
-	theResult.new_var = emualted_var;
+	theResult.new_var = emulated_variance;
+
+
 
 
 	// actually do the emulation, this function 
 	// can be found in ../multifit.c
-	evaluateRegion(&theResult, &theOptions, random);
+	evaluate_region(&theResult, &theOptions, random);
 	
 
 	// fill in emulated_y, emulated_variance
@@ -81,10 +83,11 @@ void callEmulator(double* xmodel, int* nparams_in,  double* training, int *nmode
 		final_emulated_y[i] = gsl_vector_get(emulated_y, i);
 		final_emulated_variance[i] = gsl_vector_get(emulated_variance, i);
 	}
+
 	// fill in final emulated_x
 	for(j = 0; j < nparams; j++){
-		for(i = 0; i < nmodelpts; i++){
-			final_emulated_x[i+j*nmodelpts] = gsl_matrix_get(new_x, i, j);
+		for(i = 0; i < nmodel_points; i++){
+			final_emulated_x[i+j*nmodel_points] = gsl_matrix_get(new_x, i, j);
 		}
 	}
 
@@ -96,4 +99,5 @@ void callEmulator(double* xmodel, int* nparams_in,  double* training, int *nmode
 	gsl_vector_free(thetas);
 	gsl_rng_free(random);
 }
+
 	

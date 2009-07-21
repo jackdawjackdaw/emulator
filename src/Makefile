@@ -1,6 +1,6 @@
 CC = gcc
 LDFLAGS = -lgsl -lgslcblas -lm
-CFLAGS = -O0 -Wall -g -pedantic -Wextra -std=gnu99 -I$(PWD)/libEmu
+CFLAGS = -O0 -Wall -g -pedantic -Wextra -std=gnu99 -I$(PWD)/libEmu -fPIC	
 #CFLAGS = -O3 -Wall
 TAGS = etags #for emacs
 LTOOL = libtool
@@ -15,6 +15,13 @@ multifit:
 
 multidrive: multifit  persist ioread useful
 	$(LTOOL) $(LINK) multi-drive.c -o ../multi-drive.out ./libEmu/libEmu.la  persist.o ioread.o useful.o  multifit.o $(LDFLAGS) $(CFLAGS)
+
+# sorry libtool doing this one by hand...
+rbind: 
+	$(CC) -c rbind.c $(CFLAGS)
+
+libRbind: rbind useful multifit
+	$(CC) -shared $(CFLAGS) -o libRbind.so rbind.o useful.o multifit.o $(LDFLAGS) ./libEmu/.libs/libEmu.a
 
 libEmulator:
 	$(MAKE) -C libEmu
