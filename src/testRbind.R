@@ -11,6 +11,8 @@ model <- read.table("../model-cut.dat")
 
 nmodelpts <- dim(model)[1]
 
+# i don't quite understand how to push the results together into a data
+# frame i should check on this.
 callcode <- function(){
   .C("callEmulator",
      as.double(model[,1]),
@@ -21,9 +23,9 @@ callcode <- function(){
      finalx = double(nemupts*nparams),
      as.integer(nemupts),
      finaly = double(nemupts),
-     finalemu = double(nemupts),
+     finalvar = double(nemupts),
      as.double(rangemin),
      as.double(rangemax))
-}
+} 
    
    
