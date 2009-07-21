@@ -8,7 +8,7 @@ LINK = --mode=link gcc
 LIBEMU = ../libEmu/libEmu.la
 
 
-all: gradtest testing estimatortest test-resize list-test array-test
+all: gradtest testing estimatortest test-resize list-test array-test testRbind
 
 libEmulator:
 	$(MAKE) -C ../libEmu
@@ -31,3 +31,6 @@ array-test:
 
 list-test:
 	$(CC) list-test.c -o list-test.out $(CFLAGS)
+
+testRbind:
+	$(LTOOL) $(LINK) testRbind.c -o testRbind.out ../libRbind.so ../ioread.o ../useful.o $(LIBEMU) $(LDFLAGS) $(CFLAGS)

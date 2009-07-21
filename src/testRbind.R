@@ -2,14 +2,14 @@ dyn.load("libRbind.so")
 
 nparams <- 1
 nthetas <- 4
-nmodelpts <- 10
+#nmodelpts <- 10
 nemupts <- 30
 rangemin <- 0.0
 rangemax <- 4.0
 
-model <- read.table("../model.dat")
+model <- read.table("../model-cut.dat")
 
-
+nmodelpts <- dim(model)[1]
 
 callcode <- function(){
   .C("callEmulator",
