@@ -33,6 +33,7 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
 
 
 //! calculate the covariance between a set of input points
+#DEFINE ALPHA 1.9
 /** 
  * calculate the covariance between the two given vectors (xm, xn) 
  * where xm and xn are vectors of length nparams and their elements represent the various
@@ -40,17 +41,29 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
  * The usual way to get xm and xn is to take a row slice from the model_points matrix representing a 
  * single evaluation of the model with the parameters. 
  * 
+ *
  * the hyperparameters are used in this function, 
  * theta0 -> amplitude of the covariance gaussian
- * theta1 -> offset from 0 
- * theta2 -> the nugget (only for diagonal terms) 
- * theta3 (and higher) -> scale parameter for the gaussian
+ * theta1 -> the nugget (only for diagonal terms) 
+ * theta2 (and higher) -> scale parameter for the gaussian
  *
  * @param thetas -> hyperparameters 
  * @param nparams -> the legnth of xm and xn
  * @return the covariance
  * @param thetas -> vector of the hyperparameters of the process. 
  * @param nthetas -> length of thetas
+ *
+ * Updated 21 July 09
+ * Changed the covariance function from being a pure gaussian to exp(-(x-y)^alpha)  
+ * where alpha should be something on the range [1..2] and is set by the above #define
+ * In lit (o'hagan) it's suggested that one might actually optimise for alpha also.
+ * 
+ * Also removed what was theta2, the offset term. This is suspect (wolpert)
+ * 
+ * Using the neldermead optimisation, this function is all you need to change
+ * to use the grad-desc type methods which rely on the derivative of C we need 
+ * to adjust some of the calls there. 
+ *
  */
 double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
 	// calc the covariance for a given set of input points
@@ -62,19 +75,10 @@ double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nth
 	for(i = 0; i < nparams; i++){
 		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
 		xn_temp = gsl_vector_get(xn, i);
-		r_temp = gsl_vector_get(thetas, i+3);
-		r_temp = r_temp * r_temp; 
-		// gaussian term
-		// the type coersion here is VERY bad, if you use a rational 1/2 then death
-		
-		/**
-		 * 
-		 * going to need to change the power of the covariance fn to something 
-		 * that isn't 2. make sure to carry this through also.
-		 *
-		 */			 
-		
-		covariance += exp((-1.0/2.0)*((xm_temp-xn_temp)*(xm_temp-xn_temp))/(r_temp));
+		r_temp = gsl_vector_get(thetas, i+2);
+		r_temp = pow(r_temp , ALPHA); 
+		// gaussian term				
+		covariance += exp((-1.0/2.0)*pow(xm_temp-xn_temp, ALPHA)/(r_temp));
 		//DEBUGprintf("%g\n", covariance);
 		/*
 		 * this is slightly dangerous float comparison
@@ -83,7 +87,9 @@ double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nth
 			truecount++; 		
 		}
 	}
-	covariance = covariance * gsl_vector_get(thetas,0) + gsl_vector_get(thetas,1);
+	// get rid of the offset it doesn't make sense
+	//covariance = covariance * gsl_vector_get(thetas,0) + gsl_vector_get(thetas,1);
+	covariance = covariance*gsl_vector_get(thetas, 0);
 
 	/** 
 	 * the nugget is only added to the diagonal covariance terms,
