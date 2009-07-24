@@ -32,6 +32,14 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
 }
 
 
+//! wrapper fn, calls the appropriate covariance. Change this by hand!
+/** 
+ * this is now just a wrapper which calls the appropriate covariance function
+ */
+double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+	return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
+}
+
 //! calculate the covariance between a set of input points
 #define ALPHA 1.999
 /** 
@@ -65,7 +73,7 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
  * to adjust some of the calls there. 
  *
  */
-double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
 	// calc the covariance for a given set of input points
 	int i, truecount  = 0;
 	double covariance = 0.0;
@@ -103,6 +111,59 @@ double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nth
 
 	return(covariance);
 }
+
+
+// this only works with exactly 4 thetas! irregardless of how many params there are
+//! calculates the covariance function using the matern metric. http://en.wikipedia.org/wiki/Mat%C3%A9rn_covariance_function
+/**
+ * you can switch which covariance function is called in covariance_fn
+ * 
+ * not well tested yet
+ */
+double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+	double covariance; 
+	int i, truecount = 0;
+	double xm_temp = 0.0;
+	double xn_temp = 0.0;
+	double distance = 0.0;
+	
+	assert(nthetas >= 4); // can throw away the upper ones no problem
+	
+	// map the thetas onto some local variables so the formula is more transparent
+	double sigsquared = gsl_vector_get(theta, 0);
+	double rho = gsl_vector_get(theta, 1);
+	double nu = gsl_vector_get(theta, 2);
+	double nugget = gsl_vector_get(theta,3);
+
+	// calculate the euclidean distance between the two points;
+	for(i = 0; i < nparams; i++){
+		xm_temp = gsl_vector_get(xm, i);
+		xn_temp = gsl_vector_get(xn, i);
+		// this is currently the distance squared
+		distance += pow(fabs(xm_temp - xn_temp), 2.0);
+		if(fabs(xm_temp - xn_temp) < 0.0000000000000001){
+			truecount++;
+		}
+			
+	}
+	// reduce back to the right dimensions
+	distance = sqrt(distance);
+	
+	covariance = sigsquared * (1.0/(gsl_sf_gamma(nu)*pow(2.0, nu - 1.0)));
+	covariance *= (2*sqrt(nu)*(distance/rho))*(gsl_sf_bessel_Knu(nu, (2*sqrt(nu)*(distance/rho))));
+
+	if(truecount == nparams){
+		covariance += nugget;
+	}
+
+	return(covariance);
+}
+		
+	
+	
+	
+
+
 
 //! calculate a vector of the covariances of a given point against all of the model points
 /**
