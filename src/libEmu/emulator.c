@@ -33,7 +33,7 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
 
 
 //! calculate the covariance between a set of input points
-#DEFINE ALPHA 1.9
+#define ALPHA 1.999
 /** 
  * calculate the covariance between the two given vectors (xm, xn) 
  * where xm and xn are vectors of length nparams and their elements represent the various
@@ -78,7 +78,7 @@ double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nth
 		r_temp = gsl_vector_get(thetas, i+2);
 		r_temp = pow(r_temp , ALPHA); 
 		// gaussian term				
-		covariance += exp((-1.0/2.0)*pow(xm_temp-xn_temp, ALPHA)/(r_temp));
+		covariance += exp((-1.0/2.0)*pow(fabs(xm_temp-xn_temp), ALPHA)/(r_temp));
 		//DEBUGprintf("%g\n", covariance);
 		/*
 		 * this is slightly dangerous float comparison

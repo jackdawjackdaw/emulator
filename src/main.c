@@ -27,7 +27,15 @@
  * 5 -> output
  */
 
-#define NTHETASDEFAULT 4
+
+/* 
+ * in the 1d case
+ *  now there are only 3 hyperparams by default 
+ *  -> vertical-scale theta0
+ *  -> nugget theta1
+ *  -> length-scale theta2...theta(Nparams-2⎈)
+ */
+#define NTHETASDEFAULT 3
 #define NPARAMSDEFAULT 1
 #define NEMULATEDEFAULT 20
 #define EMULATEMINDEFAULT 0.0
@@ -141,8 +149,8 @@ int main (int argc, char ** argv){
 
 	parse_arguments(argc, argv, &options);	
 
-	//sprintf(input_file, "%s",  "../tiny.dat");
-	sprintf(input_file, "%s",  "stdin");
+	sprintf(input_file, "%s",  "../short.dat");
+	//sprintf(input_file, "%s",  "stdin");
 
 	assert(options.nthetas >0);
 	assert(options.nparams >0);
@@ -303,9 +311,6 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 		gsl_matrix_set(grad_ranges, i, 0, 0.0);
 		gsl_matrix_set(grad_ranges, i, 1, 1.0);
 	}
-	
-	gsl_matrix_set(grad_ranges, 3, 0, 0.0);
-	gsl_matrix_set(grad_ranges, 3, 0, 0.4);
 	
 
 

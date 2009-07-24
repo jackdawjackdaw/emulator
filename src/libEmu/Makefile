@@ -1,7 +1,8 @@
 ## makefile for libEmu
 LTOOL = libtool
 COMPILE = --mode=compile gcc 
-CFLAGS = -O -c -O2 -Wextra -pedantic -std=c99 
+CFLAGS = -O -c -O2 -Wextra -pedantic -std=c99  
+CFLAGSDEBUG = -O -c -O0 -g 
 LFLAGS = -lgsl -lgslcblas -lm
 LINK = --mode=link gcc 
 

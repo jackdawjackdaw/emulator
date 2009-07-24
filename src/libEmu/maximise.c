@@ -588,6 +588,8 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	// make the covariance matrix 
 	// using the random initial conditions! (xold not thetas)
 	makeCovMatrix(covariance_matrix, xmodel, vertex, nmodel_points, nthetas, nparams);
+	//DEBUGprint_matrix(covariance_matrix, nmodel_points, nmodel_points);
+
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
@@ -597,6 +599,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
 	
 	the_likelyhood  = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, vertex, nmodel_points, nthetas, nparams);
+
 
 	if(isnan(the_likelyhood)){
 		fprintf(stderr, "the_likelyhood -> nan\n");

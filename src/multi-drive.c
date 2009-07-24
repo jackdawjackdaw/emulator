@@ -73,7 +73,8 @@ int main (void){
 	FILE *fptr;
 
 	// used if there is only to be one MEGA region
-	emuResult wholeThing;
+	emuResult whole_thing;
+	emuResult temp_result;
 	
 
 	int nsplits = 0;
@@ -92,11 +93,17 @@ int main (void){
 	// have to set these, can't be bothered to unpack the input data too much
 	// these are defaults
 	the_options.nparams = 1;
-	the_options.nthetas = 4;
+
+	/* 
+	 * in the 1d case
+	 *  now there are only 3 hyperparams by default 
+	 *  -> vertical-scale theta0
+	 *  -> nugget theta1
+	 *  -> length-scale theta2...theta(Nparams-2⎈)
+	 */
+	the_options.nthetas = 3;
 	the_options.nemu_points = 100; 
-	// these are now set by process_input_data
-	//the_options.range_min = 0.0;
-	//the_options.range_max = 4.0;
+
 
 	// we kind of have to hope that the inputfile is sorted, could sort it...
 	// have to free input data after this
@@ -108,25 +115,24 @@ int main (void){
 	
 	the_options.nmodel_points = number_lines;
 
-
-
 	process_input_data(input_data, &the_options);
 
 	print_matrix(the_options.xmodel, number_lines, 1);
 	vector_print(the_options.training, number_lines); 
 	
-	//exit(1);
 
 
-	nregions = smasher(&temp_result, &nsplits, &the_options, 1, random_number);
+	// split_result is a matrix of the splits, it's not a results struct
+	// this is bad naming on my part. 
+	nregions = smasher(&split_result, &nsplits, &the_options, 1, random_number);
 
 	if(nregions == 1){
 		// only one region,don't need to split
 		printf("only one region\n");
 		fptr = fopen("output/wholeThing.txt", "w");
-		alloc_emuRes(&wholeThing, &the_options);
-		evaluate_region(&wholeThing, &the_options, random_number);
-		dump_result(&wholeThing, fptr);		
+		alloc_emuRes(&whole_thing, &the_options);
+		evaluate_region(&whole_thing, &the_options, random_number);
+		dump_result(&whole_thing, fptr);		
 		fclose(fptr);
 	} else {
 		// lots of regions
@@ -140,7 +146,7 @@ int main (void){
 
 	gsl_rng_free(random_number);
 	free_eopts(&the_options);
-	free_emuRes(&wholeThing);	
+	free_emuRes(&whole_thing);	
 	free_char_array(input_data, number_lines);
 	return(0);
 }
