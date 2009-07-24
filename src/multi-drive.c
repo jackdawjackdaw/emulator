@@ -81,9 +81,9 @@ int main (void){
 	gsl_matrix *split_result;
 
 	// hand pick the input
-	//sprintf(inputfile, "../model-cut.dat");
+	sprintf(inputfile, "../model-cut.dat");
 	//sprintf(inputfile, "tests/reflected.dat");
-	sprintf(inputfile, "STDIN");
+	//sprintf(inputfile, "STDIN");
 
 	T = gsl_rng_default;
 	random_number = gsl_rng_alloc(T);
@@ -130,6 +130,10 @@ int main (void){
 		// only one region,don't need to split
 		printf("only one region\n");
 		fptr = fopen("output/wholeThing.txt", "w");
+		if(fptr == NULL){
+			fprintf(stderr, "couldn't open output file\n"); 
+			exit(1);
+		}
 		alloc_emuRes(&whole_thing, &the_options);
 		evaluate_region(&whole_thing, &the_options, random_number);
 		dump_result(&whole_thing, fptr);		
