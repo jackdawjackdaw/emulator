@@ -46,12 +46,10 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cinverse,  gsl_matrix *
 	gsl_vector *result_holder = gsl_vector_alloc(nmodel_points);
 	double log_det_c = log(det_cinverse);
 
-	if(log_det_c > 0.0){
-		// force postive
-		log_det_c = log_det_c *(-1);
-	}
+	log_det_c = fabs(log_det_c);
 
-	//printf("%g\n", log_det_c);
+
+	// DEBUG printf("lod_det_c:%g\n", log_det_c);
 	// the  log likelyhood is a given by
 	// L = (-1/2)*Log[Det[cinverse]]  - (1/2)*trainingvector.cinverse.trainingvector - (nmodel_points/2)*Log[2*Pi]
 	the_likelyhood += -(1.0/2.0)*log_det_c -  (nmodel_points/2.0)*log_2_pi;

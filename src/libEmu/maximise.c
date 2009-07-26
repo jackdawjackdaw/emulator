@@ -252,7 +252,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	gsl_matrix *new_verticies = gsl_matrix_alloc(nverticies, nthetas);
 	int last_vertex = nverticies -1; // since list starts from 0
 
-	double best_value = -50.0;
+	double best_value = -100.0;
 	double answer_likelyhood;
 	gsl_vector *best_vector = gsl_vector_alloc(nthetas);
 
@@ -261,6 +261,13 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	double evalContracted = 0.0;
 	double evalExtended = 0.0;
 	
+
+	FILE *comptr = fopen("com-vals.txt", "w");
+	if(comptr == NULL){ 
+		fprintf(stderr, "couldn't open comptr\n");
+		exit(1);
+	}
+
 	evalList = malloc(sizeof(evalunit)*nverticies);
 
 	
@@ -326,6 +333,13 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			// calculate the com of the simplex
 			// but we have to ignore the last point
 			calc_com(verticies, com, nverticies, nthetas);
+
+			// just for debugging realy
+			if( t % 10 == 0){
+				fprintf(comptr, "%g\n", evalLikelyhood(com, xmodel, trainingvector, nmodel_points, nthetas, nparams));
+				// i know this is baaad but...
+				fflush(comptr);
+			}
 			
 
 			//printf("COM IS\t");
@@ -433,12 +447,15 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 				}
 			}
 			
-			/*printf("EVALS:\t");
-			for(i = 0; i < nverticies; i++){ printf("%g\t", evalList[i].value);} 
-			printf("\n");		 */ // very verbose
+/* 			printf("EVALS:\t"); */
+/* 			for(i = 0; i < nverticies; i++){ printf("%g\t", evalList[i].value);}  */
+/* 			printf("\n");		  // very verbose */
+
 			if(test_ranges(verticies, nverticies, ranges,  nthetas) != 1){
 				// oh dear, gone out of range
-				// ANNOYING fprintf(stderr, "vertex fell out of ranges\n");
+				// ANNOYING 
+
+				//fprintf(stderr, "vertex fell out of ranges\n");
 				brokenflag = 1;
 				range_broke_count++;
 				break;
@@ -469,6 +486,9 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	if(range_broke_count > (int)(max_tries/2)){
 		fprintf(stderr, "evaluation fell out of range quite a lot, adjust the range matrix when calling this function\n");
 	}
+
+
+	fclose(comptr);
 
 	free(evalList);
 	gsl_vector_free(best_vector);
@@ -588,7 +608,8 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	// make the covariance matrix 
 	// using the random initial conditions! (xold not thetas)
 	makeCovMatrix(covariance_matrix, xmodel, vertex, nmodel_points, nthetas, nparams);
-	//DEBUGprint_matrix(covariance_matrix, nmodel_points, nmodel_points);
+	//DEBUG	print_matrix(covariance_matrix, nmodel_points, nmodel_points);
+
 
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
@@ -597,12 +618,24 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	gsl_matrix_memcpy(temp_matrix, cinverse);
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
-	
+	//debug vector_print(vertex, nthetas);
 	the_likelyhood  = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, vertex, nmodel_points, nthetas, nparams);
 
 
 	if(isnan(the_likelyhood)){
 		fprintf(stderr, "the_likelyhood -> nan\n");
+		print_matrix(covariance_matrix, nmodel_points, nmodel_points);
+		fprintf(stderr, "cinverse_det = %g\n", cinverse_det);
+		fprintf(stderr, "the_vertex = ");
+		vector_print(vertex, nthetas);
+		fprintf(stderr, "\n");
+		print_matrix(cinverse, nmodel_points, nmodel_points);
+		// crap out (this still leaks a LOT)
+		gsl_matrix_free(covariance_matrix);
+		gsl_matrix_free(cinverse);
+		gsl_matrix_free(temp_matrix);
+		gsl_permutation_free(c_LU_permutation);
+		exit(1);		
 	}
 	
 
@@ -610,6 +643,8 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	gsl_matrix_free(cinverse);
 	gsl_matrix_free(temp_matrix);
 	gsl_permutation_free(c_LU_permutation);
+
+
 	
 	return(the_likelyhood);
 }

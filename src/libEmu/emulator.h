@@ -7,6 +7,8 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h> 
+#include <gsl/gsl_sf.h>
+
 
 void print_matrix(gsl_matrix* m, int nx, int ny);
 double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);

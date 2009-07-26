@@ -35,9 +35,9 @@
  *  -> nugget theta1
  *  -> length-scale theta2...theta(Nparams-2⎈)
  */
-#define NTHETASDEFAULT 3
+#define NTHETASDEFAULT 4
 #define NPARAMSDEFAULT 1
-#define NEMULATEDEFAULT 20
+#define NEMULATEDEFAULT 60
 #define EMULATEMINDEFAULT 0.0
 #define EMULATEMAXDEFAULT 4.0
 
@@ -68,7 +68,7 @@ void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *op
 void print_usage(void){
 	printf("emulator\n");
 	printf("options are: \n");
-	printf("t->number of thetas should be (3+nparams)\n");
+	printf("t->number of thetas should be (2+nparams) for gaussian or 4 for matern\n");
 	printf("p->number of params\n");
 	printf("n->number of model_points\n");
 	printf("m->number of emulator poits\n");
@@ -148,9 +148,10 @@ int main (int argc, char ** argv){
 	int number_lines = 0;
 
 	parse_arguments(argc, argv, &options);	
+	
 
-	sprintf(input_file, "%s",  "../short.dat");
-	//sprintf(input_file, "%s",  "stdin");
+	//sprintf(input_file, "%s",  "../short.dat");	
+	sprintf(input_file, "%s",  "stdin");
 
 	assert(options.nthetas >0);
 	assert(options.nparams >0);
@@ -190,9 +191,9 @@ int main (int argc, char ** argv){
 		gsl_vector_set(training_vector, i, temp_value);
 		}
 
-	printf("read the following input matrix: %d x %d\n", options.nmodel_points, options.nparams);
+	fprintf(stderr, "read the following input matrix: %d x %d\n", options.nmodel_points, options.nparams);
 	print_matrix(xmodel_input, options.nmodel_points, options.nparams);
-	printf("the training data is:\n");
+	fprintf(stderr, "the training data is:\n");
 	print_vector_quiet(training_vector, options.nmodel_points);
 
 
@@ -298,7 +299,7 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 	gsl_rng *random_number;
 	int max_tries = 20;
 	int i; 
-	int number_steps = 40;
+	int number_steps = 100;
 	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
 
 	T = gsl_rng_default;
@@ -308,10 +309,20 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 	/* set the ranges for the initial values of the NM lookup, 
 	 * might want to adjust these as required etc, but whatever */
 	for(i = 0; i < options->nthetas; i++){
-		gsl_matrix_set(grad_ranges, i, 0, 0.0);
-		gsl_matrix_set(grad_ranges, i, 1, 1.0);
+		gsl_matrix_set(grad_ranges, i, 0, 0.001);
+		gsl_matrix_set(grad_ranges, i, 1, 1.5);
 	}
 	
+	
+	// the nugget ranges for the gaussian
+	/* 	gsl_matrix_set(grad_ranges, 2, 0,  0.0000001); */
+	/* 	gsl_matrix_set(grad_ranges, 2, 1, 0.01); */
+	
+	// the nugget ranges for the matern model
+	if(options->nthetas == 4){ // matern
+		gsl_matrix_set(grad_ranges, 3, 0, 0.01);
+		gsl_matrix_set(grad_ranges, 3, 1, 0.4);
+	}
 
 
 	nelderMead(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams);

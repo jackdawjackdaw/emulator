@@ -38,10 +38,12 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
  */
 double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
 	return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
+	//return(covariance_fn_gaussian(xm, xn , thetas, nthetas, nparams));
 }
 
 //! calculate the covariance between a set of input points
-#define ALPHA 1.999
+#define ALPHA 1.90
+//#define ALPHA 2.0
 /** 
  * calculate the covariance between the two given vectors (xm, xn) 
  * where xm and xn are vectors of length nparams and their elements represent the various
@@ -53,7 +55,8 @@ double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nth
  * the hyperparameters are used in this function, 
  * theta0 -> amplitude of the covariance gaussian
  * theta1 -> the nugget (only for diagonal terms) 
- * theta2 (and higher) -> scale parameter for the gaussian
+ * theta2 -> a confusing offset without which this doens't work at all
+ * theta3 (and higher) -> scale parameter for the gaussian
  *
  * @param thetas -> hyperparameters 
  * @param nparams -> the legnth of xm and xn
@@ -66,6 +69,7 @@ double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nth
  * where alpha should be something on the range [1..2] and is set by the above #define
  * In lit (o'hagan) it's suggested that one might actually optimise for alpha also.
  * 
+ * WELL i did, but then it sucked...
  * Also removed what was theta2, the offset term. This is suspect (wolpert)
  * 
  * Using the neldermead optimisation, this function is all you need to change
@@ -83,7 +87,7 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 	for(i = 0; i < nparams; i++){
 		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
 		xn_temp = gsl_vector_get(xn, i);
-		r_temp = gsl_vector_get(thetas, i+2);
+		r_temp = gsl_vector_get(thetas, i+3);
 		r_temp = pow(r_temp , ALPHA); 
 		// gaussian term				
 		covariance += exp((-1.0/2.0)*pow(fabs(xm_temp-xn_temp), ALPHA)/(r_temp));
@@ -96,8 +100,8 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 		}
 	}
 	// get rid of the offset it doesn't make sense
-	//covariance = covariance * gsl_vector_get(thetas,0) + gsl_vector_get(thetas,1);
-	covariance = covariance*gsl_vector_get(thetas, 0);
+	covariance = covariance * gsl_vector_get(thetas,0) + gsl_vector_get(thetas,1);
+	//covariance = covariance*gsl_vector_get(thetas, 0);
 
 	/** 
 	 * the nugget is only added to the diagonal covariance terms,
@@ -121,7 +125,7 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
  * not well tested yet
  */
 double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
-	double covariance; 
+	double covariance = 0.0;
 	int i, truecount = 0;
 	double xm_temp = 0.0;
 	double xn_temp = 0.0;
@@ -130,10 +134,11 @@ double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
 	assert(nthetas >= 4); // can throw away the upper ones no problem
 	
 	// map the thetas onto some local variables so the formula is more transparent
-	double sigsquared = gsl_vector_get(theta, 0);
-	double rho = gsl_vector_get(theta, 1);
-	double nu = gsl_vector_get(theta, 2);
-	double nugget = gsl_vector_get(theta,3);
+	double sigsquared = gsl_vector_get(thetas, 0);
+	double rho = gsl_vector_get(thetas, 1);
+	double nu = gsl_vector_get(thetas, 2);
+	double nugget = gsl_vector_get(thetas,3);
+	double tempx = 0.0;
 
 	// calculate the euclidean distance between the two points;
 	for(i = 0; i < nparams; i++){
@@ -143,15 +148,38 @@ double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
 		distance += pow(fabs(xm_temp - xn_temp), 2.0);
 		if(fabs(xm_temp - xn_temp) < 0.0000000000000001){
 			truecount++;
-		}
-			
+		}			
 	}
 	// reduce back to the right dimensions
 	distance = sqrt(distance);
 	
-	covariance = sigsquared * (1.0/(gsl_sf_gamma(nu)*pow(2.0, nu - 1.0)));
-	covariance *= (2*sqrt(nu)*(distance/rho))*(gsl_sf_bessel_Knu(nu, (2*sqrt(nu)*(distance/rho))));
+	//fprintf(stderr, "nu = %g, x = %g\n", nu, 2*sqrt(nu)*(distance/rho));
 
+	tempx = (2.0*sqrt(nu)*distance/rho);
+
+	if(distance > 0.0){
+		assert(nu > 0); // otherwise it'll crash anyway
+		//fprintf(stderr, "tempx = %g\n", tempx);
+		/*
+		 * besselK -> 0 really fast so we just cut of at 300 and replace that part with zero
+		 * this might not be close enough but it should stop the overflow
+		 */
+		if(tempx < 300){ 
+			covariance = sigsquared * (1.0/(gsl_sf_gamma(nu)*pow(2.0, nu - 1.0)));
+			covariance *= pow(tempx, nu)*(gsl_sf_bessel_Knu(nu, tempx));
+		} else {
+			covariance = 0.0;
+		}
+		/* 
+		 * in the limit that they're at the same place just
+		 * apply the regular process variance 
+		 */
+	} else if (distance == 0){ 
+		covariance = sigsquared; 
+	}
+
+
+	// this means it's diagonal, i.e the distance is less than zero
 	if(truecount == nparams){
 		covariance += nugget;
 	}

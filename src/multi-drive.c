@@ -111,7 +111,7 @@ int main (void){
 
 	fprintf(stderr, "read in %d lines\n", number_lines);
 	
-	// could use some regex lib to cut out bad lines
+  // could use some regex lib to cut out bad lines
 	
 	the_options.nmodel_points = number_lines;
 
