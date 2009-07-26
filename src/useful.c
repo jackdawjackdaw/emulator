@@ -99,11 +99,11 @@ unsigned long int get_seed(void){
 	if((devrandom = fopen("/dev/random", "r")) == NULL){
 		gettimeofday(&tv, 0);
 		seed = tv.tv_sec + tv.tv_usec;
-		printf("Got seed %u from gettimeofday()\n", seed);
+		fprintf(stderr,"Got seed %u from gettimeofday()\n", seed);
 	}
 	else {
 		fread(&seed, sizeof(seed), 1, devrandom);
-		printf("Got seed %u from /dev/random\n", seed);
+		fprintf(stderr, "Got seed %u from /dev/random\n", seed);
 		fclose(devrandom);
 	}
 	return(seed);
