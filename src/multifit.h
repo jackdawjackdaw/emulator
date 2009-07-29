@@ -1,9 +1,9 @@
 
 #ifndef __INC_MULTIFIT__
 #define __INC_MULTIFIT__
-#include "emulator.h"
-#include "estimator.h"
-#include "maximise.h"
+#include "libEmu/emulator.h"
+#include "libEmu/estimator.h"
+#include "libEmu/maximise.h"
 #include "useful.h"
 #include "gsl/gsl_rng.h"
 

@@ -1,9 +1,9 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
-#include "emulator.h"
-#include "estimator.h"
-#include "maximise.h"
+#include "libEmu/emulator.h"
+#include "libEmu/estimator.h"
+#include "libEmu/maximise.h"
 #include "multifit.h"
 #include "sys/time.h"
 #include "persist.h"
@@ -81,9 +81,9 @@ int main (void){
 	gsl_matrix *split_result;
 
 	// hand pick the input
-	sprintf(inputfile, "../model-cut.dat");
+	//sprintf(inputfile, "../model-cut.dat");
 	//sprintf(inputfile, "tests/reflected.dat");
-	//sprintf(inputfile, "STDIN");
+	sprintf(inputfile, "STDIN");
 
 	T = gsl_rng_default;
 	random_number = gsl_rng_alloc(T);

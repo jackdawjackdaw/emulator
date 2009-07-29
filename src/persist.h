@@ -3,9 +3,9 @@
 
 #include "stdio.h"
 #include "stdlib.h"
-#include "emulator.h"
-#include "estimator.h"
-#include "maximise.h"
+#include "libEmu/emulator.h"
+#include "libEmu/estimator.h"
+#include "libEmu/maximise.h"
 #include "multifit.h"
 #include "useful.h"
 
