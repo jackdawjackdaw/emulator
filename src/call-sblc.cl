@@ -23,5 +23,5 @@
 
 ;;;  a function which sets up the values we want to pass 
 ;;; and then actually calls the emulator
-(defun call-emulator ()
+(defun call-emulator (xmodel training)
 	...

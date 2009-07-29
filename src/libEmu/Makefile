@@ -2,7 +2,8 @@
 LTOOL = libtool
 COMPILE = --mode=compile gcc 
 CFLAGS = -O -c -O2 -Wextra -pedantic -std=c99  
-CFLAGSDEBUG = -O -c -O0 -g 
+#CFLAGSDEBUG = -O -c -O0 -g 
+#CFLAGS = $(CFLAGSDEBUG)
 LFLAGS = -lgsl -lgslcblas -lm
 LINK = --mode=link gcc 
 
