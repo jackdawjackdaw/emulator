@@ -30,13 +30,13 @@ write.table(answer, file=outname, append=TRUE, sep=" ", col.names=FALSE, row.nam
 
 # another test function, for 2d data
 # y(x) = x1*exp(-x1^2 - x2^2)
-# this is ranges on [-2,2], [-2, 2]
+# this is ranges on [-2,6], [-2, 6]
 test2dexpo <- function(outname, numbersamples){
   samplepoints <- maximinLHS(numbersamples, 2)
-  samplepoints <- (samplepoints * 4 - 2)
+  samplepoints <- (samplepoints * 8 - 2)
   temp <- rep(NA, numbersamples)
   for(i in 1:numbersamples){
-    temp[i] <- y2d(samplepoints[i,])
+    temp[i] <- y2d(samplepoints[i,]) + rnorm(1,0, 0.01)
   }
   answer <- data.frame(x=samplepoints[,1], y=samplepoints[,2], ans=temp)
   write("# 2d test inputfile for emulator", file=outname, append=FALSE)

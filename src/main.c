@@ -37,7 +37,7 @@
  */
 #define NTHETASDEFAULT 4
 #define NPARAMSDEFAULT 1
-#define NEMULATEDEFAULT 60
+#define NEMULATEDEFAULT 64
 #define EMULATEMINDEFAULT 0.0
 #define EMULATEMAXDEFAULT 4.0
 
@@ -63,6 +63,7 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options);
 void read_input_bounded(gsl_matrix* model, gsl_vector* training, optstruct * options);
 void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *options);
+void initialise_new_x(gsl_matrix* new_x, optstruct* options);
 
 //! print the short-option switches
 void print_usage(void){
@@ -226,6 +227,7 @@ void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *op
 		gsl_vector_set(training, i, temp_value);
 	}
 	print_matrix(xmodel, options->nmodel_points, options->nparams);
+	fprintf(stderr, "new_x is\n");
 	vector_print(training, options->nmodel_points);
 }
 
@@ -234,7 +236,7 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	int i = 0;
 	int j = 0; 
 	int n_emu_points = options->nemulate_points;
-	double step_size = (options->emulate_max - options->emulate_min) / ((double)n_emu_points);
+	
 	double temp_mean, temp_var;
 	double kappa = 0; // for now
 	gsl_matrix *new_x = gsl_matrix_alloc(n_emu_points, options->nparams);
@@ -255,12 +257,14 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse);
 	
 	// set the new_x values
-	for(i = 0; i < n_emu_points; i++){
-		// this doesn't make sense for many params!
-		for(j = 0; j < options->nparams; j++){
-			gsl_matrix_set(new_x, i, j,step_size*((double)i)+options->emulate_min);
-		}
-	}
+	/* for(i = 0; i < n_emu_points; i++){ */
+/* 		// this doesn't make sense for many params! */
+/* 		for(j = 0; j < options->nparams; j++){ */
+/* 			gsl_matrix_set(new_x, i, j,step_size*((double)i)+options->emulate_min); */
+/* 		} */
+/* 	} */
+	initialise_new_x(new_x, options);
+
 
 
 	for(i = 0; i < n_emu_points; i++){
@@ -290,6 +294,34 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	gsl_matrix_free(temp_matrix);
 	gsl_permutation_free(c_LU_permutation);
 }
+
+void initialise_new_x(gsl_matrix* new_x, optstruct* options){
+	int i, j;
+	int nparams = options->nparams;
+	int n_emu_points = options->nemulate_points;
+	int n_side;
+	double step_size;
+	
+	if (nparams == 1){
+		step_size = (options->emulate_max - options->emulate_min) / ((double)n_emu_points);	
+		for(i = 0; i < n_emu_points;i++){
+			gsl_matrix_set(new_x, i, 0, step_size*((double)i)+options->emulate_min);
+		}
+	} else if(nparams == 2){
+		n_side = floor(sqrt(n_emu_points));
+		step_size = (options->emulate_max - options->emulate_min) / ((double)n_side);	
+		for(i = 0; i < n_side; i++){
+			for(j = 0; j < n_side; j++){
+				gsl_matrix_set(new_x, i*n_side+j,0, step_size*((double)(i))+options->emulate_min);
+				gsl_matrix_set(new_x, i*n_side+j, 1, step_size*((double)(j))+options->emulate_min);
+			}
+		}
+	} else{
+		fprintf(stderr, "oops there's no support for %d'd problems yet!\n", nparams);
+	}
+	//print_matrix(new_x, n_emu_points, nparams);
+	
+}	
 
 
 
@@ -321,9 +353,8 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 	// the nugget ranges for the matern model
 	if(options->nthetas == 4){ // matern
 		gsl_matrix_set(grad_ranges, 3, 0, 0.01);
-		gsl_matrix_set(grad_ranges, 3, 1, 0.4);
+		gsl_matrix_set(grad_ranges, 3, 1, 0.1);
 	}
-
 
 	nelderMead(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams);
 
