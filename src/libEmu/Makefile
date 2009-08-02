@@ -5,7 +5,7 @@ CFLAGS = -O -c -O2 -Wextra -pedantic -std=c99
 #CFLAGSDEBUG = -O -c -O0 -g 
 #CFLAGS = $(CFLAGSDEBUG)
 LFLAGS = -lgsl -lgslcblas -lm
-LINK = --mode=link gcc 
+LINK = --mode=link gcc  -no-install -shared
 
 all: libEmu
 
@@ -24,4 +24,3 @@ libEmu: estimator emulator maximise
 clean:
 	rm *.la
 	rm *.lo
-	

@@ -283,6 +283,33 @@ double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_ve
 }
 
 
-
-
-
+//! fill in the new_x matrix for 1 and 2d
+/**
+ * Given an empty matrix of nparams x nemulate_points this function initliases the points into a square lattice
+ * however so far this only works for nparams = 1, 2
+ */
+void initialise_new_x(gsl_matrix* new_x, int nparams, int nemulate_points, double emulate_min, double emulate_max){
+	int i, j;
+	int n_side;
+	double step_size;
+	
+	if (nparams == 1){
+		step_size = (emulate_max - emulate_min) / ((double)nemulate_points);	
+		for(i = 0; i < nemulate_points;i++){
+			gsl_matrix_set(new_x, i, 0, step_size*((double)i)+emulate_min);
+		}
+	} else if(nparams == 2){
+		n_side = floor(sqrt(nemulate_points));
+		step_size = (emulate_max - emulate_min) / ((double)n_side);	
+		for(i = 0; i < n_side; i++){
+			for(j = 0; j < n_side; j++){
+				gsl_matrix_set(new_x, i*n_side+j,0, step_size*((double)(i))+emulate_min);
+				gsl_matrix_set(new_x, i*n_side+j, 1, step_size*((double)(j))+emulate_min);
+			}
+		}
+	} else{
+		fprintf(stderr, "oops there's no support for %d'd problems yet!\n", nparams);
+	}
+	//print_matrix(new_x, n_emu_points, nparams);
+	
+}	

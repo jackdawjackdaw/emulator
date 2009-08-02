@@ -40,13 +40,17 @@ void emulate_region(gsl_matrix *new_x, gsl_vector* emulated_mean, gsl_vector* em
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse);
 	
-	// set the new_x values
-	for(i = 0; i < options->nemu_points; i++){
-		// this doesn't make sense for many params!
-		for(j = 0; j < options->nparams; j++){	
-			gsl_matrix_set(new_x, i, j,step_size*((double)i)+options->range_min);			
-		}
-	}
+	/* copied in the version from main.c which tries to sensibly allocate matricies up to 3d
+	 * all typed in by hand! */
+	/* // set the new_x values */
+	/* for(i = 0; i < options->nemu_points; i++){ */
+	/* 	// this doesn't make sense for many params! */
+	/* 	for(j = 0; j < options->nparams; j++){	 */
+	/* 		gsl_matrix_set(new_x, i, j,step_size*((double)i)+options->range_min);			 */
+	/* 	} */
+	/* } */
+	intialise_new_x(new_x, options->nparams, options->nemu_points, options->range_min, options->range_max);
+	
 	
 	for(i = 0; i < options->nemu_points; i++){
 		new_x_row = gsl_matrix_row(new_x, i);
