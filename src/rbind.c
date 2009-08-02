@@ -38,8 +38,6 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 
 	//fprintf(stderr, "%d\t%d\t%d\t%d\n", nmodel_points, nparams, nemupts, nthetas);
 
-
-
 	// setup the rng
 	rng_type = gsl_rng_default;
 	random = gsl_rng_alloc(rng_type);

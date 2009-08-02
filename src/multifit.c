@@ -49,7 +49,7 @@ void emulate_region(gsl_matrix *new_x, gsl_vector* emulated_mean, gsl_vector* em
 	/* 		gsl_matrix_set(new_x, i, j,step_size*((double)i)+options->range_min);			 */
 	/* 	} */
 	/* } */
-	intialise_new_x(new_x, options->nparams, options->nemu_points, options->range_min, options->range_max);
+	initialise_new_x(new_x, options->nparams, options->nemu_points, options->range_min, options->range_max);
 	
 	
 	for(i = 0; i < options->nemu_points; i++){
