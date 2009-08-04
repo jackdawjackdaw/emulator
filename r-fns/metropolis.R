@@ -4,6 +4,7 @@
 f  <- function(x){
   #exp(-4*x*x)
   #sin(3*x)
+  # the cauchy distribution
   (1.0)/(1+x*x)
 }
 
@@ -51,7 +52,6 @@ mhsUniformWalk <- function(xt,sigma){
   # symmetry
   #paccept <- (f(yt)*qUniWalk(xt,sigma))/(f(xt)*qUniWalk(yt,sigma))
   paccept <- (f(yt)/f(xt))
-
   if(prand <= paccept){
     xnext <- yt
   }
