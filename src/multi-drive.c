@@ -42,7 +42,6 @@ double score_region(emuResult *res);
  * algorithm for random starting points. 
  */
 
-
 int main (void){
 	char inputfile[128];
 	eopts the_options;
