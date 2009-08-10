@@ -1,11 +1,5 @@
+#include "multihelper.h"
 
-void dump_result(emuResult *res, FILE *fptr);
-void alloc_emuRes(emuResult *thing, eopts *options);
-void free_eopts(eopts* options);
-void free_emuRes(emuResult *thing);
-void print_splits(gsl_matrix* splits, int n);
-
-	
 //! setup an emuResult struct from the given options
 /**
  * copy the right parts of the options into the result and alloc the data structures inside.

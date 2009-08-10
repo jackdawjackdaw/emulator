@@ -1,3 +1,5 @@
+#include "smasher.h"
+
 
 //! just to qsort the regions in smasher
 // want descending order, the first one is longest
