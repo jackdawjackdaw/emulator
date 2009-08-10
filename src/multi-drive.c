@@ -77,11 +77,13 @@ int main (void){
 	/* 
 	 * in the 1d case
 	 *  now there are only 3 hyperparams by default 
+	 * hmm not anymore! 
 	 *  -> vertical-scale theta0
-	 *  -> nugget theta1
-	 *  -> length-scale theta2...theta(Nparams-2⎈)
+	 *  -> ugly offset theta1
+	 *  -> nugget theta2
+	 *  -> length-scale theta3...theta(Nparams-2⎈)
 	 */
-	the_options.nthetas = 3;
+	the_options.nthetas = 4;
 	the_options.nemu_points = 100; 
 
 	// we kind of have to hope that the inputfile is sorted, could sort it...
