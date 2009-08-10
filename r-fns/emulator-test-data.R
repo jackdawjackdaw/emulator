@@ -11,7 +11,8 @@ test1d <- function(outname, numbersamples){
     answer[i] <- t1d(x[i]) + rnorm(1,0, 0.1)
   }
   write("# 1d test inputfile for emualtor", file=outname, append=FALSE)
-write.table(answer, file=outname, append=TRUE, sep=" ", col.names=FALSE, row.names=FALSE)
+final <- data.frame(x=x, y=answer)
+write.table(final, file=outname, append=TRUE, sep=" ", col.names=FALSE, row.names=FALSE)
 }
 
 test1dRCall <- function(numbersamples){
