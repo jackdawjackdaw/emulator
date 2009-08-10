@@ -69,6 +69,40 @@ void emulate_region(gsl_matrix *new_x, gsl_vector* emulated_mean, gsl_vector* em
 	gsl_permutation_free(c_LU_permutation);
 }
 
+
+//! set the restrictions on the ranges allowed for the multivariate fitter
+/** 
+ * set the ranges allowed for the parameters in the covariance function
+ * this should be the only point that these are messed with! 
+ * \bold IMPORTANT
+ * the matern and gaussian covariance functions use different
+ * theta's so that which is the nugget will change when you switch
+ * between them, if you don't spot this you'll have some seriously
+ * weird results when you try and run one with the others parameters.
+ */
+void set_likelyhood_ranges(gsl_matrix* ranges_matrix, int nthetas){
+	int i;
+	// for either the gaussian or matern covfns this 
+	// [0.1] range seems to work ok
+	for(i=0;i<nthetas;i++){
+		gsl_matrix_set(ranges_matrix, i, 0, 0.0);
+		gsl_matrix_set(ranges_matrix, i, 1, 1.0);
+	}
+
+	// however we have to be VERY careful with the nugget, 
+	// if we're using the matern then
+	/* gsl_matrix_set(ranges_matrix, 3, 0, 0.0); */
+	/* gsl_matrix_set(ranges_matrix, 3, 1, 0.1); */
+	// if we're using the gaussian:
+	gsl_matrix_set(ranges_matrix, 2, 0, 0.0);
+	gsl_matrix_set(ranges_matrix, 2, 1, 0.1);
+
+	/*
+	 * this is ugly, i'm sorry about it 
+	 */
+}
+
+
 //! estimate the hyperparams for a region
 /**
  * @param random is a gsl_rng which has already been setup and seeded
@@ -80,13 +114,10 @@ void estimate_region(eopts* options, gsl_rng *random){
 	int number_steps = 40;
 	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas,2);
   
-	for(i = 0; i < options->nthetas; i++){
-		gsl_matrix_set(grad_ranges, i, 0, 0.0);
-		gsl_matrix_set(grad_ranges, i, 1, 1.1);
-	}
+	
+	set_likelyhood_ranges(grad_ranges, options->nthetas);
 
-	//gsl_matrix_set(grad_ranges, 3, 0, 0.0);
-	//gsl_matrix_set(grad_ranges, 3,1, 1.1);
+
  		
 	nelderMead(random, max_tries, number_steps, options->thetas, grad_ranges, options->xmodel, options->training, options->nmodel_points, options->nthetas, options->nparams);
 	

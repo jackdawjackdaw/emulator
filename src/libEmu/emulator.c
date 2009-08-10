@@ -35,11 +35,20 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
 //! wrapper fn, calls the appropriate covariance. Change this by hand!
 /** 
  * this is now just a wrapper which calls the appropriate covariance function
+ * it seems that the matern version doesn't work very well compared to the 
+ * gaussian covariance function, at least not on the ising model.
  */
 double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
-	return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
-	//return(covariance_fn_gaussian(xm, xn , thetas, nthetas, nparams));
+	//return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
+	return(covariance_fn_gaussian(xm, xn , thetas, nthetas, nparams));
 }
+
+/** 
+ * and you'll kneel in the market place and draw your vast mandala
+ *
+ */
+ 
+
 
 //! calculate the covariance between a set of input points
 #define ALPHA 1.90
