@@ -21,7 +21,7 @@
  * @return new_x are the emulated points, emulated_mean is the mean at these points
  * and emualted_variance is the variance at these points */
 void emulate_region(gsl_matrix *new_x, gsl_vector* emulated_mean, gsl_vector* emulated_variance , eopts* options){
-	int i, j;
+	int i;
 	double kappa = 0.0;
 	double step_size = (options->range_max - options->range_min) /((double)(options->nemu_points));
 	double temp_mean = 0.0;
@@ -110,15 +110,13 @@ void set_likelyhood_ranges(gsl_matrix* ranges_matrix, int nthetas){
  */
 void estimate_region(eopts* options, gsl_rng *random){
 	int max_tries = 20;
-	int i;
+
 	int number_steps = 40;
 	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas,2);
-  
-	
+
+	// note you need to play with this if you change the emulator cov fn
 	set_likelyhood_ranges(grad_ranges, options->nthetas);
 
-
- 		
 	nelderMead(random, max_tries, number_steps, options->thetas, grad_ranges, options->xmodel, options->training, options->nmodel_points, options->nthetas, options->nparams);
 	
 	fprintf(stderr, "in range: %g..%g\n", options->range_min, options->range_max);
@@ -140,32 +138,12 @@ void evaluate_region(emuResult *results, eopts* options, gsl_rng* random){
 	emulate_region(results->new_x, results->new_mean, results->new_var, options);
 }
 
-//! see if a region is smooth
-//! this is stupid at the moment
-/*int is_smooth(double smooth_val, gsl_vector* xemu, gsl_vector* mean_emu, gsl_vector* var_emu, eopts* options){
-	int i; 
-	double mse = malloc(sizeof(double)*(options->nemu_points));
-	double var = 0.0;
-	for (i = 0; i < options-> nemu_points; i++){
-		mse[i] = get_mse(gsl_vector_get(mean_emu, i), gsl_vector_get(var_emu, i));
-	}
-
-	var = gsl_stats_variance(mse, 1, options->nemu-points);
-	free(mse);
-	if(var > smooth_val){
-		fprintf(stderr, "wiggly!\n");
-		return(1);
-	} else {
-		fprintf(stderr, "smooth\n");
-		return(0);
-	}
-	
-	}*/
-
 
 double get_mse( double mean, double variance){
 	return(pow(fabs(mean-variance), 2.0));
 }
+
+
 
 /// 
 /// All these functions only work in 1 parameter so far
@@ -211,17 +189,6 @@ void prepare_cluster(emuResult *res, double* diff_goodness, int* cluster, double
 			cluster[i] = 1;
 	}
 }
-
-
-//! for a linked list of regions (see list-test.c)
-// decided to just use an array and make it bigger if i need to
-/* typedef struct region{ */
-/* 	int region_start; */
-/* 	int region_stop; */
-/* 	int region_length; */
-/* 	double emu_x_start; */
-/* 	double emu_x_stop; */
-/* } region; */
 
 //! print out what's going on
 void checkup(emuResult *res, double* goodness, double* diff_goodness, int*cluster){
@@ -457,3 +424,225 @@ void assign_model_point(eopts* regionOpts, region* the_region){
 	fprintf(stderr, "high_index = %d\n", high_index);
 	fprintf(stderr, "span = %d\n", high_index - low_index);
 }
+
+
+//! take a set of split locations, make regions, evaluate them and push dump the results,
+//! this is the final routine you'd want to call after doing a bunch of splits
+void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl_rng* random_number){
+	int i;
+	FILE *fptr;
+	emuResult* results_array = MallocChecked(sizeof(emuResult)*nsplits);
+	eopts* options_array = MallocChecked(sizeof(eopts)*nsplits);
+	char buffer[256];
+	char outfolder[128];
+	
+	// this should presumably be an option
+	sprintf(outfolder, "%s", "output");
+	
+
+	// make the new options
+	for(i = 0; i < nsplits;i++){
+		split_region_options(&options_array[i], the_options, gsl_matrix_get(the_splits, i, 0), gsl_matrix_get(the_splits, i, 1));
+		if(&(options_array[i])==NULL){
+			fprintf(stderr, "bad split\n");
+			exit(1);
+		}
+		alloc_emuRes(&results_array[i], &options_array[i]);
+	}
+
+	// run the options
+	for(i = 0; i < nsplits; i++){
+		evaluate_region(&results_array[i], &options_array[i], random_number);
+	}
+		
+	// this is where you'd dump the results to file or whatever
+	// infaaaact we can do that with persist
+/* 	fptr = fopen("output.dat", "w"); */
+/* 	for( i = 0; i < nsplits; i++){ */
+/* 		dump_eopts(&options_array[i], fptr); */
+/* 		dump_emuresult(&results_array[i], fptr); */
+/* 	} */
+
+	// loop over the splits and output them to the folder given by outfolder
+	// note that we're only dumping the results, not the options
+	// a bin dump of everything can  be turned on above
+	for(i = 0; i < nsplits; i++){
+		sprintf(buffer, "%s/split-region-%d.dat", outfolder, i);
+		fptr = fopen(buffer, "w");
+		if(fptr == NULL){
+			fprintf(stderr, "could not open: %s\n", buffer);
+			exit(1);
+		}
+		dump_result(&results_array[i], fptr);
+		fclose(fptr);
+	}
+
+
+	for(i = 0; i < nsplits;i++){
+		free_emuRes(&results_array[i]);
+		free_eopts(&options_array[i]);
+	}
+	
+	free(results_array);
+	free(options_array);
+}
+
+
+
+//!  transforms local_split_ranges, the set of ranges with gaps into split_ranges the continuous set of ranges
+/**
+ * Takes a set of split ranges: local_split_ranges which have been pre-caculated and fills the gaps between them so that
+ * the result: split_ranges is a set of continuous points which span the whole range of toplevel.
+ * 
+ * a bad diagram:
+ * local_split_ranges:  start............|region 1 ..|...............|region 2..|......stop
+ * split_ranges:        start|region 0...|region 1...|region 2.......|region 3..|region 4 stop
+ * 
+ * Ther are no gaps by the end.
+ */
+void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * local_split_ranges, eopts* toplevel){
+	int i;
+	int split_count =0;
+
+	// start from 0 
+	for(i = 0; i < ngoodregions; i++){
+		if(i == 0){
+			//printf("first!\n");
+			gsl_matrix_set(split_ranges, 0,0, toplevel->range_min);
+			if(gsl_matrix_get(local_split_ranges, 0, 0) == toplevel->range_min){				
+				// there is no gap
+				//printf("no gap\n");
+				gsl_matrix_set(split_ranges,0, 1, gsl_matrix_get(local_split_ranges, 0, 1));
+				split_count++;
+			} else {
+				// there is a gap
+				//printf("initial gap\n");
+				gsl_matrix_set(split_ranges, 0,1, gsl_matrix_get(local_split_ranges, 0, 0));
+				split_count++;
+			}
+		}
+		//printf("middling: ");
+			// now add the winner
+			gsl_matrix_set(split_ranges, split_count, 0, gsl_matrix_get(local_split_ranges, i, 0));
+			gsl_matrix_set(split_ranges, split_count, 1, gsl_matrix_get(local_split_ranges, i, 1));
+			split_count++;
+			// now we have to add a blank again
+			if((i < ngoodregions -1) && (gsl_matrix_get(local_split_ranges, i+1, 0) > gsl_matrix_get(local_split_ranges, i, 1))){
+				// there is another gap!
+				gsl_matrix_set(split_ranges, split_count+1,  0, gsl_matrix_get(local_split_ranges, i, 1));
+				gsl_matrix_set(split_ranges, split_count+1,  1, gsl_matrix_get(local_split_ranges, i+1, 1));
+				split_count++;
+			}
+		
+			if( i == (ngoodregions -1)){
+				// the last one
+				//printf("last!\n");
+				if(gsl_matrix_get(local_split_ranges, i, 1) < toplevel->range_max){
+					// there is a gap before the end
+					//printf("final one\n");
+					gsl_matrix_set(split_ranges, split_count, 0, gsl_matrix_get(local_split_ranges, i, 1));
+					gsl_matrix_set(split_ranges, split_count, 1, toplevel->range_max);
+					split_count++;
+				}
+				// do nothing otherwise
+			}
+			printf("split_count = %d\n", split_count);
+	}
+}
+
+//! creates a new region from lower and upper in the first parameter of the xmodel parts of the parent
+/**
+ * Creates a new eopts result from the parent but only includes the data which lies within the range  
+ * lower..upper. 
+ * 
+ * This method can then be used on the same parent multiple times with different lower and upper values
+ * to carve up the parent into a series of child regions which can then be evaluated etc. 
+ * 
+ * if the split doesn't work, result => NULL
+ */
+void split_region_options(eopts *result, eopts *parent, double lower, double upper){
+	assert(lower < upper);
+	
+	int i,j;
+	int split_low = 0;// the index at which to split the model, training vecs etc
+	int split_high=  parent->nmodel_points;
+	int new_nemu_points = 0;
+	int new_nmodel_points = 0;
+	//int min_model_points = 3; // don't need this, already set by the clustering alg
+	int offset = 0;
+	int bad_flag = 0;
+	double temp_val;
+	
+	// set the basic things
+	new_nemu_points = 40; //(fudge)
+	
+	// grow split low to the last_xmodel value before the split
+	for(i = 0; i < parent->nmodel_points; i++){
+		// look at the first value in xmodel only
+		if(gsl_matrix_get(parent->xmodel, i, 0) <= lower){
+			split_low++; // don't split at this i
+		} 
+	}
+	
+
+	// shrink split high to the xmodel value to the right of the upper split
+	for(i = parent->nmodel_points-1; i >= 0; i--){
+		if(gsl_matrix_get(parent->xmodel, i, 0) > upper){
+			split_high--;
+		}
+	}
+
+	fprintf(stderr, "split_low = %d, split_high = %d\n", split_low, split_high);
+
+	// now we can figure everything else out
+	if(split_low == split_high){
+		fprintf(stderr, "bad split\n");
+		bad_flag = 1;
+	}
+
+	if(lower < parent->range_min || upper > parent->range_max){
+		fprintf(stderr, "doing a split out of range\n");
+		bad_flag = 1;
+	}
+	
+	new_nmodel_points = (split_high - split_low);
+
+	/*if(new_nmodel_points < min_model_points){
+		fprintf(stderr, "bad split, not enough new points\n");
+		//exit(1);
+		bad_flag = 1;
+		}*/
+	
+	if(bad_flag != 1){
+		// set everything up
+		result->nmodel_points = new_nmodel_points;
+		result->nparams = parent->nparams;
+		result->nthetas = parent->nthetas;
+		result->range_min = lower;
+		result->range_max = upper;
+		result->nemu_points = new_nemu_points;
+		result->xmodel = gsl_matrix_alloc(new_nmodel_points, parent->nparams);
+		result->training = gsl_vector_alloc(new_nmodel_points);
+		result->thetas = gsl_vector_alloc(parent->nthetas); 
+		
+		// copyin the new data
+		for(i = 0; i < new_nmodel_points; i++){
+			offset = i + split_low;
+			for(j = 0; j < parent->nparams;  j++){
+				temp_val = gsl_matrix_get(parent->xmodel, offset, j);
+				gsl_matrix_set(result->xmodel, i, j, temp_val);
+			}
+			temp_val = gsl_vector_get(parent->training, offset);
+			gsl_vector_set(result->training, i, temp_val);
+		}
+		
+	} else if(bad_flag == 1){
+		result = NULL;
+		fprintf(stderr, "bad splits\n");
+		exit(1);
+	}
+
+	
+}
+
+
