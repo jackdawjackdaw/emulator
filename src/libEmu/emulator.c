@@ -187,7 +187,6 @@ double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
 		covariance = sigsquared; 
 	}
 
-
 	// this means it's diagonal, i.e the distance is less than zero
 	if(truecount == nparams){
 		covariance += nugget;

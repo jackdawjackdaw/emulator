@@ -8,8 +8,6 @@
  * just enough setup and teardown to call the emulator directly from R
  */
 
-
-
 //! callEmulator from R
 /**
  * so R can't handle passing anything other than arrays, 
@@ -117,4 +115,6 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	gsl_vector_free(training_vec);
 	gsl_rng_free(random);
 }
+
+
 

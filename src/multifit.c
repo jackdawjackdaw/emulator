@@ -95,7 +95,7 @@ void set_likelyhood_ranges(gsl_matrix* ranges_matrix, int nthetas){
 	/* gsl_matrix_set(ranges_matrix, 3, 1, 0.1); */
 	// if we're using the gaussian:
 	gsl_matrix_set(ranges_matrix, 2, 0, 0.0);
-	gsl_matrix_set(ranges_matrix, 2, 1, 0.1);
+	gsl_matrix_set(ranges_matrix, 2, 1, 0.2);
 
 	/*
 	 * this is ugly, i'm sorry about it 
@@ -108,7 +108,7 @@ void set_likelyhood_ranges(gsl_matrix* ranges_matrix, int nthetas){
  * @param random is a gsl_rng which has already been setup and seeded
  * @return options->thetas is set to the best hyperparams
  */
-void estimate_region(eopts* options, gsl_rng *random){
+void estimate_region(eopts* options, gsl_rng *random){ /*  */
 	int max_tries = 20;
 
 	int number_steps = 40;
