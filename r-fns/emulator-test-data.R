@@ -21,7 +21,7 @@ test1dRCall <- function(numbersamples){
   for(i in 1:numbersamples){
     answer[i] <- t1d(x[i]) + rnorm(1,0, 0.1)
   }
-  data.frame(x=x, y=answer)
+  data.frame(xmodel=x, training=answer)
 }
 
 
@@ -61,7 +61,7 @@ test2dExpoRCall <- function(numbersamples){
   for(i in 1:numbersamples){
     temp[i] <- y2d(samplepoints[i,]) + rnorm(1,0, 0.01)
   }
-  answer <- data.frame(x=samplepoints[,1], y=samplepoints[,2], ans=temp)
+  answer <- data.frame(xmodel=samplepoints, training=temp)
 }  
 
 y2d <- function(x){

@@ -4,6 +4,9 @@
 #include "multifit.h"
 #include "useful.h"
 
+void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx);
+void convertDoubleToVector(gsl_vector* the_vec, double* input, int nx);
+
 /**
  * just enough setup and teardown to call the emulator directly from R
  */
@@ -42,16 +45,9 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	gsl_rng_set(random, get_seed());
 
 	// fill in xmodel 
-	// you have to do this to new_x at the end
-	for(j=0; j < nparams; j++){
-		for(i = 0; i < nmodel_points; i++){
-			gsl_matrix_set(xmodel, i, j, xmodel_in[i+j*nmodel_points]);
-		}
-	}
+	convertDoubleToMatrix(xmodel, xmodel_in, nparams, nmodel_points);
 	// fill in the training vec
-	for(i = 0; i < nmodel_points; i++){
-		gsl_vector_set(training_vec, i, training_in[i]);
-	}
+	convertDoubleToVector(training_vec, training_in, nmodel_points);
 
 
 /* 	for(j=0; j < nparams; j++){ */
@@ -116,5 +112,67 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	gsl_rng_free(random);
 }
 
+/*void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int *nmodelpts, 
+int* nthetas_in, double* final_emulated_x, int *nemupts_in, double* final_emulated_y, 
+double* final_emulated_variance , double* range_min_in, double* range_max_in ){ */
+
+/*
+ * this is a binding to call the function libEmu/maximise.c:evalLikelyhood
+ * double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *trainingvector, 
+ * int nmodel_points, int nthetas, int nparams) 
+ * 
+ * this is mostly copied from above
+ */
+
+void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in, \
+													int *nmodelpts_in, int* nthetas_in, double* thetas_in, \
+													double* answer){
+
+	int nmodel_points = *nmodelpts_in;
+	int nparams = *nparams_in;
+	int nthetas = *nthetas_in;
+	gsl_matrix *xmodel = gsl_matrix_alloc(nmodel_points, nparams);
+	gsl_vector *training_vec = gsl_vector_alloc(nmodel_points);
+	gsl_vector *thetas = gsl_vector_alloc(nthetas);
+	double the_likelyhood = 0.0;
+
+	convertDoubleToMatrix(xmodel, xmodel_in, nparams, nmodel_points);
+	convertDoubleToVector(training_vec, training_in, nmodel_points);
+	convertDoubleToVector(thetas, thetas_in, nthetas);
+
+	// this calls the log likelyhood
+	the_likelyhood = evalLikelyhood(thetas, xmodel, training_vec, nmodel_points, nthetas, nparams);
+
+	*answer = the_likelyhood;
+
+	gsl_matrix_free(xmodel);
+	gsl_vector_free(training_vec);
+	gsl_vector_free(thetas);
+
+}
 
 
+/*
+ * takes an ALLOCATED gsl_matrix and copies the input vector into it, 
+ * doesn't check anything
+ */
+
+void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx){
+	int i, j;
+	for(j = 0; j < ny; j++){
+		for(i =0; i < nx; i++){
+			gsl_matrix_set(the_matrix, i, j, input[i+j*nx]);
+		}
+	}
+}
+										 
+/*
+ * takes an ALLOCATED gsl_vector and copies the input vector into it
+ * non checking again
+ */
+void convertDoubleToVector(gsl_vector* the_vec, double* input, int nx){
+	int i;
+	for(i =0; i < nx; i++){
+		gsl_vector_set(the_vec, i, input[i]);
+	}
+}
