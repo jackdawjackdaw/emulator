@@ -79,16 +79,24 @@ typedef struct region{
 } region;
 
 
+// stupid circular includes :(
+#include "multihelper.h"
+
 void emulate_region(gsl_matrix *new_x, gsl_vector* emulated_mean, gsl_vector* emulated_variance , eopts* options);
 void estimate_region(eopts* options, gsl_rng *random);
 void evaluate_region(emuResult *results, eopts* options, gsl_rng* random);
 int is_smooth(double smooth_val, gsl_vector* xemu, gsl_vector* mean_emu, gsl_vector* var_emu, eopts* options);
 double get_mse( double mean, double variance);
-
+void set_likelyhood_ranges(gsl_matrix* ranges_matrix, int nthetas);
 void checkup(emuResult *res, double* goodness, double* diff_goodness, int*cluster);
 int resize_region_array(region** the_array, int current_length, int grow_length);
 void assign_clusters(emuResult *res, int *cluster, int cluster_min, region** region_array, int* nclusters);
 void create_clusters_1d(emuResult *res, region** region_list, int* number_regions);
 void copy_region_array(region* target, region* source, int length);
 void assign_model_point(eopts* regionOpts, region* the_region);
+
+// moved in from multi-drive.c
+void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl_rng* random_number);
+void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * local_split_ranges, eopts* toplevel);
+void split_region_options(eopts *result, eopts *parent, double lower, double upper);
 #endif
