@@ -32,7 +32,7 @@ double fPowers( gsl_vector*x, int nparams);
 void getGradientNumeric(double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* gradient, int nparams);
 void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), gsl_vector* xk, int nparams, gsl_matrix* bkInv);
 void getYk(gsl_vector* yk, double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* xk1, int nparams);
-void getNewBInverse(gsl_matrix *bprev,  gsl_vector *s, gsl_vector y, int nparams);
+void getNewBInverse(gsl_matrix *bprev,  gsl_vector *s, gsl_vector *y, int nparams);
 void getNewB(gsl_matrix* b, gsl_vector* s, gsl_vector* y, int nparams);
 double lineSearch(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* position, int nparams);
 int armGold(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* position, double a, int nparams);
@@ -146,15 +146,15 @@ void getNewB(gsl_matrix* b, gsl_vector* s, gsl_vector* y, int nparams){
 	// bnew = b + (y.y/y.s) - ((B.s.(B.s))/(s.B.s))
 	//                   ^ product 1
 	//                                  ^ product 2
-	gsl_blas_dsdot(y, y, temp1);
-	gsl_blas_dsdot(y, s, temp2);	
+	gsl_blas_ddot(y, y, &temp1);
+	gsl_blas_ddot(y, s, &temp2);	
 	product1= temp1/temp2;
 	
 	// calculate the second part
-	gsl_blas_dgemv(CblasNoTrans, 1.0, b, s, temp_vec);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, b, s, 0.0, temp_vec);
 	// topline of product 2
-	temp1 = gsl_blas_dsdot(temp_vec, temp_vec);
-	temp2 = gsl_blas_dsdot(s, temp_vec);
+	gsl_blas_ddot(temp_vec, temp_vec, &temp1);
+	gsl_blas_ddot(s, temp_vec, &temp2);
 	product2= temp1/temp2;
 
 	// now b is set to bnew
@@ -167,7 +167,7 @@ void getNewB(gsl_matrix* b, gsl_vector* s, gsl_vector* y, int nparams){
  * approximate a new inverse hessian	
  * @return bprev is set to the new value 
  */
-void getNewBInverse(gsl_matrix *bprev,  gsl_vector *s, gsl_vector y, int nparams){
+void getNewBInverse(gsl_matrix *bprev,  gsl_vector *s, gsl_vector *y, int nparams){
 	double sdoty = 0.0;
 	double sdots = 0.0;
 	double ydotbpdoty = 0.0;
@@ -175,14 +175,14 @@ void getNewBInverse(gsl_matrix *bprev,  gsl_vector *s, gsl_vector y, int nparams
 	gsl_vector * temp_vec = gsl_vector_alloc(nparams);
 	
 	//b = bp + (s.s)*(s.y - y.bp.y)/((s.y)^2) 
-	sdoty = gsl_blas_dsdot(s, y);
-	sdots = gsl_blas_dsdot(s, s);
-	gsl_blas_dgemv(CblasNoTrans, 1.0, b, s, temp_vec); 
-	ydotbpdoty = gsl_blas_dsdot(s, temp_vec);
+	gsl_blas_ddot(s, y, &sdoty);
+	gsl_blas_ddot(s, s, &sdots);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, bprev, s, 0.0, temp_vec); 
+	gsl_blas_ddot(s, temp_vec, &ydotbpdoty);
 	if(sdoty != 0.0){
 		temp = sdots*(sdoty - ydotbpdoty) / (pow(sdoty, 2.0));
 		// set the answer
-		gsl_matrix_add(bprev, sdots); 
+		gsl_matrix_add_constant(bprev, sdots); 
 	} else {
 		// this is likely to be annoying
 		fprintf(stderr, "getNewBinverse had a singluar sdoty\n");
@@ -215,7 +215,7 @@ int armGold(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* po
 	gsl_vector *temp = gsl_vector_alloc(nparams);
 	gsl_vector *offset = gsl_vector_alloc(nparams);
 	gsl_vector *gradient = gsl_vector_alloc(nparams);
-	gsl_vector *gradientOffset = gsl_vector(nparams);
+	gsl_vector *gradientOffset = gsl_vector_alloc(nparams);
 	
 
 	// set offset -> x + stepsize*position
@@ -227,9 +227,9 @@ int armGold(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* po
 	fposition = fn(position, nparams);
 	
 	getGradientNumeric(fn, position, gradient, nparams);
-	dirdotgradient = gsl_blas_dsdot(direction, gradient);	
+	gsl_blas_ddot(direction, gradient, &dirdotgradient);	
 	getGradientNumeric(fn, offset, gradientOffset, nparams);
-	dirdotgradientOffset = gsl_blas_dsdot(direction, gradientOffset);
+	gsl_blas_ddot(direction, gradientOffset, &dirdotgradientOffset);
 
 	if( (foffset <= fposition + c1*a*dirdotgradient)  && (dirdotgradientOffset >= c2 * dirdotgradient)){
 		retval = 1;
@@ -244,6 +244,9 @@ int armGold(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* po
 	return(retval);
 }
 		
+void doSimpleBFGS( double(*fn)(gsl_vector*, int), gsl_vector* xkInit, gsl_matrix* Binit, int nparams, int nsteps){
+	int count = 0;
+	gsl_vector *xk = gsl_vector_
 
 
 
