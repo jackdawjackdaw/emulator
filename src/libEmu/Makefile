@@ -18,8 +18,14 @@ emulator:
 maximise:
 	$(LTOOL) $(COMPILE) $(CFLAGS) maximise.c 
 
-libEmu: estimator emulator maximise
-	$(LTOOL) $(LINK) -o libEmu.la estimator.lo emulator.lo maximise.lo $(CFLAGS) $(LFLAGS)
+maxbfgs:
+	$(LTOOL) $(COMPILE) $(CFLAGS) maxbfgs.c
+
+bfgs:
+	$(LTOOL) $(COMPILE) $(CFLAGS) bfgs.c
+
+libEmu: estimator emulator maximise maxbfgs bfgs
+	$(LTOOL) $(LINK) -o libEmu.la estimator.lo emulator.lo maximise.lo maxbfgs.lo bfgs.lo $(CFLAGS) $(LFLAGS)
 
 clean:
 	rm *.la
