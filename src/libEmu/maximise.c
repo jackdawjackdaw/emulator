@@ -2,6 +2,8 @@
 
 #define FAILVALUE -100
 
+void print_nasty_error(char* error);
+
 /** 
  * @file 
  * @author Chris Coleman-Smith cec24@phy.duke.edu
@@ -262,11 +264,11 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	double evalExtended = 0.0;
 	
 
-	FILE *comptr = fopen("com-vals.txt", "w");
-	if(comptr == NULL){ 
-		fprintf(stderr, "couldn't open comptr\n");
-		exit(1);
-	}
+/* 	FILE *comptr = fopen("com-vals.txt", "w"); */
+/* 	if(comptr == NULL){  */
+/* 		fprintf(stderr, "couldn't open comptr\n"); */
+/* 		exit(1); */
+/* 	} */
 
 	evalList = malloc(sizeof(evalunit)*nverticies);
 
@@ -294,7 +296,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			for(i = 0; i < nverticies; i++){
 				vertex = gsl_matrix_row(verticies, i);
 				the_likelyhood = evalLikelyhood(&vertex.vector, xmodel, trainingvector, nmodel_points, nthetas, nparams);
-				//printf("%g\n", the_likelyhood);
+				//printf("%g\n", the_likelyhood);				
 				evalList[i].index = i;
 				evalList[i].value = the_likelyhood;
 			}
@@ -334,12 +336,12 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			// but we have to ignore the last point
 			calc_com(verticies, com, nverticies, nthetas);
 
-			// just for debugging realy
-			if( t % 10 == 0){
-				fprintf(comptr, "%g\n", evalLikelyhood(com, xmodel, trainingvector, nmodel_points, nthetas, nparams));
-				// i know this is baaad but...
-				fflush(comptr);
-			}
+/* 			// just for debugging realy */
+/* 			if( t % 10 == 0){ */
+/* 				fprintf(comptr, "%g\n", evalLikelyhood(com, xmodel, trainingvector, nmodel_points, nthetas, nparams)); */
+/* 				// i know this is baaad but... */
+/* 				fflush(comptr); */
+/* 			} */
 			
 
 			//printf("COM IS\t");
@@ -462,6 +464,15 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			}
 			t++;					 
 		}
+		
+		// final test of NAN-ness
+		for(i = 0; i < nverticies; i++){ 
+			if((isnan(evalList[i].value)) || isinf(evalList[i].value)){
+				fprintf(stderr, "nan!\n");
+				nanflag = 1;
+				break;
+			}
+		}
 		// now it's done, calc the com one more time and then run with it
 		if(nanflag == 0 && brokenflag == 0){
 			calc_com(verticies, com, nverticies, nthetas);
@@ -488,7 +499,8 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	}
 
 
-	fclose(comptr);
+	//	fclose(comptr);
+
 
 	free(evalList);
 	gsl_vector_free(best_vector);
@@ -623,13 +635,17 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 
 
 	if(isnan(the_likelyhood)){
-		fprintf(stderr, "the_likelyhood -> nan\n");
-		print_matrix(covariance_matrix, nmodel_points, nmodel_points);
+		
+		print_nasty_error("the likleyhood is NAN");
+
+		// not useful
+		//print_matrix(covariance_matrix, nmodel_points, nmodel_points);
 		fprintf(stderr, "cinverse_det = %g\n", cinverse_det);
 		fprintf(stderr, "the_vertex = ");
 		vector_print(vertex, nthetas);
 		fprintf(stderr, "\n");
-		print_matrix(cinverse, nmodel_points, nmodel_points);
+		// this isn't fucking helpful
+		//print_matrix(cinverse, nmodel_points, nmodel_points);
 		// crap out (this still leaks a LOT)
 		gsl_matrix_free(covariance_matrix);
 		gsl_matrix_free(cinverse);
@@ -647,6 +663,12 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 
 	
 	return(the_likelyhood);
+}
+
+void print_nasty_error(char* error){
+	fprintf(stderr, "***************************\n\n\n");
+	fprintf(stderr, "%s\n\n\n", error);
+	fprintf(stderr, "***************************\n\n");			
 }
 
 

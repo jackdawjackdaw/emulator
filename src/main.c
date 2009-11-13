@@ -127,6 +127,14 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	//\todo something is wrong with the theta_val thing
 	options->nthetas = theta_val;
 	options->nparams = param_val;
+
+	if(options->nthetas != options->nparams + 3){
+		fprintf(stderr, "you have possbily selected a crazy value of nthetas...\n");
+		// for the moment force them to work
+		options->nthetas = options->nparams +3;
+	}
+		
+
 	options->nmodel_points = nmodel_points;
 	options->nemulate_points = nemulate_val;
 	options->emulate_min = min_val;
@@ -193,10 +201,12 @@ int main (int argc, char ** argv){
 		}
 
 	fprintf(stderr, "read the following input matrix: %d x %d\n", options.nmodel_points, options.nparams);
-	print_matrix(xmodel_input, options.nmodel_points, options.nparams);
+	//print_matrix(xmodel_input, options.nmodel_points, options.nparams);
 	fprintf(stderr, "the training data is:\n");
-	print_vector_quiet(training_vector, options.nmodel_points);
-
+	//print_vector_quiet(training_vector, options.nmodel_points);
+	
+	fprintf(stderr, "nthetas = %d\n", options.nthetas);
+	fprintf(stderr, "nparams = %d\n", options.nparams);
 
 	estimate_thetas(xmodel_input, training_vector, thetas, &options);
 
@@ -296,9 +306,9 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options){
 	const gsl_rng_type *T;
 	gsl_rng *random_number;
-	int max_tries = 20;
+	int max_tries = 10;
 	int i; 
-	int number_steps = 100;
+	int number_steps = 50;
 	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
 
 	T = gsl_rng_default;
@@ -308,8 +318,8 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 	/* set the ranges for the initial values of the NM lookup, 
 	 * might want to adjust these as required etc, but whatever */
 	for(i = 0; i < options->nthetas; i++){
-		gsl_matrix_set(grad_ranges, i, 0, 0.001);
-		gsl_matrix_set(grad_ranges, i, 1, 1.5);
+		gsl_matrix_set(grad_ranges, i, 0, 0.1);
+		gsl_matrix_set(grad_ranges, i, 1, 5.5);
 	}
 	
 	
@@ -318,10 +328,10 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 	/* 	gsl_matrix_set(grad_ranges, 2, 1, 0.01); */
 	
 	// the nugget ranges for the matern model
-	if(options->nthetas == 4){ // matern
-		gsl_matrix_set(grad_ranges, 3, 0, 0.01);
-		gsl_matrix_set(grad_ranges, 3, 1, 0.1);
-	}
+	/* if(options->nthetas == 4){ // matern */
+	/* 		gsl_matrix_set(grad_ranges, 3, 0, 0.01); */
+	/* 		gsl_matrix_set(grad_ranges, 3, 1, 0.1); */
+	/* 	} */
 
 	nelderMead(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams);
 
