@@ -109,6 +109,26 @@ unsigned long int get_seed(void){
 	return(seed);
 }
 
+// RNG 
+// tries to read from /dev/random, or otherwise uses the system time
+unsigned long int get_seed_noblock(void){
+	unsigned int seed;
+	struct timeval tv;
+	FILE *devrandom;
+
+	if((devrandom = fopen("/dev/urandom", "r")) == NULL){
+		gettimeofday(&tv, 0);
+		seed = tv.tv_sec + tv.tv_usec;
+		fprintf(stderr,"Got seed %u from gettimeofday()\n", seed);
+	}
+	else {
+		fread(&seed, sizeof(seed), 1, devrandom);
+		fprintf(stderr, "Got seed %u from /dev/random\n", seed);
+		fclose(devrandom);
+	}
+	return(seed);
+}
+
 
 /* binary io routines */
 // input

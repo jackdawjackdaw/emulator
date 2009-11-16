@@ -7,15 +7,18 @@
 #include "ioread.h"
 #include "sys/time.h"
 #include "useful.h"
+#include "pthread.h"
 
 /**
  * @file
  * @author Chris Coleman-Smith cec24@phy.duke.edu
- * @version 0.1
+ * @version 0.2
  * @section Description
  * 
  * The main apparatus to run the emulator, reads in options from the command line and
  * reads the actual data points from the given filename
+ * 
+ * threaded the estimator call function
  */
  
 
@@ -56,6 +59,20 @@ typedef struct optstruct{
 	char  filename[128];
 } optstruct;
 
+struct estimate_thetas_params{
+	gsl_rng* random_number;
+	int max_tries;
+	int number_steps;
+	gsl_vector* thetas;
+	gsl_matrix* grad_ranges;
+	gsl_matrix* model_input;
+	gsl_vector* training_vector;
+	int nmodel_points;
+	int nthetas;
+	int nparams;
+} estimate_thetas_params;
+// why do you need this ^ ident?
+
 
 void print_usage(void);
 void parse_arguments(int argc, char** argv, optstruct* options);
@@ -64,6 +81,8 @@ void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_
 void read_input_bounded(gsl_matrix* model, gsl_vector* training, optstruct * options);
 void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *options);
 
+void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options);
+void* estimate_thread_function(void* args);
 
 //! print the short-option switches
 void print_usage(void){
@@ -208,7 +227,7 @@ int main (int argc, char ** argv){
 	fprintf(stderr, "nthetas = %d\n", options.nthetas);
 	fprintf(stderr, "nparams = %d\n", options.nparams);
 
-	estimate_thetas(xmodel_input, training_vector, thetas, &options);
+	estimate_thetas_threaded(xmodel_input, training_vector, thetas, &options);
 
 	// calc the new means, new variance and dump to stdout
 	emulate_model(xmodel_input, training_vector, thetas, &options);
@@ -221,27 +240,10 @@ int main (int argc, char ** argv){
 }
 
 
-void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *options){
-	int i = 0;
-	int j = 0;
-	double temp_value = 0.0;
-	FILE *fptr;
-	fptr = fopen(options->filename, "r");
-
-	for(i =0; i < options->nmodel_points; i++){
-		for(j = 0; j < options->nparams; j++){
-			fscanf(fptr, "%lg", &temp_value);
-			gsl_matrix_set(xmodel, i, j, temp_value);
-		}
-		fscanf(fptr, "%lg", &temp_value);
-		gsl_vector_set(training, i, temp_value);
-	}
-	print_matrix(xmodel, options->nmodel_points, options->nparams);
-	fprintf(stderr, "new_x is\n");
-	vector_print(training, options->nmodel_points);
-}
-
-
+/**
+ * take the estimated parameters and turn them into an emulated set of model points 
+ * which can then be output to stdio or whatever 
+ */
 void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, optstruct* options){
 	int i = 0;
 	int j = 0; 
@@ -299,48 +301,200 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	gsl_permutation_free(c_LU_permutation);
 }
 
+// globals for the threads to use
+pthread_mutex_t job_counter_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t results_mutex = PTHREAD_MUTEX_INITIALIZER;
+/* how many lots of thread_level_tries to do */
+int ntries = 4; 
+/* mutex protected counter to keep track of completed jobs */
+int jobnumber = 0; 
+/* global spot for the best thetas to be kept in */
+gsl_vector *best_thetas;
+/* the best value of theta */
+double best_theta_val = -1000;
+
+#define NUMBERTHREADS 2
 
 
+/* threaded estimate thetas */
+void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options){
 
+	/* thread data */
+	int nthreads = NUMBERTHREADS;
+	/* how many attempts to maximise should we make */
+	/* each thread will make this number of tries and then compare its best values 
+	 * to the ones in best_thetas, if it wins it will save them
+	 * we only care about the *best* so it doesn't matter if we just throw 
+	 * the rest out the window... 
+	 */
+	int thread_level_tries = 5; 
+	best_thetas = gsl_vector_alloc(options->nthetas);
 
-void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options){
+	pthread_t threads[NUMBERTHREADS];
+	struct estimate_thetas_params params[NUMBERTHREADS];
+	
+	
+	/* regular stuff */
 	const gsl_rng_type *T;
-	gsl_rng *random_number;
-	int max_tries = 10;
+	
 	int i; 
-	int number_steps = 50;
+	int number_steps = 10;
 	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
-
 	T = gsl_rng_default;
-	random_number = gsl_rng_alloc(T);
-	gsl_rng_set(random_number, get_seed());
+
 	
 	/* set the ranges for the initial values of the NM lookup, 
 	 * might want to adjust these as required etc, but whatever */
 	for(i = 0; i < options->nthetas; i++){
 		gsl_matrix_set(grad_ranges, i, 0, 0.1);
 		gsl_matrix_set(grad_ranges, i, 1, 5.5);
+		gsl_vector_set(best_thetas, i, 0.0);
 	}
-	
-	
-	// the nugget ranges for the gaussian
-	/* 	gsl_matrix_set(grad_ranges, 2, 0,  0.0000001); */
-	/* 	gsl_matrix_set(grad_ranges, 2, 1, 0.01); */
-	
-	// the nugget ranges for the matern model
-	/* if(options->nthetas == 4){ // matern */
-	/* 		gsl_matrix_set(grad_ranges, 3, 0, 0.01); */
-	/* 		gsl_matrix_set(grad_ranges, 3, 1, 0.1); */
-	/* 	} */
 
-	nelderMead(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams);
+
+	/* setup the thread params */
+	for(i = 0; i < nthreads; i++){
+		// alloc a rng for each thread
+		params[i].random_number = gsl_rng_alloc(T);
+		// this is blocking right now (slooow)
+		gsl_rng_set(params[i].random_number, get_seed_noblock());
+		// not sure about this, perhaps each thread should make 10 tries
+		params[i].max_tries = thread_level_tries;
+		params[i].thetas = gsl_vector_alloc(options->nthetas);
+		params[i].grad_ranges = gsl_matrix_alloc(options->nthetas, 2);		
+		params[i].model_input = gsl_matrix_alloc(options->nmodel_points, options->nparams);
+		params[i].training_vector = gsl_vector_alloc(options->nmodel_points);
+		params[i].nmodel_points = options->nmodel_points;
+		params[i].nthetas = options->nthetas;
+		params[i].nparams = options->nparams;
+		params[i].number_steps = number_steps;
+		// now actually copy the stuff into the vectors / matrices
+		gsl_vector_memcpy(params[i].thetas, thetas);
+		gsl_matrix_memcpy(params[i].grad_ranges, grad_ranges);
+		gsl_matrix_memcpy(params[i].model_input, xmodel_input);
+		gsl_vector_memcpy(params[i].training_vector, training_vector);
+		
+	}
+
+	// create the threads
+	for(i = 0; i < nthreads; i++)
+		pthread_create(&threads[i], NULL, &estimate_thread_function, &params[i]);
+	
+	// wait to rejoin
+	for(i = 0; i < nthreads; i++)
+		pthread_join(threads[i], NULL);
+
 
 	fprintf(stderr, "best_thetas: \t");
-	print_vector_quiet(thetas, options->nthetas);
+	print_vector_quiet(best_thetas, options->nthetas);
 
-	gsl_rng_free(random_number);
-	gsl_matrix_free(grad_ranges);
+	// tear down the thread params
+	for(i = 0; i < nthreads; i++){
+		gsl_rng_free(params[i].random_number);
+		gsl_matrix_free(params[i].grad_ranges);
+		gsl_matrix_free(params[i].model_input);
+		gsl_vector_free(params[i].thetas);
+		gsl_vector_free(params[i].training_vector);
+	}
+
+	// copy the global best_theta into the one provided 
+	gsl_vector_memcpy(thetas, best_thetas);
+	// now free best_thetas
+	gsl_vector_free(best_thetas);
+	
+}	
+
+// THIS USES GLOBAL VARIABES DEFINED ABOVE, WATCH OUT!
+// what the threads actually call, put this in here so that the function
+// will share the same scope as the rest of the crap here
+void* estimate_thread_function(void* args){
+	// cast the args back
+	struct estimate_thetas_params *p = (struct estimate_thetas_params*) args;
+	int next_job;
+	int my_id = pthread_self();
+	double my_theta_val = 0.0;
+	while(1){
+		/* see if we've done enough */
+		pthread_mutex_lock(&job_counter_mutex);
+		if(jobnumber == ntries){
+			next_job = -1;
+		} else {
+			next_job = jobnumber;
+			jobnumber++;
+			printf("job: %d by %d\n", next_job, my_id); 
+		}
+		/* now we can unlock the job counter */
+		pthread_mutex_unlock(&job_counter_mutex);
+		
+		/* we're done so stop */
+		if(next_job == -1)
+			break;
+		
+		/* else we do the nelder mead stuff */
+		nelderMead(p->random_number, p->max_tries, p->number_steps, p->thetas, p->grad_ranges, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams);
+
+		// kind of sneakily calling into the maximise.c api (aah well...)
+		my_theta_val = evalLikelyhood(p->thetas, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams);
+
+		pthread_mutex_lock(&results_mutex);
+		printf("results locked by %d\n", my_id);
+		if(my_theta_val > best_theta_val){
+			// this thread has produced better thetas than previously there
+			gsl_vector_memcpy(best_thetas, p->thetas); // save them
+			// save the new best too
+			best_theta_val = my_theta_val;
+			printf("thread %d, won with %g\n", my_id, my_theta_val);
+		}
+		pthread_mutex_unlock(&results_mutex);
+		printf("results unlocked by: %d\n", my_id);
+	}
+	// and relax...
+	return NULL;
 }
+
+
+
+/* /\**  */
+/*  * does the maximum likelyhood estimation on the model_input to try and find the best hyperparams */
+/*  *\/ */
+/* void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options){ */
+/* 	const gsl_rng_type *T; */
+/* 	gsl_rng *random_number; */
+/* 	int max_tries = 10; */
+/* 	int i;  */
+/* 	int number_steps = 50; */
+/* 	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas, 2); */
+
+/* 	T = gsl_rng_default; */
+/* 	random_number = gsl_rng_alloc(T); */
+/* 	gsl_rng_set(random_number, get_seed()); */
+	
+/* 	/\* set the ranges for the initial values of the NM lookup,  */
+/* 	 * might want to adjust these as required etc, but whatever *\/ */
+/* 	for(i = 0; i < options->nthetas; i++){ */
+/* 		gsl_matrix_set(grad_ranges, i, 0, 0.1); */
+/* 		gsl_matrix_set(grad_ranges, i, 1, 5.5); */
+/* 	} */
+	
+	
+/* 	// the nugget ranges for the gaussian */
+/* 	/\* 	gsl_matrix_set(grad_ranges, 2, 0,  0.0000001); *\/ */
+/* 	/\* 	gsl_matrix_set(grad_ranges, 2, 1, 0.01); *\/ */
+	
+/* 	// the nugget ranges for the matern model */
+/* 	/\* if(options->nthetas == 4){ // matern *\/ */
+/* 	/\* 		gsl_matrix_set(grad_ranges, 3, 0, 0.01); *\/ */
+/* 	/\* 		gsl_matrix_set(grad_ranges, 3, 1, 0.1); *\/ */
+/* 	/\* 	} *\/ */
+
+/* 	nelderMead(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams); */
+
+/* 	fprintf(stderr, "best_thetas: \t"); */
+/* 	print_vector_quiet(thetas, options->nthetas); */
+
+/* 	gsl_rng_free(random_number); */
+/* 	gsl_matrix_free(grad_ranges); */
+/* } */
 
 
 
