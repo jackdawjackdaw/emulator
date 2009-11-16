@@ -69,6 +69,10 @@ int armGold(double(*fn)(gsl_vector*, int),
 
 void doSimpleBFGS( double(*fn)(gsl_vector*, int),
 									 void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector* ,int), 
+									 gsl_matrix* ranges,
 									 gsl_vector* xkInit, gsl_vector* xkFinal, gsl_matrix* Binit, int nparams, int nsteps);
+
+
+int test_range_vector( gsl_vector *x, gsl_matrix *ranges, int nparams);
 
 #endif

@@ -46,7 +46,7 @@ void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, g
 		gsl_matrix_free(cinverse);
 		gsl_matrix_free(temp_matrix);
 		gsl_permutation_free(c_LU_permutation);
-		return(temp_val);
+		return(-1*temp_val);
 	}
 
 	// a wrapper to calculate the gradient
@@ -82,11 +82,11 @@ void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, g
 	
 	int tries  = 0;
 	double likelyHood;
-	double bestLikleyHood = -50;
-	gsl_vector *xInit = gsl_vector_alloc(nparams);
-	gsl_vector *xFinal = gsl_vector_alloc(nparams);
-	gsl_vector *xBest = gsl_vector_alloc(nparams);
-	gsl_matrix *Binit = gsl_matrix_alloc(nparams, nparams);
+	double bestLikleyHood = -100;
+	gsl_vector *xInit = gsl_vector_alloc(nthetas);
+	gsl_vector *xFinal = gsl_vector_alloc(nthetas);
+	gsl_vector *xBest = gsl_vector_alloc(nthetas);
+	gsl_matrix *Binit = gsl_matrix_alloc(nthetas, nthetas);
 
 	gsl_vector_set_zero(xBest);
 	gsl_vector_set_zero(xFinal);
@@ -96,16 +96,22 @@ void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, g
 	gsl_matrix_set_identity(Binit);
 	
 	while(tries < max_tries){
-		doSimpleBFGS(&evalFn, &gradFn, xInit, xFinal, Binit, nthetas, nsteps);
-		vector_print(xFinal, nparams);
-		likelyHood = evalFn(xFinal, nparams);
+		doSimpleBFGS(&evalFn, &gradFn, ranges,  xInit, xFinal, Binit, nthetas, nsteps);
+		//vector_print(xFinal, nthetas);
+		likelyHood = -1*evalFn(xFinal, nthetas);
+		printf("L = %g\n", likelyHood);
 		if(likelyHood > bestLikleyHood){
 			bestLikleyHood = likelyHood;
 			gsl_vector_memcpy(xBest, xFinal);
-			printf("best = %d\n", bestLikleyHood);
+
+			printf("best = %g\n", bestLikleyHood);
 		}
 		tries++;
 	}
+	
+	
+
+	printf(" Final best = %g\n", bestLikleyHood);
 
 	// should now save the best values
 	gsl_vector_memcpy(thetas, xBest);

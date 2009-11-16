@@ -39,8 +39,8 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
  * gaussian covariance function, at least not on the ising model.
  */
 double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
-	//return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
-	return(covariance_fn_gaussian(xm, xn , thetas, nthetas, nparams));
+	return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
+	//return(covariance_fn_gaussian(xm, xn , thetas, nthetas, nparams));
 }
 
 /** 
@@ -293,7 +293,7 @@ double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_ve
 
 //! fill in the new_x matrix for 1 and 2d
 /**
- * Given an empty matrix of nparams x nemulate_points this function initliases the points into a square lattice
+ * Given an empty matrix of nparams x nemulate_points this function inits the points into a square lattice
  * however so far this only works for nparams = 1, 2
  */
 void initialise_new_x(gsl_matrix* new_x, int nparams, int nemulate_points, double emulate_min, double emulate_max){

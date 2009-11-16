@@ -203,12 +203,14 @@ int main (int argc, char ** argv){
 	print_vector_quiet(training_vector, options.nmodel_points);
 
 
-	estimate_thetas(xmodel_input, training_vector, thetas, &options);
 
-	printf("using nelder mead we got: ");
+	printf(".....NELDERMEAD......\n");
+	estimate_thetas(xmodel_input, training_vector, thetas, &options);
+	printf("using nelder mead we got: \n");
 	print_vector_quiet(thetas, options.nthetas);
+	printf("........BFGS.........\n");
 	estimate_thetas_BFGS(xmodel_input, training_vector, thetas, &options);
-	printf("using BFGS we got: ");
+	printf("using BFGS we got: \n");
 	print_vector_quiet(thetas, options.nthetas);
 	
 
@@ -359,6 +361,10 @@ void estimate_thetas_BFGS(gsl_matrix* xmodel_input, gsl_vector* training_vector,
 		gsl_matrix_set(grad_ranges, i, 0, 0.001);
 		gsl_matrix_set(grad_ranges, i, 1, 1.5);
 	}
+
+	gsl_matrix_set(grad_ranges, 3, 0, 0.001);
+	gsl_matrix_set(grad_ranges, 3, 0, 0.01);
+
 	
 		
 	//maxWithBFGS(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams);

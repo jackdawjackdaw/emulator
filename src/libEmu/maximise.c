@@ -1,6 +1,6 @@
 #include "maximise.h"
 
-#define FAILVALUE -100
+#define FAILVALUE -800
 
 void print_nasty_error(char* error);
 
@@ -254,7 +254,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	gsl_matrix *new_verticies = gsl_matrix_alloc(nverticies, nthetas);
 	int last_vertex = nverticies -1; // since list starts from 0
 
-	double best_value = -100.0;
+	double best_value = -10000.0;
 	double answer_likelyhood;
 	gsl_vector *best_vector = gsl_vector_alloc(nthetas);
 
@@ -604,6 +604,7 @@ void vector_rectify(gsl_vector *x, int n){
 /**
  * returns the loglikelyhood for a given vertex
  * each time you do this you have to invert the matrix, so this method becomes expensive in high nthetas
+ * i *think* this is the bottleneck but i don't know yet
  * 
  */
 double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *trainingvector, int nmodel_points, int nthetas, int nparams){

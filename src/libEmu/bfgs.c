@@ -1,4 +1,5 @@
 #include "bfgs.h"
+
 void print_vec(gsl_vector* x, int n);
 
 double fRosenbrock( gsl_vector* x, int nparams){
@@ -171,8 +172,8 @@ double lineSearch(double(*fn)(gsl_vector*, int),\
 	while(armGold(fn, gradientFn, direction, position, a, nparams) == 0){
 		a = tau *a;
 		//printf("%g\n", a); 
-		if( a < 1E-10){
-			printf("a is very very small: %g\n", a);
+		if( a < 1E-15){
+			//printf("a is very very small: %g\n", a);
 			// just use it anyway!
 			return(a);
 		}
@@ -241,6 +242,7 @@ int armGold(double(*fn)(gsl_vector*, int), \
 // Binit should be the id matrix 
 void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 									 void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector*, int), \
+									 gsl_matrix* ranges,
 									 gsl_vector* xkInit, gsl_vector* xkFinal, gsl_matrix* Binit, int nparams, int nsteps){
 	int count = 0;
 	int i;
@@ -300,10 +302,9 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 		//void getNewBInverse(gsl_matrix *bprev,  gsl_vector *s, gsl_vector *y, int nparams){
 		getNewBInverse(bkInv, step, yk, nparams);
 
-		
 
 		gsl_vector_set_zero(temp);
-		print_vec(xk1, nparams);
+		//print_vec(xk1, nparams);
 		
 		count++;
 
@@ -319,12 +320,19 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 		absGrad = sqrt(absGrad);
 		
 		if(fabs(absGrad - absGradPrev) < convergedValue){
-			fprintf(stderr, "converged after %d steps", count);
+			fprintf(stderr, "converged after %d steps\n", count);
 			break;
 		}
 		
 		// save the gradient as the previous one
 		absGradPrev = absGrad;
+		
+		// check the ranges
+		if(test_range_vector(xk1, ranges, nparams) == 1){
+			fprintf(stderr, "fell out of range\n");
+			print_vec(xk1, nparams);
+			break;
+		}
 
 	}
 	
@@ -341,6 +349,25 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 	gsl_matrix_free(bkInv);
 }
 
+// short circuting range test
+int test_range_vector( gsl_vector *x, gsl_matrix *ranges, int nparams){
+	int i;
+	int bad_flag =0;
+	double temp_val;
+	for(i = 0; i < nparams; i++){
+		temp_val = gsl_vector_get(x, i);
+		if(temp_val < gsl_matrix_get(ranges, i, 0) || temp_val > gsl_matrix_get(ranges, i, 1)){
+			bad_flag = 1;
+			break;
+		}
+	}
+	if(bad_flag == 1){
+		return(2);
+	} else {
+		return(0);
+	}
+}
+
 
 
 // just to test
@@ -353,6 +380,13 @@ int main (void){
 	gsl_vector* xTest = gsl_vector_alloc(nparams);
 	gsl_vector* xFinal = gsl_vector_alloc(nparams);
 	gsl_matrix* Binit = gsl_matrix_alloc(nparams, nparams);
+	gsl_matrix* ranges = gsl_matrix_alloc(nparams, 2);
+
+	
+	for(i =0; i < nparams; i++){
+		gsl_matrix_set(ranges, i, 0, 0.0);
+		gsl_matrix_set(ranges, i, 1, 1.0);
+	}
 
 	gsl_vector_set(xTest, 0, 0.3);
 	gsl_vector_set(xTest, 1, 0.35);
@@ -364,8 +398,10 @@ int main (void){
 
 	//printf("calling BFGS\n");
 
+
+
 	//void doSimpleBFGS( double(*fn)(gsl_vector*, int), gsl_vector* xkInit, gsl_vector* xkFinal, gsl_matrix* Binit, int nparams, int nsteps){
-	doSimpleBFGS(&fRosenbrock, &getGradientNumeric, xTest, xFinal, Binit, nparams, 100000);
+	doSimpleBFGS(&fRosenbrock, &getGradientNumeric, ranges, xTest, xFinal, Binit, nparams, 100000);
 	print_vec(xFinal, nparams);
 	
 	gsl_matrix_free(Binit);
@@ -373,6 +409,7 @@ int main (void){
 	gsl_vector_free(xFinal);
 	return(0);
 }
+#endif
 
 void print_vec(gsl_vector* x, int n){
 	int i;
@@ -381,4 +418,4 @@ void print_vec(gsl_vector* x, int n){
 	}
 	fprintf(stdout, "\n");
 }
-#endif
+

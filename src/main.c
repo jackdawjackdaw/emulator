@@ -4,10 +4,13 @@
 #include "libEmu/estimator.h"
 #include "libEmu/emulator.h"
 #include "libEmu/maximise.h"
+#include "libEmu/maxbfgs.h"
 #include "ioread.h"
 #include "sys/time.h"
 #include "useful.h"
 #include "pthread.h"
+
+#define NELDER
 
 /**
  * @file
@@ -40,9 +43,9 @@
  */
 #define NTHETASDEFAULT 4
 #define NPARAMSDEFAULT 1
-#define NEMULATEDEFAULT 64
+#define NEMULATEDEFAULT 4096
 #define EMULATEMINDEFAULT 0.0
-#define EMULATEMAXDEFAULT 4.0
+#define EMULATEMAXDEFAULT 1.0
 
 //! holds command line options
 /** 
@@ -57,6 +60,7 @@ typedef struct optstruct{
 	double emulate_min;
 	double emulate_max;
 	char  filename[128];
+	char outputfile[128];
 } optstruct;
 
 struct estimate_thetas_params{
@@ -177,9 +181,12 @@ int main (int argc, char ** argv){
 
 	parse_arguments(argc, argv, &options);	
 	
-
+	
+	// testing
 	//sprintf(input_file, "%s",  "../short.dat");	
 	sprintf(input_file, "%s",  "stdin");
+
+	sprintf(options.outputfile, "emulator-out.txt");
 
 	assert(options.nthetas >0);
 	assert(options.nparams >0);
@@ -229,8 +236,9 @@ int main (int argc, char ** argv){
 
 	estimate_thetas_threaded(xmodel_input, training_vector, thetas, &options);
 
-	// calc the new means, new variance and dump to stdout
+	// calc the new means, new variance and dump to emulator-out.txt
 	emulate_model(xmodel_input, training_vector, thetas, &options);
+
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
 	gsl_matrix_free(xmodel_input);
@@ -262,6 +270,11 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	gsl_matrix *temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
 	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(options->nmodel_points);
 	int lu_signum = 0;
+	
+	FILE *fptr;
+	fptr = fopen(options->outputfile, "w");
+
+
 
 	makeCovMatrix(c_matrix, xmodel, thetas,options->nmodel_points, options->nthetas, options->nparams);
 	gsl_matrix_memcpy(temp_matrix, c_matrix);
@@ -285,10 +298,10 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	 
 	for(i = 0; i < n_emu_points; i++){
 		for(j = 0; j < options->nparams; j++){
-			printf("%g\t", gsl_matrix_get(new_x, i, j));
+			fprintf(fptr, "%g\t", gsl_matrix_get(new_x, i, j));
 		}
-		printf("%g\t", gsl_vector_get(new_mean, i));
-		printf("%g\n", gsl_vector_get(new_variance, i));
+		fprintf(fptr, "%g\t", gsl_vector_get(new_mean, i));
+		fprintf(fptr,"%g\n", gsl_vector_get(new_variance, i));
 	}
 		
 	gsl_matrix_free(new_x);
@@ -299,13 +312,21 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	gsl_vector_free(kplus);
 	gsl_matrix_free(temp_matrix);
 	gsl_permutation_free(c_LU_permutation);
+	fclose(fptr);
 }
+#define NUMBERTHREADS 8
 
+#ifdef USEMUTEX
 // globals for the threads to use
-pthread_mutex_t job_counter_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t results_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t job_counter_mutex;// = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t results_mutex;// = PTHREAD_MUTEX_INITIALIZER;
+#else
+pthread_spinlock_t job_counter_spin;
+pthread_spinlock_t results_spin;
+#endif
+
 /* how many lots of thread_level_tries to do */
-int ntries = 4; 
+int ntries = 2*NUMBERTHREADS; 
 /* mutex protected counter to keep track of completed jobs */
 int jobnumber = 0; 
 /* global spot for the best thetas to be kept in */
@@ -313,7 +334,7 @@ gsl_vector *best_thetas;
 /* the best value of theta */
 double best_theta_val = -1000;
 
-#define NUMBERTHREADS 2
+
 
 
 /* threaded estimate thetas */
@@ -338,7 +359,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	const gsl_rng_type *T;
 	
 	int i; 
-	int number_steps = 10;
+	int number_steps = 20;
 	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
 	T = gsl_rng_default;
 
@@ -346,8 +367,8 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	/* set the ranges for the initial values of the NM lookup, 
 	 * might want to adjust these as required etc, but whatever */
 	for(i = 0; i < options->nthetas; i++){
-		gsl_matrix_set(grad_ranges, i, 0, 0.1);
-		gsl_matrix_set(grad_ranges, i, 1, 5.5);
+		gsl_matrix_set(grad_ranges, i, 0, 0.001);
+		gsl_matrix_set(grad_ranges, i, 1, 1.0);
 		gsl_vector_set(best_thetas, i, 0.0);
 	}
 
@@ -375,6 +396,15 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 		gsl_vector_memcpy(params[i].training_vector, training_vector);
 		
 	}
+	
+	#ifdef USEMUTEX
+	// didn't know you needed to do this?
+	pthread_mutex_init(&job_counter_mutex, NULL);
+	pthread_mutex_init(&results_mutex, NULL);
+	#else 
+	pthread_spin_init(&job_counter_spin, 0);
+	pthread_spin_init(&results_spin, 0);
+	#endif
 
 	// create the threads
 	for(i = 0; i < nthreads; i++)
@@ -384,6 +414,14 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	for(i = 0; i < nthreads; i++)
 		pthread_join(threads[i], NULL);
 
+	#ifdef USEMUTEX
+	// now kill the mutexs
+	pthread_mutex_destroy(&job_counter_mutex);
+	pthread_mutex_destroy(&results_mutex);
+	#else 
+	pthread_spin_destroy(&job_counter_spin);
+	pthread_spin_destroy(&results_spin);
+	#endif
 
 	fprintf(stderr, "best_thetas: \t");
 	print_vector_quiet(best_thetas, options->nthetas);
@@ -401,6 +439,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	gsl_vector_memcpy(thetas, best_thetas);
 	// now free best_thetas
 	gsl_vector_free(best_thetas);
+	gsl_matrix_free(grad_ranges);
 	
 }	
 
@@ -411,42 +450,64 @@ void* estimate_thread_function(void* args){
 	// cast the args back
 	struct estimate_thetas_params *p = (struct estimate_thetas_params*) args;
 	int next_job;
-	int my_id = pthread_self();
+	unsigned long my_id = pthread_self();
 	double my_theta_val = 0.0;
 	while(1){
 		/* see if we've done enough */
+		#ifdef USEMUTEX
 		pthread_mutex_lock(&job_counter_mutex);
+		#else 
+		pthread_spin_lock(&job_counter_spin);
+		#endif
 		if(jobnumber == ntries){
 			next_job = -1;
 		} else {
 			next_job = jobnumber;
 			jobnumber++;
-			printf("job: %d by %d\n", next_job, my_id); 
+			printf("job: %d by %lu\n", next_job, my_id); 
 		}
 		/* now we can unlock the job counter */
+		#ifdef USEMUTEX		
 		pthread_mutex_unlock(&job_counter_mutex);
+		#else 
+		pthread_spin_unlock(&job_counter_spin);
+		#endif
 		
 		/* we're done so stop */
 		if(next_job == -1)
 			break;
 		
+		#ifdef NELDER
 		/* else we do the nelder mead stuff */
 		nelderMead(p->random_number, p->max_tries, p->number_steps, p->thetas, p->grad_ranges, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams);
+		#else
+		maxWithBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas,	\
+								p->nmodel_points, p->nthetas, p->nparams);
+		#endif
+
 
 		// kind of sneakily calling into the maximise.c api (aah well...)
 		my_theta_val = evalLikelyhood(p->thetas, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams);
 
+		#ifdef USEMUTEX
 		pthread_mutex_lock(&results_mutex);
-		printf("results locked by %d\n", my_id);
+		#else 
+		pthread_spin_lock(&results_spin);
+		#endif
+		printf("results locked by %lu\n", my_id);
 		if(my_theta_val > best_theta_val){
 			// this thread has produced better thetas than previously there
 			gsl_vector_memcpy(best_thetas, p->thetas); // save them
 			// save the new best too
 			best_theta_val = my_theta_val;
-			printf("thread %d, won with %g\n", my_id, my_theta_val);
+			printf("thread %lu, won with %g\n", my_id, my_theta_val);
 		}
+		#ifdef USEMUTEX
 		pthread_mutex_unlock(&results_mutex);
-		printf("results unlocked by: %d\n", my_id);
+		#else 
+		pthread_spin_lock(&results_spin);
+		#endif
+		printf("results unlocked by: %lu\n", my_id);
 	}
 	// and relax...
 	return NULL;
