@@ -109,7 +109,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	// wait to rejoin
 	for(i = 0; i < nthreads; i++)
 		pthread_join(threads[i], NULL);
-p
+
 	#ifdef USEMUTEX
 	// now kill the mutexs
 	pthread_mutex_destroy(&job_counter_mutex);
