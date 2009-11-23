@@ -1,6 +1,6 @@
 CC = gcc
 LDFLAGS = -lgsl -lgslcblas -lm
-CFLAGS = -O0 -Wall -g -pedantic -Wextra -std=gnu99 -I$(PWD)/libEmu -fPIC	
+CFLAGS = -O2 -Wall -pg -g -pedantic -Wextra -std=gnu99 -I$(PWD)/libEmu -fPIC	
 #CFLAGS = -O3 -Wall
 TAGS = etags #for emacs
 LTOOL = libtool
@@ -8,7 +8,7 @@ LINK = --mode=link gcc
 
 
 
-all: multidrive main
+all: main
 
 multifit:
 	$(CC) -c multifit.c $(CFLAGS) $(LDFLAGS)
@@ -32,6 +32,8 @@ smasher:
 multihelper:
 	$(CC) -c multihelper.c $(CFLAGS)
 
+estimateThreaded:
+	$(CC) -c estimate_threaded.c $(CFLAGS)
 
 test:
 	$(MAKE) -C test
@@ -49,8 +51,9 @@ tags:
 	$(TAGS) emulator.c 
 	$(TAGS) --append estimator.c
 
-main:  ioread persist useful libEmulator
-	$(LTOOL) $(LINK) main.c -o emulator.out  ./libEmu/libEmu.la ioread.o persist.o useful.o $(LDFLAGS) $(CFLAGS)
+main:  ioread persist useful estimateThreaded
+	$(LTOOL) $(LINK) main.c -o emulator.out  ./libEmu/libEmu.la estimate_threaded.o  ioread.o persist.o useful.o $(LDFLAGS) $(CFLAGS) -pthread
+
 
 clean:
 	rm *.o

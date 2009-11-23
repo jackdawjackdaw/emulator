@@ -1,5 +1,8 @@
 
 #include "multifit.h"
+#include "estimate_thetas_thread.h"
+
+
 
 /* typedef struct eopts{ */
 /* 	int nmodel_points; */
@@ -127,6 +130,22 @@ void estimate_region(eopts* options, gsl_rng *random){ /*  */
 }
 
 
+/** call out to estimate_thetas_threaded 
+ * and push the answer back into options->thetas 
+ */
+void estimate_region_threaded(eopts* options){
+	
+	optstruct newopts;	
+	copy_eopts_to_optstruct(&newopts, options);
+	estimate_thetas_threaded(options->xmodel, options->training, options->thetas, &newopts);
+	// now the answer is back in options->thetas which is what we want
+}
+
+
+
+
+
+
 /*void evaluate_region(gsl_matrix* new_x, gsl_vector* new_mean, gsl_vector* new_variance, eopts* options, gsl_rng * random){
 	estimate_region(options, random);
 	emulate_region(new_x, new_mean, new_variance, options);
@@ -135,6 +154,12 @@ void estimate_region(eopts* options, gsl_rng *random){ /*  */
 //! do the estimation and emulation for a region
 void evaluate_region(emuResult *results, eopts* options, gsl_rng* random){
 	estimate_region(options, random);
+	emulate_region(results->new_x, results->new_mean, results->new_var, options);
+}
+
+//! do the estimation and emulation for a region
+void evaluate_region_threaded(emuResult *results, eopts* options, gsl_rng* random){
+	estimate_region_threaded(options);
 	emulate_region(results->new_x, results->new_mean, results->new_var, options);
 }
 

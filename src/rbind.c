@@ -83,7 +83,7 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 
 	// actually do the emulation, this function 
 	// can be found in multifit.c
-	evaluate_region(&theResult, &theOptions, random);
+	evaluate_region_threaded(&theResult, &theOptions, random);
 
 	fprintf(stderr, "back from evaluate region\n");
 

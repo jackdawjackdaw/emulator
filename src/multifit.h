@@ -84,6 +84,8 @@ typedef struct region{
 
 void emulate_region(gsl_matrix *new_x, gsl_vector* emulated_mean, gsl_vector* emulated_variance , eopts* options);
 void estimate_region(eopts* options, gsl_rng *random);
+void estimate_region_threaded(eopts* options, gsl_rng *random);
+
 void evaluate_region(emuResult *results, eopts* options, gsl_rng* random);
 int is_smooth(double smooth_val, gsl_vector* xemu, gsl_vector* mean_emu, gsl_vector* var_emu, eopts* options);
 double get_mse( double mean, double variance);
@@ -95,8 +97,39 @@ void create_clusters_1d(emuResult *res, region** region_list, int* number_region
 void copy_region_array(region* target, region* source, int length);
 void assign_model_point(eopts* regionOpts, region* the_region);
 
+void evaluate_region_threaded(emuResult *results, eopts* options, gsl_rng* random);
+
 // moved in from multi-drive.c
 void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl_rng* random_number);
 void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * local_split_ranges, eopts* toplevel);
 void split_region_options(eopts *result, eopts *parent, double lower, double upper);
+
+// stupid wrappers 
+typedef struct optstruct{
+	int nthetas;
+	int nparams;
+	int nmodel_points;
+	int nemulate_points;
+	double emulate_min;
+	double emulate_max;
+	char  filename[128];
+	char outputfile[128];
+} optstruct;
+
+
+// a simple helper to match data structures from main.c and multidrive. (doh)
+void copy_eopts_to_optstruct(optstruct* dest, eopts* source);
+
+
+void copy_eopts_to_optstruct(optstruct* dest, eopts* source){
+	dest->nthetas = source->nthetas;
+	dest->nparams = source->nparams;
+	dest->nmodel_points = source->nmodel_points;
+	dest->nemulate_points = source->nemu_points;
+	dest->emulate_min = source->range_min;
+	dest->emulate_max = source->range_max;
+	sprintf(dest->outputfile, "%s", source->filename);
+	// don't need this so just make a note that it's nothing
+	sprintf(dest->filename, "VOID");
+}
 #endif
