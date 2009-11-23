@@ -39,7 +39,7 @@ test:
 	$(MAKE) -C test
 
 persist:
-	$(CC) -c persist.c $(CFLAGS) $(LDFLAGS)
+	$(CC) -c persist.c $(CFLAGS) $(LDFLAGS
 
 useful:
 	$(CC) -c useful.c $(CFLAGS) $(LDFLAGS)

@@ -6,7 +6,7 @@
 #include "libEmu/maximise.h"
 #include "useful.h"
 #include "gsl/gsl_rng.h"
-
+#include "main.h"
 
 //! options for a single run of the emulator
 /**
@@ -104,17 +104,6 @@ void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl
 void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * local_split_ranges, eopts* toplevel);
 void split_region_options(eopts *result, eopts *parent, double lower, double upper);
 
-// stupid wrappers 
-typedef struct optstruct{
-	int nthetas;
-	int nparams;
-	int nmodel_points;
-	int nemulate_points;
-	double emulate_min;
-	double emulate_max;
-	char  filename[128];
-	char outputfile[128];
-} optstruct;
 
 
 // a simple helper to match data structures from main.c and multidrive. (doh)

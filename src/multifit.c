@@ -1,6 +1,6 @@
 
 #include "multifit.h"
-#include "estimate_thetas_thread.h"
+#include "estimate_threaded.h"
 
 
 

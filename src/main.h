@@ -1,6 +1,24 @@
 #ifndef __INC_MAIN__
 #define __INC_MAIN__
 
+//! holds command line options
+/** 
+ * designed to hold basic command line 
+ * options
+ */
+typedef struct optstruct{
+	int nthetas;
+	int nparams;
+	int nmodel_points;
+	int nemulate_points;
+	double emulate_min;
+	double emulate_max;
+	char  filename[128];
+	char outputfile[128];
+} optstruct;
+
+
+
 #include "stdio.h"
 #include "stdlib.h"
 #include "unistd.h"
@@ -51,21 +69,6 @@
 #define EMULATEMINDEFAULT 0.0
 #define EMULATEMAXDEFAULT 1.0
 
-//! holds command line options
-/** 
- * designed to hold basic command line 
- * options
- */
-typedef struct optstruct{
-	int nthetas;
-	int nparams;
-	int nmodel_points;
-	int nemulate_points;
-	double emulate_min;
-	double emulate_max;
-	char  filename[128];
-	char outputfile[128];
-} optstruct;
 
 
 
