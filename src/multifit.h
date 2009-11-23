@@ -84,7 +84,8 @@ typedef struct region{
 
 void emulate_region(gsl_matrix *new_x, gsl_vector* emulated_mean, gsl_vector* emulated_variance , eopts* options);
 void estimate_region(eopts* options, gsl_rng *random);
-void estimate_region_threaded(eopts* options, gsl_rng *random);
+
+void estimate_region_threaded(eopts* options);
 
 void evaluate_region(emuResult *results, eopts* options, gsl_rng* random);
 int is_smooth(double smooth_val, gsl_vector* xemu, gsl_vector* mean_emu, gsl_vector* var_emu, eopts* options);
@@ -97,7 +98,7 @@ void create_clusters_1d(emuResult *res, region** region_list, int* number_region
 void copy_region_array(region* target, region* source, int length);
 void assign_model_point(eopts* regionOpts, region* the_region);
 
-void evaluate_region_threaded(emuResult *results, eopts* options, gsl_rng* random);
+
 
 // moved in from multi-drive.c
 void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl_rng* random_number);
@@ -110,15 +111,4 @@ void split_region_options(eopts *result, eopts *parent, double lower, double upp
 void copy_eopts_to_optstruct(optstruct* dest, eopts* source);
 
 
-void copy_eopts_to_optstruct(optstruct* dest, eopts* source){
-	dest->nthetas = source->nthetas;
-	dest->nparams = source->nparams;
-	dest->nmodel_points = source->nmodel_points;
-	dest->nemulate_points = source->nemu_points;
-	dest->emulate_min = source->range_min;
-	dest->emulate_max = source->range_max;
-	sprintf(dest->outputfile, "%s", source->filename);
-	// don't need this so just make a note that it's nothing
-	sprintf(dest->filename, "VOID");
-}
 #endif

@@ -13,15 +13,15 @@ all: main
 multifit:
 	$(CC) -c multifit.c $(CFLAGS) $(LDFLAGS)
 
-multidrive: libEmulator multifit  persist ioread useful smasher multihelper
-	$(LTOOL) $(LINK) multi-drive.c -o ../multi-drive.out ./libEmu/libEmu.la  persist.o ioread.o useful.o  multifit.o smasher.o multihelper.o $(LDFLAGS) $(CFLAGS)
+multidrive: libEmulator multifit  persist ioread useful smasher multihelper estimateThreaded
+	$(LTOOL) $(LINK) multi-drive.c -o ../multi-drive.out ./libEmu/libEmu.la  persist.o ioread.o useful.o estimate_threaded.o  multifit.o smasher.o multihelper.o $(LDFLAGS) $(CFLAGS) -pthread
 
 # sorry libtool doing this one by hand...
 rbind: 
 	$(CC) -c rbind.c $(CFLAGS)
 
-libRbind: rbind useful multifit multihelper 
-	$(CC) -shared $(CFLAGS) -o libRbind.so rbind.o useful.o multifit.o multihelper.o $(LDFLAGS) ./libEmu/.libs/libEmu.a
+libRbind: rbind useful multifit multihelper estimateThreaded
+	$(CC) -shared $(CFLAGS) -o libRbind.so estimate_threaded.o rbind.o useful.o multifit.o multihelper.o $(LDFLAGS) ./libEmu/.libs/libEmu.a -pthread
 
 libEmulator:
 	$(MAKE) -C libEmu
@@ -39,7 +39,7 @@ test:
 	$(MAKE) -C test
 
 persist:
-	$(CC) -c persist.c $(CFLAGS) $(LDFLAGS
+	$(CC) -c persist.c $(CFLAGS) $(LDFLAGS)
 
 useful:
 	$(CC) -c useful.c $(CFLAGS) $(LDFLAGS)

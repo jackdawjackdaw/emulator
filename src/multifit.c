@@ -142,6 +142,18 @@ void estimate_region_threaded(eopts* options){
 }
 
 
+void copy_eopts_to_optstruct(optstruct* dest, eopts* source){
+	dest->nthetas = source->nthetas;
+	dest->nparams = source->nparams;
+	dest->nmodel_points = source->nmodel_points;
+	dest->nemulate_points = source->nemu_points;
+	dest->emulate_min = source->range_min;
+	dest->emulate_max = source->range_max;
+	sprintf(dest->outputfile, "%s", source->filename);
+	// don't need this so just make a note that it's nothing
+	sprintf(dest->filename, "VOID");
+}
+
 
 
 
