@@ -10,24 +10,25 @@ testIsing <- function(){
   nemupts <- 100
   ans<-callcode(model, nmodelpts, nemupts=nemupts)
   plotResults(model, ans)  
-  ans
+  #ans
 }
 
 plotResults <- function(model, results){
-  # plots the first dimension by default
-  plot(model$xmodel[,1], model$training)
+  # this works in 1d now
+  plot(model$xmodel, model$training)
   lines(results$emulatedx, results$emulatedy, col="red")
   confidence <- rep(NA, length(results$emulatedvar))
   for(i in 1:length(results$emulatedvar))
     confidence[i] <- 0.5*sqrt(results$emulatedvar[i])*1.65585
-  lines(results$emulatedx, results$emualtedy + confidence, col="blue")
-  lines(results$emulatedx, results$emualtedy - confidence, col="blue")  
+ 
+  lines(results$emulatedx, results$emulatedy + confidence, col="blue")
+  lines(results$emulatedx, results$emulatedy - confidence, col="blue")  
 }
 
 test1dSin <- function(){
-  nmodelpts <- 50
+  nmodelpts <- 40
   model <- test1dRCall(nmodelpts)
-  ans<-callcode(model, nmodelpts, rangemin=0.0, rangemax=60)
+  ans<-callcode(model, nmodelpts, rangemin=0.0, rangemax=60, nemupts=100)
   plotResults(model, ans)
 }
 
