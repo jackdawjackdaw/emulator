@@ -1,6 +1,9 @@
 #include "estimate_threaded.h"
 
 
+// this lives in libEmu/emulator.c
+extern emulator_opts the_emulator_options;
+
 
 #define NUMBERTHREADS 2
 
@@ -14,7 +17,7 @@ pthread_spinlock_t results_spin;
 #endif
 
 /* how many lots of thread_level_tries to do */
-int ntries = 2*NUMBERTHREADS; 
+int ntries = 2; 
 /* mutex protected counter to keep track of completed jobs */
 int jobnumber = 0; 
 /* global spot for the best thetas to be kept in */
@@ -34,7 +37,7 @@ double best_theta_val = -1000;
  * Spinlocks are slightly faster but they are probably not universally supported...
  */
 void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options){
-
+	
 	/* thread data */
 	int nthreads = NUMBERTHREADS;
 	/* how many attempts to maximise should we make */
@@ -49,7 +52,10 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	pthread_t threads[NUMBERTHREADS];
 	struct estimate_thetas_params params[NUMBERTHREADS];
 	
-	
+	// set the jobnumber back to zero otherwise running twice will kill ya
+	jobnumber = 0;
+	best_theta_val = -1000;
+
 	/* regular stuff */
 	const gsl_rng_type *T;
 	
@@ -67,6 +73,13 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 		gsl_matrix_set(grad_ranges, i, 1, 1.0);
 		gsl_vector_set(best_thetas, i, 0.0);
 	}
+
+	if(the_emulator_options.usematern ==0){
+		// hackity hack, force the nugget to be small
+		gsl_matrix_set(grad_ranges, 2, 0, 0.000001);
+		gsl_matrix_set(grad_ranges, 2, 1, 0.00001);
+	}
+	
 
 
 	/* setup the thread params */

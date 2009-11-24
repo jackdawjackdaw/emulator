@@ -42,7 +42,17 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	emuResult theResult;
 	eopts theOptions;
 
-	//fprintf(stderr, "%d\t%d\t%d\t%d\n", nmodel_points, nparams, nemupts, nthetas);
+	// reset the common vecs, this might be messing things up?
+	for(i = 0; i < nemupts; i++){
+		final_emulated_y[i] = 0.0;
+		final_emulated_variance[i] = 0.0;
+	}
+	for(i =0; i < nemupts*nparams;i++){
+		final_emulated_x[i] = 0.0;
+	}
+	
+
+	fprintf(stderr, "%d\t%d\t%d\t%d\n", nmodel_points, nparams, nemupts, nthetas);
 
 	// setup the rng
 	rng_type = gsl_rng_default;
@@ -75,6 +85,7 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	theOptions.nthetas = nthetas;
 	theOptions.training = training_vec;
 	theOptions.thetas = thetas;
+	sprintf(theOptions.filename,"NOTHING");
 
 	// alloc the result bits
 	theResult.nemu_points = nemupts;
@@ -86,6 +97,7 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	// actually do the emulation, this function 
 	// can be found in multifit.c
 	evaluate_region_threaded(&theResult, &theOptions, random);
+	//evaluate_region(&theResult, &theOptions, random);
 
 	fprintf(stderr, "back from evaluate region\n");
 
@@ -214,7 +226,8 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 	// setup the rng
 	rng_type = gsl_rng_default;
 	random = gsl_rng_alloc(rng_type);
-	gsl_rng_set(random, get_seed());
+	// don't wait for a truly random seeed :(
+	gsl_rng_set(random, get_seed_noblock());
 
 
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
