@@ -29,13 +29,13 @@ int main (void){
 	int nparams = 1;	
 	int nmodelpts;
 	int nthetas = 4;
-	int nemupts= 40;
+	int nemupts= 10;
 
 	the_options.nthetas = 4;
 	the_options.nparams= 1;
 
 
-	sprintf(filename, "../../model-cut.dat");
+	sprintf(filename, "../../wobbly-small.dat");
 	
 	if((fptr = fopen(filename, "r")) == NULL){
 		fprintf(stderr, "couldn't open file: %s\n", filename);
@@ -77,6 +77,14 @@ int main (void){
 	for(i = 0; i < nmodelpts; i++)
 		training_flat[i] = gsl_vector_get(the_options.training, i);
 
+	callEmulator(xmodel_flat, &nparams, training_flat, &nmodelpts, &nthetas, final_emulated_x, &nemupts, final_emulated_y,\
+							 final_emulated_variance, &range_min, &range_max);
+	
+	for(i = 0; i < nemupts; i++)
+		printf("%g\t%g\t%g\n", final_emulated_x[i], final_emulated_y[i], final_emulated_variance[i]);
+
+	// now call it again, why? because ooh it doesn't work! 
+	
 	callEmulator(xmodel_flat, &nparams, training_flat, &nmodelpts, &nthetas, final_emulated_x, &nemupts, final_emulated_y,\
 							 final_emulated_variance, &range_min, &range_max);
 	
