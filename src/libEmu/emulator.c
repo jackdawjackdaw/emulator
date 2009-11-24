@@ -1,5 +1,4 @@
 #include "emulator.h"
-
 /** 
  * @file 
  * @author Chris Coleman-Smith cec24@phy.duke.edu
@@ -10,6 +9,27 @@
  * correct hyperparameters (theta) then the makeEmulatedMean and makeEmulatedVariance
  * functions can be used  
  */
+
+//! a GLOBAL structure which will be queried by the functions to set params
+emulator_opts the_emulator_options;
+
+
+//! this MUST BE CALLED FIRST before any emulatoring
+void set_emulator_defaults(emulator_opts* x){
+	// set some default behaviour
+	x->alpha = 1.9;
+	x->usematern = 0;
+}
+	
+
+void print_emulator_options(emulator_opts* x){
+	if(x->usematern ==0){
+		fprintf(stderr, "using a power-exp covariance function\n");
+		fprintf(stderr, "alpha = %g\n", x->alpha);				
+	} else {
+		fprintf(stderr, "using a matern covariance function\n");
+	}
+}
 
 
 
@@ -39,8 +59,11 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
  * gaussian covariance function, at least not on the ising model.
  */
 double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
-	return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
-	//return(covariance_fn_gaussian(xm, xn , thetas, nthetas, nparams));
+	if(the_emulator_options.usematern == 1){
+		return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
+	} else {
+		return(covariance_fn_gaussian(xm, xn , thetas, nthetas, nparams, the_emulator_options.alpha));
+	}
 }
 
 /** 
@@ -51,8 +74,6 @@ double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nth
 
 
 //! calculate the covariance between a set of input points
-#define ALPHA 1.90
-//#define ALPHA 2.0
 /** 
  * calculate the covariance between the two given vectors (xm, xn) 
  * where xm and xn are vectors of length nparams and their elements represent the various
@@ -86,7 +107,7 @@ double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nth
  * to adjust some of the calls there. 
  *
  */
-double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams, double alpha){
 	// calc the covariance for a given set of input points
 	int i, truecount  = 0;
 	double covariance = 0.0;
@@ -97,9 +118,9 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
 		xn_temp = gsl_vector_get(xn, i);
 		r_temp = gsl_vector_get(thetas, i+3);
-		r_temp = pow(r_temp , ALPHA); 
+		r_temp = pow(r_temp , alpha); 
 		// gaussian term				
-		covariance += exp((-1.0/2.0)*pow(fabs(xm_temp-xn_temp), ALPHA)/(r_temp));
+		covariance += exp((-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp));
 		//DEBUGprintf("%g\n", covariance);
 		/*
 		 * this is slightly dangerous float comparison

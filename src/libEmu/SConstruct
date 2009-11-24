@@ -5,10 +5,10 @@ cflags = '-O -c -O2 -Wextra -pedantic -std=c99'
 # debug flags
 debug = '-O -c -O0 -g'
 # use the matern covariance function
-usematern = ' -DMATERN'
+#usematern = ' -DMATERN'
 
-env_prod = Environment(CCFLAGS = cflags+usematern)
-env_debug = Environment(CCFLAGS = debug+usematern)
+env_prod = Environment(CCFLAGS = cflags)
+env_debug = Environment(CCFLAGS = debug)
 
 # source files to make the lib
 src_files = Split('estimator.c emulator.c maximise.c maxbfgs.c bfgs.c')
@@ -16,5 +16,5 @@ src_files = Split('estimator.c emulator.c maximise.c maxbfgs.c bfgs.c')
 libs=Split('gsl gslcblas m')
 
 # make the libEmu library (shared)
-env_prod.SharedLibrary('libEmu', src_files, LIBS=libs)
+env_prod.Library('libEmu', src_files, LIBS=libs)
 

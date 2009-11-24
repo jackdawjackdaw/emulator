@@ -88,6 +88,7 @@ void estimate_region(eopts* options, gsl_rng *random);
 void estimate_region_threaded(eopts* options);
 
 void evaluate_region(emuResult *results, eopts* options, gsl_rng* random);
+void evaluate_region_threaded(emuResult *results, eopts* options, gsl_rng* random);
 int is_smooth(double smooth_val, gsl_vector* xemu, gsl_vector* mean_emu, gsl_vector* var_emu, eopts* options);
 double get_mse( double mean, double variance);
 void set_likelyhood_ranges(gsl_matrix* ranges_matrix, int nthetas);

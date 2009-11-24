@@ -1,15 +1,7 @@
-#include "stdio.h"
-#include "stdlib.h"
-#include "unistd.h"
-#include "libEmu/estimator.h"
-#include "libEmu/emulator.h"
-#include "libEmu/maximise.h"
-#include "libEmu/maxbfgs.h"
-#include "ioread.h"
-#include "sys/time.h"
-#include "useful.h"
-#include "estimate_threaded.h"
 #include "main.h"
+
+// this lives in libEmu/emulator.c it's important!
+extern emulator_opts the_emulator_options;
 
 
 //! print the short-option switches
@@ -157,6 +149,16 @@ int main (int argc, char ** argv){
 	
 	fprintf(stderr, "nthetas = %d\n", options.nthetas);
 	fprintf(stderr, "nparams = %d\n", options.nparams);
+	
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// this is key
+	// fills in a structure in libEmu which 
+	// sets gaussian or matern cov fn and 
+	// the alpha option for the gaussian
+	set_emulator_defaults(&the_emulator_options);
+	// show the default options in the lib
+	print_emulator_options(&the_emulator_options);
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	estimate_thetas_threaded(xmodel_input, training_vector, thetas, &options);
 

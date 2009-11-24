@@ -1,11 +1,16 @@
 #include "libEmu/emulator.h"
 #include "libEmu/estimator.h"
 #include "libEmu/maximise.h"
+#include "estimate_threaded.h"
 #include "multifit.h"
 #include "useful.h"
+#include "stdio.h"
 
 void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx);
 void convertDoubleToVector(gsl_vector* the_vec, double* input, int nx);
+
+// this lives in libEmu/emulator.c it's important!
+extern emulator_opts the_emulator_options;
 
 /**
  * just enough setup and teardown to call the emulator directly from R
@@ -44,24 +49,21 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	random = gsl_rng_alloc(rng_type);
 	gsl_rng_set(random, get_seed());
 
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// this is key
+	// fills in a structure in libEmu which 
+	// sets gaussian or matern cov fn and 
+	// the alpha option for the gaussian
+	set_emulator_defaults(&the_emulator_options);
+	// show the default options in the lib
+	print_emulator_options(&the_emulator_options);
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 	// fill in xmodel 
 	convertDoubleToMatrix(xmodel, xmodel_in, nparams, nmodel_points);
 	// fill in the training vec
 	convertDoubleToVector(training_vec, training_in, nmodel_points);
-
-
-/* 	for(j=0; j < nparams; j++){ */
-/* 		for(i = 0; i < nmodel_points; i++){ */
-/* 			fprintf(stderr, "%g\n" , gsl_matrix_get(xmodel, i, j)); */
-/* 		} */
-/* 	} */
-	
-/* 	// fill in the training vec */
-/* 	for(i = 0; i < nmodel_points; i++){ */
-/* 		fprintf(stderr, "%g\n", gsl_vector_get(training_vec, i)); */
-/* 	} */
-	
-
 
 	// fill in the options
 	theOptions.nmodel_points = nmodel_points;
@@ -112,11 +114,176 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	gsl_rng_free(random);
 }
 
-/*void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int *nmodelpts, 
-int* nthetas_in, double* final_emulated_x, int *nemupts_in, double* final_emulated_y, 
-double* final_emulated_variance , double* range_min_in, double* range_max_in ){ */
 
-/*
+
+/**
+ * just calculate the thetas for a model
+ */
+void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *nmodelpts, int *nthetas_in, double* final_thetas){
+	int i;
+	int nmodel_points = *nmodelpts;
+	int nparams = *nparams_in;
+	int nthetas = *nthetas_in;
+	gsl_matrix *xmodel = gsl_matrix_alloc(nmodel_points, nparams);
+	gsl_vector *training_vec = gsl_vector_alloc(nmodel_points);
+	gsl_vector *thetas = gsl_vector_alloc(nthetas);
+
+	gsl_rng* random; 
+	const gsl_rng_type *rng_type;
+	
+	eopts theOptions;
+	// setup the rng
+	rng_type = gsl_rng_default;
+	random = gsl_rng_alloc(rng_type);
+	gsl_rng_set(random, get_seed());
+
+	// fill in xmodel 
+	convertDoubleToMatrix(xmodel, xmodel_in, nparams, nmodel_points);
+	// fill in the training vec
+	convertDoubleToVector(training_vec, training_in, nmodel_points);
+
+	// fill in the options
+	theOptions.nmodel_points = nmodel_points;
+	theOptions.nemu_points = 200;
+	theOptions.nparams = nparams;
+	// these two don't do anything, right?
+	theOptions.range_min = 0;
+	theOptions.range_max = 1;
+
+	theOptions.xmodel = xmodel;
+	theOptions.nthetas = nthetas;
+	theOptions.training = training_vec;
+	theOptions.thetas = thetas;
+
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// this is key
+	// fills in a structure in libEmu which 
+	// sets gaussian or matern cov fn and 
+	// the alpha option for the gaussian
+	set_emulator_defaults(&the_emulator_options);
+	// show the default options in the lib
+	print_emulator_options(&the_emulator_options);
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+	// call out to the estimation func
+	estimate_region_threaded(&theOptions);
+
+
+	// set the final results
+	for(i = 0; i < nthetas; i++)
+		final_thetas[i] = gsl_vector_get(thetas, i);
+
+
+	// tidy up
+	gsl_matrix_free(xmodel);
+	gsl_vector_free(thetas);
+	gsl_vector_free(training_vec);
+	gsl_rng_free(random);
+
+}
+
+/**
+ * run the emulator against a given set of data and given hyperparams theta
+ */
+void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* nmodelpts, double* thetas_in, int* nthetas_in, double* final_emulated_x, int *nemupts_in, double* final_emulated_y, double* final_emulated_variance, double* range_min_in, double*range_max_in){
+	
+	int i, j;
+	int nmodel_points = *nmodelpts;
+	int nparams = *nparams_in;
+	int nemupts = *nemupts_in;
+	int nthetas = *nthetas_in;
+	fprintf(stderr,"nthetas = %d\n", nthetas);
+	fprintf(stderr, "nparams = %d\n", nparams);
+	fprintf(stderr, "nemupts = %d\n", nemupts);
+	gsl_matrix *xmodel = gsl_matrix_alloc(nmodel_points, nparams);
+	gsl_matrix *new_x = gsl_matrix_alloc(nemupts, nparams);
+	gsl_vector *training_vec = gsl_vector_alloc(nmodel_points);
+	gsl_vector *emulated_variance = gsl_vector_alloc(nemupts);
+	gsl_vector *emulated_y = gsl_vector_alloc(nemupts);
+	gsl_vector *thetas = gsl_vector_alloc(nthetas);
+	//\todo sethis up
+	gsl_rng* random; 
+	const gsl_rng_type *rng_type;
+
+	// need these to call the routines which actually do the emulation
+	emuResult theResult;
+	eopts theOptions;
+
+
+	// setup the rng
+	rng_type = gsl_rng_default;
+	random = gsl_rng_alloc(rng_type);
+	gsl_rng_set(random, get_seed());
+
+
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// this is key
+	// fills in a structure in libEmu which 
+	// sets gaussian or matern cov fn and 
+	// the alpha option for the gaussian
+	set_emulator_defaults(&the_emulator_options);
+	// show the default options in the lib
+	print_emulator_options(&the_emulator_options);
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+	// fill in thetas
+	convertDoubleToVector(thetas, thetas_in, nthetas);
+	// fill in xmodel 
+	convertDoubleToMatrix(xmodel, xmodel_in, nparams, nmodel_points);
+	// fill in the training vec
+	convertDoubleToVector(training_vec, training_in, nmodel_points);
+
+	// fill in the options
+	theOptions.nmodel_points = nmodel_points;
+	theOptions.nemu_points = nemupts;
+	theOptions.nparams = nparams;
+	theOptions.range_min = *range_min_in;
+	theOptions.range_max = *range_max_in;
+	theOptions.xmodel = xmodel;
+	theOptions.nthetas = nthetas;
+	theOptions.training = training_vec;
+	theOptions.thetas = thetas;
+
+	// alloc the result bits
+	theResult.nemu_points = nemupts;
+	theResult.nparams = nparams;
+	theResult.new_x = new_x;
+	theResult.new_mean = emulated_y; 
+	theResult.new_var = emulated_variance;
+
+	// call out to multifit.c:emulate_region
+	emulate_region(theResult.new_x, theResult.new_mean, theResult.new_var, &theOptions);
+	
+	// Fill in emulated_y, emulated_variance
+	for(i = 0; i < nemupts; i++){
+		final_emulated_y[i] = gsl_vector_get(emulated_y, i);
+		final_emulated_variance[i] = gsl_vector_get(emulated_variance, i);
+	}
+
+	// fill in final emulated_x
+	for(j = 0; j < nparams; j++){
+		for(i = 0; i < nemupts; i++){
+			final_emulated_x[i+j*nmodel_points] = gsl_matrix_get(new_x, i, j);
+		}
+	}
+
+	
+	
+	// tidy up
+	gsl_matrix_free(xmodel);
+	gsl_matrix_free(new_x);
+	gsl_vector_free(emulated_variance);
+	gsl_vector_free(emulated_y);
+	gsl_vector_free(thetas);
+	gsl_vector_free(training_vec);
+	gsl_rng_free(random);
+}
+
+
+
+/**
  * this is a binding to call the function libEmu/maximise.c:evalLikelyhood
  * double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *trainingvector, 
  * int nmodel_points, int nthetas, int nparams) 
