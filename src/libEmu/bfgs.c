@@ -1,41 +1,6 @@
-//! A C implementation of the BFGS algorithm as sketched out in mathematica
-#include "stdio.h"
-#include "stdlib.h"
-#include "math.h"
-#include "gsl/gsl_vector.h"
-#include "gsl/gsl_matrix.h"
-#include "gsl/gsl_linalg.h"
-#include "gsl/gsl_blas.h"
-#include "assert.h"
+#include "bfgs.h"
 
-/** 
- * This should provide an additional maximisation method for libEmu
- */
-
-/**
- * function pointers
- * float fn (float a, float b)
- * 
- * void foo( float (*ptr)(float, float)){
- * result = ptr(a, b);
- * }
- *
- * foo(&fn);
- */
-
-/* test functions */
-double fRosenbrock( gsl_vector* x, int nparams); 
-double fSphere(gsl_vector *x, int nparams);
-double fPowers( gsl_vector*x, int nparams);
-
-/* actual bfgs functions */
-void getGradientNumeric(double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* gradient, int nparams);
-void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), gsl_vector* xk, int nparams, gsl_matrix* bkInv);
-void getYk(gsl_vector* yk, double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* xk1, int nparams);
-void getNewBInverse(gsl_matrix *bprev,  gsl_vector *s, gsl_vector *y, int nparams);
-void getNewB(gsl_matrix* b, gsl_vector* s, gsl_vector* y, int nparams);
-double lineSearch(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* position, int nparams);
-int armGold(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* position, double a, int nparams);
+void print_vec(gsl_vector* x, int n);
 
 double fRosenbrock( gsl_vector* x, int nparams){
 	double xp, yp;
@@ -66,7 +31,7 @@ double fPowers( gsl_vector*x, int nparams){
 
 // first order finite diffs, not very accurate
 void getGradientNumeric(double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* gradient, int nparams){
-	double stepsize = 1.0E-8;
+	double stepsize = 1.0E-10;
 	int i, j;
 	gsl_vector* temp = gsl_vector_alloc(nparams);
 	gsl_vector* localGradient = gsl_vector_alloc(nparams);
@@ -95,13 +60,16 @@ void getGradientNumeric(double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vecto
  * nparams is the number of dimensions in step and xk
  * bkInv is the approximate inverse of the Hessian matrix
  */
-void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), gsl_vector* xk, int nparams, gsl_matrix* bkInv){
+void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), \
+								void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector*, int), \
+								gsl_vector* xk, int nparams, gsl_matrix* bkInv){
 	double norm = 0.0;
 	int i;
 	gsl_vector* gradient = gsl_vector_alloc(nparams);
 	
 	// calculate the gradient of the function
-	getGradientNumeric(fn, xk, gradient, nparams);
+	//getGradientNumeric(fn, xk, gradient, nparams);
+	gradientFn(fn, xk, gradient, nparams);
 	
 	// step = -Binv.grad
 	gsl_blas_dgemv(CblasNoTrans, -1.0, bkInv, gradient, 0.0, step);
@@ -119,13 +87,17 @@ void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), gsl_vector* xk
 }
 
 //! get the change in gradient between two locations
-void getYk(gsl_vector* yk, double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* xk1, int nparams){
+void getYk(gsl_vector* yk, double(*fn)(gsl_vector*, int),\
+					 void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector*, int), \
+					 gsl_vector* xk, gsl_vector* xk1, int nparams){
 	int i;
 	gsl_vector* gradXk = gsl_vector_alloc(nparams);
 	gsl_vector* gradXk1 = gsl_vector_alloc(nparams);
 	
-	getGradientNumeric(fn, xk, gradXk, nparams);
-	getGradientNumeric(fn, xk1, gradXk1, nparams);
+	//getGradientNumeric(fn, xk, gradXk, nparams);
+	gradientFn(fn, xk, gradXk, nparams);
+	//getGradientNumeric(fn, xk1, gradXk1, nparams);
+	gradientFn(fn, xk1, gradXk1, nparams);
 	
 	for(i = 0; i < nparams; i++)
 		gsl_vector_set(yk, i, gsl_vector_get(gradXk1, i) - gsl_vector_get(gradXk, i));
@@ -192,11 +164,19 @@ void getNewBInverse(gsl_matrix *bprev,  gsl_vector *s, gsl_vector *y, int nparam
 }	
 		
 //! do a backtracking line search
-double lineSearch(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* position, int nparams){
-	double a = 5.0; // the max stepsize
-	double tau = 0.85; // the shrink factor
-	while(armGold(fn, direction, position, a, nparams) == 0){
+double lineSearch(double(*fn)(gsl_vector*, int),\
+					 void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector*, int), \
+									gsl_vector* direction, gsl_vector* position, int nparams){
+	double a = 2.0; // the max stepsize
+	double tau = 0.35; // the shrink factor
+	while(armGold(fn, gradientFn, direction, position, a, nparams) == 0){
 		a = tau *a;
+		//printf("%g\n", a); 
+		if( a < 1E-15){
+			//printf("a is very very small: %g\n", a);
+			// just use it anyway!
+			return(a);
+		}
 	}
 	return(a);
 }
@@ -204,7 +184,9 @@ double lineSearch(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vect
 
 //! check to see if the stepsize is too long or not
 // this is WAY simpler in mathematica
-int armGold(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* position, double a, int nparams){
+int armGold(double(*fn)(gsl_vector*, int), \
+					 void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector*, int), \
+						gsl_vector* direction, gsl_vector* position, double a, int nparams){
 	double c1 = 1E-3;
 	double c2 = 0.9;
 	double foffset = 0.0;
@@ -217,19 +199,32 @@ int armGold(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* po
 	gsl_vector *gradient = gsl_vector_alloc(nparams);
 	gsl_vector *gradientOffset = gsl_vector_alloc(nparams);
 	
+	gsl_vector_set_zero(temp);
+	gsl_vector_set_zero(offset);
 
 	// set offset -> x + stepsize*position
 	gsl_vector_memcpy(offset, position);
+	gsl_vector_memcpy(temp, direction);
 	gsl_vector_scale(temp, a);
 	gsl_vector_add(offset, temp);
 
 	foffset = fn(offset, nparams);
 	fposition = fn(position, nparams);
 	
-	getGradientNumeric(fn, position, gradient, nparams);
+	//getGradientNumeric(fn, position, gradient, nparams);
+	gradientFn(fn, position, gradient, nparams);
 	gsl_blas_ddot(direction, gradient, &dirdotgradient);	
-	getGradientNumeric(fn, offset, gradientOffset, nparams);
+	//getGradientNumeric(fn, offset, gradientOffset, nparams);
+	gradientFn(fn, offset, gradientOffset, nparams);
 	gsl_blas_ddot(direction, gradientOffset, &dirdotgradientOffset);
+	
+/* 	if( foffset <= fposition + c1*a*dirdotgradient){ */
+/* 		printf("cond1 == TRUE\n"); */
+/* 	} */
+
+/* 	if( dirdotgradientOffset >= c2*dirdotgradient){ */
+/* 		printf("cond2 == TRUE\n"); */
+/* 	} */
 
 	if( (foffset <= fposition + c1*a*dirdotgradient)  && (dirdotgradientOffset >= c2 * dirdotgradient)){
 		retval = 1;
@@ -244,32 +239,183 @@ int armGold(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* po
 	return(retval);
 }
 		
-void doSimpleBFGS( double(*fn)(gsl_vector*, int), gsl_vector* xkInit, gsl_matrix* Binit, int nparams, int nsteps){
+// Binit should be the id matrix 
+void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
+									 void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector*, int), \
+									 gsl_matrix* ranges,
+									 gsl_vector* xkInit, gsl_vector* xkFinal, gsl_matrix* Binit, int nparams, int nsteps){
 	int count = 0;
-	gsl_vector *xk = gsl_vector_
+	int i;
+	double stepsize = 0.0;
+	double absGrad = 0.0;
+	double absGradPrev = 0.0;
+	double convergedValue = 1e-8;
+	gsl_vector *xk = gsl_vector_alloc(nparams);
+	gsl_vector *xk1 = gsl_vector_alloc(nparams);
+	gsl_vector *temp = gsl_vector_alloc(nparams);
+	gsl_vector *yk = gsl_vector_alloc(nparams);
+	gsl_vector *step = gsl_vector_alloc(nparams);
+	gsl_matrix *bk = gsl_matrix_alloc(nparams, nparams);
+	gsl_matrix *bkInv = gsl_matrix_alloc(nparams, nparams);
+	
+	gsl_vector_set_zero(xk1);
+	gsl_vector_set_zero(yk);
+	gsl_vector_set_zero(step);
+	gsl_vector_set_zero(temp);
+
+	// set xk to the initial value, and bk
+	gsl_vector_memcpy(xk, xkInit);
+
+	gsl_matrix_memcpy(bk, Binit);
+	// gonna cheat and just copy the init matrix to the inverse too,
+	gsl_matrix_memcpy(bkInv, Binit);
+	
+
+
+	while(count < nsteps){
+
+		//void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), gsl_vector* xk, int nparams, gsl_matrix* bkInv){
+		obtainStep(step, fn, gradientFn, xk, nparams, bkInv);
+
+		/* for(i = 0; i<nparams;i++) */
+/* 			printf("%g ", gsl_vector_get(step, i)); */
+/* 		printf("\n"); */
+		
+		// find the stepsize
+		//double lineSearch(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* position, int nparams){		
+		stepsize = lineSearch(fn, gradientFn, step, xk, nparams);
+		
+
+		//printf("%g\n", stepsize);
+		
+		// find the new position
+		gsl_vector_memcpy(xk1, xk);
+		gsl_vector_memcpy(temp, step);
+		gsl_vector_scale(temp, stepsize);
+		gsl_vector_add(xk1, temp);
+		//void getYk(gsl_vector* yk, double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* xk1, int nparams){	
+		getYk(yk, fn, gradientFn, xk, xk1, nparams);
+		// find the new Bk
+		// void getNewB(gsl_matrix* b, gsl_vector* s, gsl_vector* y, int nparams){		
+		getNewB(bk, step, yk, nparams);
+		// and find the new approximate inverse
+		//void getNewBInverse(gsl_matrix *bprev,  gsl_vector *s, gsl_vector *y, int nparams){
+		getNewBInverse(bkInv, step, yk, nparams);
+
+
+		gsl_vector_set_zero(temp);
+		//print_vec(xk1, nparams);
+		
+		count++;
+
+		// copy the new step back into xk
+		gsl_vector_memcpy(xk, xk1);
+
+		// for convergence we monitor the difference between the current gradient 
+		// and that of the last step, if they get small enough we're stuck 
+		// void getGradientNumeric(double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* gradient, int nparams){		
+		gradientFn(fn, xk1, temp, nparams);
+		for(i = 0; i < nparams; i++)
+			absGrad += pow(gsl_vector_get(temp, i),2.0);
+		absGrad = sqrt(absGrad);
+		
+		if(fabs(absGrad - absGradPrev) < convergedValue){
+			fprintf(stderr, "converged after %d steps\n", count);
+			break;
+		}
+		
+		// save the gradient as the previous one
+		absGradPrev = absGrad;
+		
+		// check the ranges
+		if(test_range_vector(xk1, ranges, nparams) == 1){
+			fprintf(stderr, "fell out of range\n");
+			print_vec(xk1, nparams);
+			break;
+		}
+
+	}
+	
+	
+	gsl_vector_memcpy(xkFinal, xk1);
+
+	
+	gsl_vector_free(step);
+	gsl_vector_free(xk);
+	gsl_vector_free(xk1);
+	gsl_vector_free(temp);
+	gsl_vector_free(yk);
+	gsl_matrix_free(bk);
+	gsl_matrix_free(bkInv);
+}
+
+// short circuting range test
+int test_range_vector( gsl_vector *x, gsl_matrix *ranges, int nparams){
+	int i;
+	int bad_flag =0;
+	double temp_val;
+	for(i = 0; i < nparams; i++){
+		temp_val = gsl_vector_get(x, i);
+		if(temp_val < gsl_matrix_get(ranges, i, 0) || temp_val > gsl_matrix_get(ranges, i, 1)){
+			bad_flag = 1;
+			break;
+		}
+	}
+	if(bad_flag == 1){
+		return(2);
+	} else {
+		return(0);
+	}
+}
 
 
 
 // just to test
+#ifdef EXECUTE
 int main (void){
 	int nparams = 2.0;
 	int i;
-	gsl_vector* gradient = gsl_vector_alloc(nparams);
+
+	double stepsize = 0.0;
 	gsl_vector* xTest = gsl_vector_alloc(nparams);
+	gsl_vector* xFinal = gsl_vector_alloc(nparams);
+	gsl_matrix* Binit = gsl_matrix_alloc(nparams, nparams);
+	gsl_matrix* ranges = gsl_matrix_alloc(nparams, 2);
 
-	gsl_vector_set(gradient, 0, 0.0);
-	gsl_vector_set(gradient, 1, 0.0);
+	
+	for(i =0; i < nparams; i++){
+		gsl_matrix_set(ranges, i, 0, 0.0);
+		gsl_matrix_set(ranges, i, 1, 1.0);
+	}
 
-	gsl_vector_set(xTest, 0, 1.3);
-	gsl_vector_set(xTest, 1, 1.5);
+	gsl_vector_set(xTest, 0, 0.3);
+	gsl_vector_set(xTest, 1, 0.35);
 
-	getGradientNumeric(&fRosenbrock, xTest, gradient, nparams);
+	gsl_matrix_set_identity(Binit);
 
-	for(i = 0; i < nparams; i++)
-		fprintf(stderr, "%g\n", gsl_vector_get(gradient, i));
+	//int armGold(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* position, double a, int nparams){	
+	//printf("%d\n", armGold( &fRosenbrock, step, xTest, 0.02, nparams));
+
+	//printf("calling BFGS\n");
 
 
-	gsl_vector_free(gradient);
+
+	//void doSimpleBFGS( double(*fn)(gsl_vector*, int), gsl_vector* xkInit, gsl_vector* xkFinal, gsl_matrix* Binit, int nparams, int nsteps){
+	doSimpleBFGS(&fRosenbrock, &getGradientNumeric, ranges, xTest, xFinal, Binit, nparams, 100000);
+	print_vec(xFinal, nparams);
+	
+	gsl_matrix_free(Binit);
 	gsl_vector_free(xTest);
+	gsl_vector_free(xFinal);
 	return(0);
 }
+#endif
+
+void print_vec(gsl_vector* x, int n){
+	int i;
+	for(i =0; i < n;i++){
+		fprintf(stdout, "%g ", gsl_vector_get(x, i));
+	}
+	fprintf(stdout, "\n");
+}
+

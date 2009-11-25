@@ -1,9 +1,9 @@
 ## makefile for libEmu
 LTOOL = libtool
 COMPILE = --mode=compile gcc 
-#CFLAGS = -O -c -O2 -Wextra -pedantic -std=c99  
-CFLAGSDEBUG = -O -c -O0 -g -Wextra -pedantic -std=c99
-CFLAGS = $(CFLAGSDEBUG)
+CFLAGS = -O -c -O2 -Wextra -pedantic -std=c99  
+#CFLAGSDEBUG = -O -c -O0 -g 
+#CFLAGS = $(CFLAGSDEBUG)
 LFLAGS = -lgsl -lgslcblas -lm
 LINK = --mode=link gcc  -no-install -shared
 
@@ -18,8 +18,14 @@ emulator:
 maximise:
 	$(LTOOL) $(COMPILE) $(CFLAGS) maximise.c 
 
-libEmu: estimator emulator maximise
-	$(LTOOL) $(LINK) -o libEmu.la estimator.lo emulator.lo maximise.lo $(CFLAGS) $(LFLAGS)
+maxbfgs:
+	$(LTOOL) $(COMPILE) $(CFLAGS) maxbfgs.c
+
+bfgs:
+	$(LTOOL) $(COMPILE) $(CFLAGS) bfgs.c
+
+libEmu: estimator emulator maximise maxbfgs bfgs
+	$(LTOOL) $(LINK) -o libEmu.la estimator.lo emulator.lo maximise.lo maxbfgs.lo bfgs.lo $(CFLAGS) $(LFLAGS)
 
 clean:
 	rm *.la

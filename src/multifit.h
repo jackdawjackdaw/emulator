@@ -6,7 +6,7 @@
 #include "libEmu/maximise.h"
 #include "useful.h"
 #include "gsl/gsl_rng.h"
-
+#include "main.h"
 
 //! options for a single run of the emulator
 /**
@@ -84,7 +84,11 @@ typedef struct region{
 
 void emulate_region(gsl_matrix *new_x, gsl_vector* emulated_mean, gsl_vector* emulated_variance , eopts* options);
 void estimate_region(eopts* options, gsl_rng *random);
+
+void estimate_region_threaded(eopts* options);
+
 void evaluate_region(emuResult *results, eopts* options, gsl_rng* random);
+void evaluate_region_threaded(emuResult *results, eopts* options, gsl_rng* random);
 int is_smooth(double smooth_val, gsl_vector* xemu, gsl_vector* mean_emu, gsl_vector* var_emu, eopts* options);
 double get_mse( double mean, double variance);
 void set_likelyhood_ranges(gsl_matrix* ranges_matrix, int nthetas);
@@ -95,8 +99,17 @@ void create_clusters_1d(emuResult *res, region** region_list, int* number_region
 void copy_region_array(region* target, region* source, int length);
 void assign_model_point(eopts* regionOpts, region* the_region);
 
+
+
 // moved in from multi-drive.c
 void process_splits(gsl_matrix* the_splits, int nsplits, eopts* the_options, gsl_rng* random_number);
 void fill_split_ranges(gsl_matrix* split_ranges, int ngoodregions, gsl_matrix * local_split_ranges, eopts* toplevel);
 void split_region_options(eopts *result, eopts *parent, double lower, double upper);
+
+
+
+// a simple helper to match data structures from main.c and multidrive. (doh)
+void copy_eopts_to_optstruct(optstruct* dest, eopts* source);
+
+
 #endif

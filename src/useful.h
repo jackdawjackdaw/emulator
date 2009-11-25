@@ -22,6 +22,7 @@ void print_int_array(int* the_array, int n_x, int n_y);
 // tries to get a seed from /dev/random or otherwise uses the system time
 //*****************
 unsigned long int get_seed(void);
+unsigned long int get_seed_noblock(void);
 
 //***************
 // binary io

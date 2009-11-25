@@ -1,68 +1,7 @@
-#include "stdio.h"
-#include "stdlib.h"
-#include "unistd.h"
-#include "libEmu/estimator.h"
-#include "libEmu/emulator.h"
-#include "libEmu/maximise.h"
-#include "ioread.h"
-#include "sys/time.h"
-#include "useful.h"
+#include "main.h"
 
-/**
- * @file
- * @author Chris Coleman-Smith cec24@phy.duke.edu
- * @version 0.1
- * @section Description
- * 
- * The main apparatus to run the emulator, reads in options from the command line and
- * reads the actual data points from the given filename
- */
- 
-
-/* 
- * 1 -> read command line parameters
- * 2 -> read and process stream data
- * 3 -> estimate thetas
- * 4 -> calculate new means and variances
- * 5 -> output
- */
-
-
-/* 
- * in the 1d case
- *  now there are only 3 hyperparams by default 
- *  -> vertical-scale theta0
- *  -> nugget theta1
- *  -> length-scale theta2...theta(Nparams-2⎈)
- */
-#define NTHETASDEFAULT 4
-#define NPARAMSDEFAULT 1
-#define NEMULATEDEFAULT 64
-#define EMULATEMINDEFAULT 0.0
-#define EMULATEMAXDEFAULT 4.0
-
-//! holds command line options
-/** 
- * designed to hold basic command line 
- * options
- */
-typedef struct optstruct{
-	int nthetas;
-	int nparams;
-	int nmodel_points;
-	int nemulate_points;
-	double emulate_min;
-	double emulate_max;
-	char  filename[128];
-} optstruct;
-
-
-void print_usage(void);
-void parse_arguments(int argc, char** argv, optstruct* options);
-void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, optstruct* options);
-void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options);
-void read_input_bounded(gsl_matrix* model, gsl_vector* training, optstruct * options);
-void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *options);
+// this lives in libEmu/emulator.c it's important!
+extern emulator_opts the_emulator_options;
 
 
 //! print the short-option switches
@@ -127,6 +66,14 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	//\todo something is wrong with the theta_val thing
 	options->nthetas = theta_val;
 	options->nparams = param_val;
+
+	if(options->nthetas != options->nparams + 3){
+		fprintf(stderr, "you have possbily selected a crazy value of nthetas...\n");
+		// for the moment force them to work
+		options->nthetas = options->nparams +3;
+	}
+		
+
 	options->nmodel_points = nmodel_points;
 	options->nemulate_points = nemulate_val;
 	options->emulate_min = min_val;
@@ -150,9 +97,12 @@ int main (int argc, char ** argv){
 
 	parse_arguments(argc, argv, &options);	
 	
-
+	
+	// testing
 	//sprintf(input_file, "%s",  "../short.dat");	
 	sprintf(input_file, "%s",  "stdin");
+
+	sprintf(options.outputfile, "emulator-out.txt");
 
 	assert(options.nthetas >0);
 	assert(options.nparams >0);
@@ -193,15 +143,28 @@ int main (int argc, char ** argv){
 		}
 
 	fprintf(stderr, "read the following input matrix: %d x %d\n", options.nmodel_points, options.nparams);
-	print_matrix(xmodel_input, options.nmodel_points, options.nparams);
+	//print_matrix(xmodel_input, options.nmodel_points, options.nparams);
 	fprintf(stderr, "the training data is:\n");
-	print_vector_quiet(training_vector, options.nmodel_points);
+	//print_vector_quiet(training_vector, options.nmodel_points);
+	
+	fprintf(stderr, "nthetas = %d\n", options.nthetas);
+	fprintf(stderr, "nparams = %d\n", options.nparams);
+	
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// this is key
+	// fills in a structure in libEmu which 
+	// sets gaussian or matern cov fn and 
+	// the alpha option for the gaussian
+	set_emulator_defaults(&the_emulator_options);
+	// show the default options in the lib
+	print_emulator_options(&the_emulator_options);
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+	estimate_thetas_threaded(xmodel_input, training_vector, thetas, &options);
 
-	estimate_thetas(xmodel_input, training_vector, thetas, &options);
-
-	// calc the new means, new variance and dump to stdout
+	// calc the new means, new variance and dump to emulator-out.txt
 	emulate_model(xmodel_input, training_vector, thetas, &options);
+
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
 	gsl_matrix_free(xmodel_input);
@@ -211,27 +174,10 @@ int main (int argc, char ** argv){
 }
 
 
-void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *options){
-	int i = 0;
-	int j = 0;
-	double temp_value = 0.0;
-	FILE *fptr;
-	fptr = fopen(options->filename, "r");
-
-	for(i =0; i < options->nmodel_points; i++){
-		for(j = 0; j < options->nparams; j++){
-			fscanf(fptr, "%lg", &temp_value);
-			gsl_matrix_set(xmodel, i, j, temp_value);
-		}
-		fscanf(fptr, "%lg", &temp_value);
-		gsl_vector_set(training, i, temp_value);
-	}
-	print_matrix(xmodel, options->nmodel_points, options->nparams);
-	fprintf(stderr, "new_x is\n");
-	vector_print(training, options->nmodel_points);
-}
-
-
+/**
+ * take the estimated parameters and turn them into an emulated set of model points 
+ * which can then be output to stdio or whatever 
+ */
 void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, optstruct* options){
 	int i = 0;
 	int j = 0; 
@@ -250,6 +196,11 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	gsl_matrix *temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
 	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(options->nmodel_points);
 	int lu_signum = 0;
+	
+	FILE *fptr;
+	fptr = fopen(options->outputfile, "w");
+
+
 
 	makeCovMatrix(c_matrix, xmodel, thetas,options->nmodel_points, options->nthetas, options->nparams);
 	gsl_matrix_memcpy(temp_matrix, c_matrix);
@@ -273,10 +224,10 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	 
 	for(i = 0; i < n_emu_points; i++){
 		for(j = 0; j < options->nparams; j++){
-			printf("%g\t", gsl_matrix_get(new_x, i, j));
+			fprintf(fptr, "%g\t", gsl_matrix_get(new_x, i, j));
 		}
-		printf("%g\t", gsl_vector_get(new_mean, i));
-		printf("%g\n", gsl_vector_get(new_variance, i));
+		fprintf(fptr, "%g\t", gsl_vector_get(new_mean, i));
+		fprintf(fptr,"%g\n", gsl_vector_get(new_variance, i));
 	}
 		
 	gsl_matrix_free(new_x);
@@ -287,75 +238,53 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	gsl_vector_free(kplus);
 	gsl_matrix_free(temp_matrix);
 	gsl_permutation_free(c_LU_permutation);
+	fclose(fptr);
 }
 
+/* /\**  */
+/*  * does the maximum likelyhood estimation on the model_input to try and find the best hyperparams */
+/*  *\/ */
+/* void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options){ */
+/* 	const gsl_rng_type *T; */
+/* 	gsl_rng *random_number; */
+/* 	int max_tries = 10; */
+/* 	int i;  */
+/* 	int number_steps = 50; */
+/* 	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas, 2); */
 
-
-
-
-void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options){
-	const gsl_rng_type *T;
-	gsl_rng *random_number;
-	int max_tries = 20;
-	int i; 
-	int number_steps = 100;
-	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
-
-	T = gsl_rng_default;
-	random_number = gsl_rng_alloc(T);
-	gsl_rng_set(random_number, get_seed());
+/* 	T = gsl_rng_default; */
+/* 	random_number = gsl_rng_alloc(T); */
+/* 	gsl_rng_set(random_number, get_seed()); */
 	
-	/* set the ranges for the initial values of the NM lookup, 
-	 * might want to adjust these as required etc, but whatever */
-	for(i = 0; i < options->nthetas; i++){
-		gsl_matrix_set(grad_ranges, i, 0, 0.001);
-		gsl_matrix_set(grad_ranges, i, 1, 1.5);
-	}
+/* 	/\* set the ranges for the initial values of the NM lookup,  */
+/* 	 * might want to adjust these as required etc, but whatever *\/ */
+/* 	for(i = 0; i < options->nthetas; i++){ */
+/* 		gsl_matrix_set(grad_ranges, i, 0, 0.1); */
+/* 		gsl_matrix_set(grad_ranges, i, 1, 5.5); */
+/* 	} */
 	
 	
-	// the nugget ranges for the gaussian
-	/* 	gsl_matrix_set(grad_ranges, 2, 0,  0.0000001); */
-	/* 	gsl_matrix_set(grad_ranges, 2, 1, 0.01); */
+/* 	// the nugget ranges for the gaussian */
+/* 	/\* 	gsl_matrix_set(grad_ranges, 2, 0,  0.0000001); *\/ */
+/* 	/\* 	gsl_matrix_set(grad_ranges, 2, 1, 0.01); *\/ */
 	
-	// the nugget ranges for the matern model
-	if(options->nthetas == 4){ // matern
-		gsl_matrix_set(grad_ranges, 3, 0, 0.01);
-		gsl_matrix_set(grad_ranges, 3, 1, 0.1);
-	}
+/* 	// the nugget ranges for the matern model */
+/* 	/\* if(options->nthetas == 4){ // matern *\/ */
+/* 	/\* 		gsl_matrix_set(grad_ranges, 3, 0, 0.01); *\/ */
+/* 	/\* 		gsl_matrix_set(grad_ranges, 3, 1, 0.1); *\/ */
+/* 	/\* 	} *\/ */
 
-	nelderMead(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams);
+/* 	nelderMead(random_number, max_tries, number_steps, thetas, grad_ranges, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams); */
 
-	fprintf(stderr, "best_thetas: \t");
-	print_vector_quiet(thetas, options->nthetas);
+/* 	fprintf(stderr, "best_thetas: \t"); */
+/* 	print_vector_quiet(thetas, options->nthetas); */
 
-	gsl_rng_free(random_number);
-	gsl_matrix_free(grad_ranges);
-}
-
-
-
-//! reads nmodel_points from the stdin
-/* void read_input_bounded(gsl_matrix* model, gsl_vector* training, optstruct * options){ */
-/* 	int i = 0; */
-/* 	int j = 0; */
-/* 	double temp_value;	  */
-/* 	while(i < options->nmodel_points){ */
-/* 		for(j = 0; j < options->nparams; j++){ */
-/* 			scanf("%lg", &temp_value); */
-/* 			//printf("%lg\n", temp_value); */
-/* 			gsl_matrix_set(model, i, j, temp_value); */
-/* 		} */
-/* 		scanf("%lg", &temp_value); */
-/* 		//printf("%lg\n", temp_value); */
-/* 		gsl_vector_set(training, i, temp_value); */
-/* 		i++; */
-/* 	}; */
-
-/* 	printf("read in xmodel:\n"); */
-/* 	print_matrix(model, options->nmodel_points, options->nparams); */
-/* 	printf("read in training_vec:\n"); */
-/* 	vector_print(training, options->nmodel_points); */
+/* 	gsl_rng_free(random_number); */
+/* 	gsl_matrix_free(grad_ranges); */
 /* } */
+
+
+
 
 
 
