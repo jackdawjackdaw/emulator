@@ -34,17 +34,30 @@ demoModel <- function(m, lhs=0){
   model
 }
 
+makeSuperPlot <- function(){
+  par(mfrow=c(2,5))
+  postscript("superPlot.ps")
+  for(i in 1:5)
+    testNModelPts(i+3,1)
+  for(i in 1:5)
+    testNModelPts(i+3,0)
+  dev.off()
+}
+
+
 testNModelPts <- function(m, lhs=0){
   model <- demoModel(m, lhs=lhs)
   nmodelpts <- m
   nemupts <- 200
+  print(model)
   ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
   sequence <- seq(0.0,1.0, length=nemupts)
   actual <- data.frame(x=sequence, y=yM(sequence))
   plotResultsTest(model, ans, actual)
+
 }
 
-# super super slow
+# super super slow(if you use matern)
 # same as plot results but now we have an analytic actual model to plot
 plotResultsTest <- function(model, results, actual){
   # this works in 1d now
@@ -142,7 +155,10 @@ testCallEm <- function(){
   model <- demoModel(6, 0)
   # just made up but about right for matern
   ans <- c(0.89, 0.54, 0.334, 0.64)
-  callEmulate(model, ans, m)
+  f1<-callEmulate(model, ans, m, nemupts=10)
+  print(f1)
+  f2<-callEmulate(model, ans,m, nemupts=10)
+  print(f2)
 }
 
 ## use a given set of thetas to emulate the code
