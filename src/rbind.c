@@ -72,8 +72,11 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 
 	// fill in xmodel 
 	convertDoubleToMatrix(xmodel, xmodel_in, nparams, nmodel_points);
+
 	// fill in the training vec
 	convertDoubleToVector(training_vec, training_in, nmodel_points);
+
+	print_matrix(xmodel, nparams, nmodel_points);
 
 	// fill in the options
 	theOptions.nmodel_points = nmodel_points;
@@ -336,7 +339,7 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
  * takes an ALLOCATED gsl_matrix and copies the input vector into it, 
  * doesn't check anything
  */
-
+/** dimensions are interleaved! */
 void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx){
 	int i, j;
 	for(j = 0; j < ny; j++){
