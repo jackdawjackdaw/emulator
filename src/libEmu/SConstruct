@@ -8,13 +8,14 @@ debug = '-O -c -O0 -g'
 #usematern = ' -DMATERN'
 
 env_prod = Environment(CCFLAGS = cflags)
-env_debug = Environment(CCFLAGS = debug)
+env_shared = Environment(CCFLAGS = cflags)
 
 # source files to make the lib
 src_files = Split('estimator.c emulator.c maximise.c maxbfgs.c bfgs.c')
 
 libs=Split('gsl gslcblas m')
 
-# make the libEmu library (shared)
+# make the libEmu library 
 env_prod.Library('libEmu', src_files, LIBS=libs)
-
+# make the shared one
+env_shared.SharedLibrary('libEmu', src_files, LIBS=libs)

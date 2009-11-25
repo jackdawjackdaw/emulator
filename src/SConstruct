@@ -5,6 +5,7 @@ import os
 SConscript(['libEmu/SConstruct'])
 
 libs=Split('gsl gslcblas m pthread Emu')
+libs2 = Split('gsl gslcblas m pthread')
 cflags='-O2 -Wall -pg -g -pedantic -Wextra -std=gnu99'
 
 env = Environment(CCFLAGS = cflags, CPPPATH=['./libEmu'], LIBPATH=['./libEmu'])
