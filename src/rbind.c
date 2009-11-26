@@ -8,13 +8,52 @@
 
 void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx);
 void convertDoubleToVector(gsl_vector* the_vec, double* input, int nx);
-
+void setEmulatorOptions(int* useGauss_in, double* alpha_in);
 // this lives in libEmu/emulator.c it's important!
 extern emulator_opts the_emulator_options;
 
 /**
  * just enough setup and teardown to call the emulator directly from R
  */
+
+//! change the covariance function options
+/**
+ * set the emulator options
+ * @param useGauss, if this is one we'll use the gaussian covariance function
+ * otherwise use the matern function
+ * @param alpha, if we're using the gaussian covariance function this 
+ * will set the power in the exponent, you should set it somewhere between 1 and 2 
+ * if you're using the matern one and you set alpha to either 1/2, 3/2, 5/2 
+ * we get fast versions of besselK and the emulator will be faster (but 
+ * it will have one fixed param)
+ * \bold the matern behaviour is not implemented yet 
+ */
+void setEmulatorOptions(int* useGauss_in, double* alpha_in){
+	int useGauss = *useGauss_in;
+	double alpha = *alpha_in;
+	printf("%d\n", useGauss);
+	printf("%g\n", alpha);
+
+
+	if(useGauss == 1.0){
+		the_emulator_options.usematern=0;
+		if(alpha > 0 && alpha < 2){
+			the_emulator_options.alpha = alpha;
+		} else {
+			the_emulator_options.alpha = 1.9;
+		}
+		fprintf(stderr, "using Gaussian Cov, with alpha = %g\n", the_emulator_options.alpha);
+	}
+	else if(useGauss==0.0){
+		the_emulator_options.usematern=1;
+		fprintf(stderr, "using Matern Cov, no alpha support yet\n");
+	} else {
+		fprintf(stderr, " bad call to setEmulatorOptions\n");
+		exit(1);
+	}
+}
+
+
 
 //! callEmulator from R
 /**
@@ -64,19 +103,21 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	// fills in a structure in libEmu which 
 	// sets gaussian or matern cov fn and 
 	// the alpha option for the gaussian
-	set_emulator_defaults(&the_emulator_options);
+	//set_emulator_defaults(&the_emulator_options);
 	// show the default options in the lib
-	print_emulator_options(&the_emulator_options);
+	//print_emulator_options(&the_emulator_options);
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 	// fill in xmodel 
-	convertDoubleToMatrix(xmodel, xmodel_in, nparams, nmodel_points);
+	//! \todo fix this for nparams >1 !
+	convertDoubleToMatrix(xmodel, xmodel_in,nparams, nmodel_points);
 
 	// fill in the training vec
 	convertDoubleToVector(training_vec, training_in, nmodel_points);
 
-	print_matrix(xmodel, nparams, nmodel_points);
+	
+	print_matrix(xmodel, nmodel_points, nparams);
 
 	// fill in the options
 	theOptions.nmodel_points = nmodel_points;

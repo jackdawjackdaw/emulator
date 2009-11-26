@@ -64,7 +64,6 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
 	T = gsl_rng_default;
 
-	
 	/* set the ranges for the initial values of the NM lookup, 
 	 * might want to adjust these as required etc, but whatever */
 	/* \TODO replace this this set_likelyhood_ranges ? */
@@ -78,7 +77,12 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 		// hackity hack, force the nugget to be small
 		gsl_matrix_set(grad_ranges, 2, 0, 0.000001);
 		gsl_matrix_set(grad_ranges, 2, 1, 0.00001);
+	} else {
+		// also force the nugget to be small for the matern
+		gsl_matrix_set(grad_ranges, 3, 0, 0.000001);
+		gsl_matrix_set(grad_ranges, 3, 1, 0.00001);
 	}
+		
 	
 
 
