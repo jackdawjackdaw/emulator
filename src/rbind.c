@@ -377,6 +377,8 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
 
 
 /*
+ * driving to atlanta: fixed bug in this
+ * 
  * takes an ALLOCATED gsl_matrix and copies the input vector into it, 
  * doesn't check anything
  */
@@ -385,10 +387,11 @@ void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx
 	int i, j;
 	for(j = 0; j < ny; j++){
 		for(i =0; i < nx; i++){
-			gsl_matrix_set(the_matrix, i, j, input[i+j*nx]);
+			gsl_matrix_set(the_matrix, j, i, input[nx*j+i]);
 		}
 	}
 }
+
 										 
 /*
  * takes an ALLOCATED gsl_vector and copies the input vector into it
