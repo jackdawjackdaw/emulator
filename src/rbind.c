@@ -96,7 +96,7 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	// setup the rng
 	rng_type = gsl_rng_default;
 	random = gsl_rng_alloc(rng_type);
-	gsl_rng_set(random, get_seed());
+	gsl_rng_set(random, get_seed_noblock());
 
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// this is key
