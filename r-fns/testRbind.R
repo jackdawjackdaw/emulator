@@ -1,7 +1,4 @@
-dyn.load("../src/libRbind.so")
-source("emulator-test-data.R")
-library("lhs")
-library("scatterplot3d")
+source("EmuRbind.R")
 
 ## some test functions and the interface to rbind (at the end of the file)
 ## the main ones of interest are callcode and setEmulatorOptions
@@ -34,7 +31,7 @@ testIsing <- function(){
 ## really really sucks
 makeSuperPlot <- function(){
   par(mfrow=c(2,5))
-  #postscript("psuperPlot.ps")
+  #postscript("superPlot.ps")
   for(i in 1:5)
     testNModelPts(i+3,1)
   for(i in 1:5)
@@ -43,22 +40,90 @@ makeSuperPlot <- function(){
 }
 
 
-compareCovFns <- function(){
-  par(mfrow=c(1,2))
-  m <- 8
-  # use the gaussian cov fn
-  testNModelPts(m, lhs=1)
-  # now set the matern cov fn
-  setEmulatorOptions(0,1.9)
-  model <- demoModel(m, lhs=1)
-  nmodelpts <- m
-  nemupts <-  200
-  ansMatern <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
-  sequence <- seq(0.0,1.0, length=nemupts)
-  actual <- data.frame(x=sequence, y=yM(sequence))
-  plotResultsTest(model, ansMatern, actual)
+
+## change the alpha value for the gauss covFn
+## keep the number of points fixed,
+## should use a single lhs sample for all the pulls but
+varyAlpha <- function(){
+  par(mfrow=c(1,5))
+  title <- "Gauss Plot"
+  for(i in 1:5){
+    alpha <- i/5 + 1
+    setEmulatorOptions(1, alpha)
+    string <- toString(alpha)
+    testNModelPtsGauss(8, lhs=0, string)
+  }
 }
-                       
+
+
+## do a row wise compare of
+## gaussian and matern cov fns for different m
+compareCovFns <- function(){
+  par(mfrow=c(2,5))
+  for(i in 1:5)
+  # use the gaussian cov fn
+    testNModelPtsGauss(i+3, lhs=1, "Gaussian Covariance Fn")
+
+  for(i in 1:5)
+  # now set the matern cov fn
+    testNmodelPtsMatern(i+3, lhs=1, "Matern Covariance Fn")
+}
+
+# test the linear interpolation model,
+# it works ok but this is not a good demo yet
+testInt <- function(m){
+  model <- demoModel(m, 1)
+  f <- lm(model$training ~ model$xmodel + I(model$xmodel^2) + I(model$xmodel^3) )
+  plot(model, ylim=range(0,6))
+  #print(summary(f) )
+  #abline(f)
+  x <- seq(0,1,by=0.01)
+  y<-rep(0, 101)
+  y<-f[1]$coefficients[1]*x^0 + f[1]$coefficients[2]*x + f[1]$coefficients[3]*(x^2) + f[1]$coefficients[4]*x^3
+  #browser()
+  lines(x,y)
+  ModelPlus <- demoModel(m+2, 1)
+  points(ModelPlus, ylim=range(0,6), col="red")
+}
+
+
+## interpolate (doesnt' work)
+## # y is a vec of values of the fn (evaluated at the pts x)
+## interpolate <- function(y,x, order, npts, rangemin=0.0, rangemax=1.0){
+##   d <- length(x)
+##   F = matrix(0, d, order)
+##   for(i in 1:d){
+##     for(j in order:0){
+##       #print(j)
+##       F[i,order-j] <- x[i]^(j)
+##     }
+##   }
+##   ##this gives you ans where: F %*% ans = y 
+##   ans <- solve(F, y)
+##   ##print(y)
+##   ##print(F %*% ans)
+##   ## fullX <- rep(0, npts)
+##   ## for(i in 1:npts)
+##   ##   fullX[i] <- i*(1/npts)
+##   ## fullY <- rep(0, npts)
+##   ## temp <- rep(0, order)
+##   ## #browser()
+##   ## ## now actually use the thing
+##   ## for(i in 1:npts){
+##   ##   fullY[i] <- intFn(fullX[i], ans)
+##   ## }
+##   ## #browser()
+##   ## final <- data.frame(x=fullX, y=fullY)
+## }
+
+## intFn <- function(x,a){
+##   order <- length(a)
+##   temp <- rep(0, order)
+##   for(i in 1:order)
+##     temp[i] <- (x^(i-1))*a[i]
+##   print(temp)n
+##   ans <- sum(temp)
+## }
 
 
 
@@ -81,17 +146,30 @@ demoModel <- function(m, lhs=0){
   model
 }
 
-testNModelPts <- function(m, lhs=0){
+testNModelPtsGauss <- function(m, lhs=0, title="test"){
   model <- demoModel(m, lhs=lhs)
   nmodelpts <- m
   nemupts <- 200
   print(model)
-  setDefaultOps()
+  setEmulatorOptions(1,1.9)
   ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
   sequence <- seq(0.0,1.0, length=nemupts)
   actual <- data.frame(x=sequence, y=yM(sequence))
-  plotResultsTest(model, ans, actual)
+  plotResultsTest(model, ans, actual, title)
 
+}
+
+
+testNModelPtsMatern <- function(m, lhs=0, title="test"){
+  model <- demoModel(m, lhs=lhs)
+  nmodelpts <- m
+  nemupts <- 200
+  print(model)
+  setEmulatorOptions(0,1.9)  
+  ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
+  sequence <- seq(0.0,1.0, length=nemupts)
+  actual <- data.frame(x=sequence, y=yM(sequence))
+  plotResultsTest(model, ans, actual, title)
 }
 
 
@@ -99,17 +177,18 @@ testNModelPts <- function(m, lhs=0){
 
 # super super slow(if you use matern)
 # same as plot results but now we have an analytic actual model to plot
-plotResultsTest <- function(model, results, actual){
+plotResultsTest <- function(model, results, actual, title="testing"){
   # this works in 1d now
-  plot(model$xmodel, model$training, ylim=range(0.0,6.0))
-  lines(actual$x, actual$y, col="green")
-  lines(results$emulatedx, results$emulatedy, col="red")
+  plot(model$xmodel, model$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19)
+  title(main=title)
+  lines(actual$x, actual$y, col="green", lwd=2, lty=2)
+  lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
   confidence <- rep(NA, length(results$emulatedvar))
   for(i in 1:length(results$emulatedvar))
     confidence[i] <- 0.5*sqrt(results$emulatedvar[i])*1.65585
  
-  lines(results$emulatedx, results$emulatedy + confidence, col="blue")
-  lines(results$emulatedx, results$emulatedy - confidence, col="blue")
+  lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
+  lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
   grid()
 }
 
@@ -149,12 +228,16 @@ demoGauss <- function(m){
   model
 }
 
+## this works now but it doesn't seem to produce the correct output
+## rbind is probably not set up for 2d output yet
 runGauss <-function(m){
   nmodelpts <- m
   model <- demoGauss(nmodelpts)
   nemupts <- 200
   nthetas <- 5
+  setDefaultOps()
   ans <- callcode(model, nmodelpts, nemupts=200, nparams=2, nthetas=nthetas)
+  ans
 }
 
 
@@ -182,130 +265,3 @@ testLikely <- function(){
   l
 }
 
-setDefaultOps <- function(){
-  setEmulatorOptions(1,1.9)
-}
-
-
-## i've taken away the call in the C function, so you need to do this
-## before you CALL CODE or DEATH
-# the function we're calling has no return, it just switches
-# some options around so this should be pretty simple
-setEmulatorOptions <- function(useGauss, alpha){
-  foo<-.C("setEmulatorOptions",
-     as.integer(useGauss),
-     as.double(alpha))
-
-}
-
-
-# i don't quite understand how to push the results together into a data
-# frame i should check on this.
-# note that the rangemin/max create a square domain in 2d.
-# not sure how to grab the results?
-callcode <- function(model, nmodelpts, nparams=1, nthetas=4, nemupts=50, rangemin=0.0, rangemax=4.0){
-
-  if(nparams==1){
-  
-    res<-  .C("callEmulator",
-     as.double(model$xmodel),
-     as.integer(nparams),
-     as.double(model$training),
-     as.integer(nmodelpts),
-     as.integer(nthetas),
-     finalx = double(nemupts*nemupts),
-     as.integer(nemupts),
-     finaly = double(nemupts),
-     finalvar = double(nemupts),
-     as.double(rangemin),
-     as.double(rangemax))
-  }else if(nparams==2){
-    newmodel <- rep(NA, 2*nmodelpts)
-    print(model)
-    # interleave the xmodel array
-    for(i in 1:nmodelpts)
-      newmodel[2*i-1] <- model$xmodel.1[i]
-    for(i in 1:nmodelpts)
-      newmodel[2*i] <- model$xmodel.2[i]
-    print(newmodel)
-    
-    res<-  .C("callEmulator",
-     as.double(newmodel),
-     as.integer(nparams),
-     as.double(model$training),
-     as.integer(nmodelpts),
-     as.integer(nthetas),
-     finalx = double(nemupts*nemupts),
-     as.integer(nemupts),
-     finaly = double(nemupts),
-     finalvar = double(nemupts),
-     as.double(rangemin),
-     as.double(rangemax))
-    
-
-  } else {
-    print("sorry, won't work with nparams > 2")
-  }
-
-  results <- data.frame(emulatedx=res$finalx[1:nemupts], emulatedy=res$finaly, emulatedvar=res$finalvar)
-  results
-} 
-
-## just estimates the thetas for a model (this is the slow ass part)
-callEstimate <- function(model, nmodelpts,nparams=1, nthetas=4){
-
-  res <- .C("callEstimate",
-            as.double(model$xmodel),
-            as.integer(nparams),
-            as.double(model$training),
-            as.integer(nmodelpts),
-            as.integer(nthetas),
-            thetas = double(nthetas))
-  res$thetas
-}
-
-## test this, its not working right
-testCallEm <- function(){
-  m <- 6
-  model <- demoModel(6, 0)
-  # just made up but about right for matern
-  ans <- c(0.89, 0.54, 0.334, 0.64)
-  f1<-callEmulate(model, ans, m, nemupts=10)
-  print(f1)
-  f2<-callEmulate(model, ans,m, nemupts=10)
-  print(f2)
-}
-
-## use a given set of thetas to emulate the code
-callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=4, nemupts=100, rangemin=0.0, rangemax=1.0){
-  res <- .C("callEmulate",
-            as.double(model$xmodel),
-            as.integer(nparams),
-            as.double(model$training),
-            as.integer(nmodelpts),
-            as.double(thetas),
-            as.integer(nthetas),
-            finalx = double(nemupts*nemupts),
-            as.integer(nemupts),
-            finaly = double(nemupts),
-            finalvar = double(nemupts),
-            as.double(rangemin),
-            as.double(rangemax))
-            
-   results <- data.frame(emulatedx=res$finalx[1:nemupts], emulatedy=res$finaly, emulatedvar=res$finalvar)           
-  results
-}
-
-   
-callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=4){
-  answer <- 0.0
-  likely <- .C("callEvalLikelyhood",
-               as.double(model$xmodel),
-               as.integer(nparams),
-               as.double(model$training),
-               as.integer(nmodelpoints),
-               as.integer(nthetas),
-               as.double(vertex),
-               as.double(answer))
-  likely[[7]]
-}
