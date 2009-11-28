@@ -1,6 +1,6 @@
-## some more demo functions
-source("EmuRbind.R")
-source("testRbind.R")
+## a demo
+source("EmuRbind.R") ## provides the basic interface to the c fns via libRbind
+source("testRbind.R") ## provides some model test functions for plotting etc
 
 # npts
 npts <- 8
