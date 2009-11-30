@@ -1,35 +1,13 @@
 ## a demo
 source("EmuRbind.R") ## provides the basic interface to the c fns via libRbind
 source("testRbind.R") ## provides some model test functions for plotting etc
+source("plotCovReals.R") ## makes a covariance matrix
 library("Matrix")
 
-covFn <- function(z1,z2,thetas){
-  beta <- thetas[4]^(1.9)
-  cov <- exp((-1.0/2.0)*(abs(z1-z2))^(1.9)/beta)
-  ## if(abs(z1-z2) < 0.001){
-  ##   print("added nugget")
-  ##   nugget <- thetas[3]
-  ## } else {
-  ##   nugget <- 0
-  ## }
-  ## theats[2] is what makes the matrix
-  ## non pos-def, remove from the c-code!
-  ans <- thetas[1]*cov#+thetas[2]  
-}
-
-makeCMatrix <- function(m, thetas, xmodel){
-  covM <- diag(m) # (e^0)
-  for(j in 1:(m-1)) 
-    for(i in (1+j):m) 
-      covM[i,j] <- covM[j,i] <- covFn(xmodel[i], xmodel[j], thetas)
-  # add in the nugget
-  diag(covM) <- 1 + thetas[3]
-  covM
-}
 
 
 # npts
-npts <- 8
+npts <- 5
 
 
 # this function in testRbind.R creates some model data
@@ -62,6 +40,8 @@ actual <- data.frame(x=sequence, y=yM(sequence))
 
 
 # we can plot the results, and it works!
+# plot a jpg
+#jpeg("model-showing-samples.jpg", quality=100, bg="white", res=200, width=7, height=7, units="in")
 plotResultsTest(ourModel, results, actual, "our model")
 
 
@@ -69,24 +49,20 @@ plotResultsTest(ourModel, results, actual, "our model")
 ## this is ok but really we should do this at quite a few points
 ## 
 
-
-
 # now make the covMatrix
 cM <- makeCMatrix(npts, thetas, ourModel$xmodel)
 bigpts<- 100
 cMHuge <- makeCMatrix(bigpts, thetas, results$emulatedx)
 
-# make the cholesky decomp
-# this doesn't seem to work because the cM matrix is not positive def,
-# this is worrying, it really should be
-f <- chol(cM)
+# make the cholesky decomp,
+# now have f2' . f2 = cM) up to numeric errors
 f2 <- chol(cMHuge)
+
 for(i in 1:10){
-  z <- rnorm(npts)
   z1 <- rnorm(bigpts)
 # now we have some samples with the right correlation
-  samples <- t(f) %*% z
   samples2 <- t(f2) %*% z1
-  points(results$emulatedx, results$emulatedy+samples2, col="antiquewhite")
-
+  points(results$emulatedx, results$emulatedy+samples2, col="lightpink")
+  #lines(results$emulatedx, results$emulatedy+samples2, col="lightpink")
 }
+#dev.off()

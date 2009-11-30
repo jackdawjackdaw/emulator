@@ -46,12 +46,15 @@ makeSuperPlot <- function(){
 ## should use a single lhs sample for all the pulls but
 varyAlpha <- function(){
   par(mfrow=c(1,5))
+  # this is quite subtle
   title <- "Gauss Plot"
   for(i in 1:5){
     alpha <- i/5 + 1
     setEmulatorOptions(1, alpha)
     string <- toString(alpha)
-    testNModelPtsGauss(8, lhs=0, string)
+    # calling this with noSet makes sure it won't try and call
+    # setEmulatorOptions itself which would be annoying
+    testNModelPtsGauss(6, lhs=0, string, noSet=1)
   }
 }
 
@@ -66,7 +69,7 @@ compareCovFns <- function(){
 
   for(i in 1:5)
   # now set the matern cov fn
-    testNmodelPtsMatern(i+3, lhs=1, "Matern Covariance Fn")
+    testNModelPtsMatern(i+3, lhs=1, "Matern Covariance Fn")
 }
 
 # test the linear interpolation model,
@@ -146,12 +149,17 @@ demoModel <- function(m, lhs=0){
   model
 }
 
-testNModelPtsGauss <- function(m, lhs=0, title="test"){
+testNModelPtsGauss <- function(m, lhs=0, title="test", noSet=0){
   model <- demoModel(m, lhs=lhs)
   nmodelpts <- m
   nemupts <- 200
   print(model)
+  # don't set the emu options if this param has the value 1
+  # allows you to switch the emulator basics etc
+  if(noSet ==0 ){
   setEmulatorOptions(1,1.9)
+}
+  
   ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
   sequence <- seq(0.0,1.0, length=nemupts)
   actual <- data.frame(x=sequence, y=yM(sequence))

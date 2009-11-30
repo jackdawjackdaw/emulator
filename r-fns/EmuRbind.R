@@ -1,4 +1,4 @@
-dyn.load("../src/libRbind.so")
+dyn.load("libRbind.so")
 #source("emulator-test-data.R")
 library("lhs")
 library("scatterplot3d")
@@ -66,7 +66,7 @@ callcode <- function(model, nmodelpts, nparams=1, nthetas=4, nemupts=50, rangemi
   } else {
     print("sorry, won't work with nparams > 2")
   }
-  browser()
+  #browser()
   results <- data.frame(emulatedx=res$finalx[1:nemupts], emulatedy=res$finaly, emulatedvar=res$finalvar)
   results
 } 
