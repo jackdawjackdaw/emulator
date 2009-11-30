@@ -28,14 +28,15 @@ int main (void){
 	double range_max = 1.0;	
 	int nparams = 2;	
 	int nmodelpts;
-	int nthetas = 4;
+	int nthetas = nparams+3;
 	int nemupts= 100;
 
-	the_options.nthetas = 4;
-	the_options.nparams= 1;
 
+	// have to set this by hand
+	the_options.nparams= nparams;
+	the_options.nthetas = nthetas;
 
-	sprintf(filename, "../../gauss.dat");
+	sprintf(filename, "../../gauss.txt");
 	
 	if((fptr = fopen(filename, "r")) == NULL){
 		fprintf(stderr, "couldn't open file: %s\n", filename);
@@ -70,6 +71,7 @@ int main (void){
 	
 	for(j = 0; j < nparams; j++){
 		for(i = 0; i < nmodelpts; i++){
+			printf("%d, %d\n", i, j);
 			xmodel_flat[i+j*nmodelpts] = gsl_matrix_get(the_options.xmodel, i, j);
 		}
 	}

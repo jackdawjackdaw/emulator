@@ -378,8 +378,6 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
 }
 
 
-
-
 /*
  * driving to atlanta: fixed bug in this
  * 
@@ -387,7 +385,7 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
  * doesn't check anything
  */
 /** dimensions are interleaved! */
-void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx){
+void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int nx, int ny){
 	int i, j;
 	for(j = 0; j < ny; j++){
 		for(i =0; i < nx; i++){
