@@ -18,16 +18,23 @@ emulator_opts the_emulator_options;
 void set_emulator_defaults(emulator_opts* x){
 	// set some default behaviour
 	x->alpha = 1.9;
+	// don't use any of the matern functions
 	x->usematern = 0;
+	x->usematern_three = 0;
+	x->usematern_five = 0;
 }
 	
 
 void print_emulator_options(emulator_opts* x){
-	if(x->usematern ==0){
+	if(x->usematern ==0 && x->usematern_three == 0 && x->usematern_five==0){
 		fprintf(stderr, "using a power-exp covariance function\n");
 		fprintf(stderr, "alpha = %g\n", x->alpha);				
+	} else if (x->usematern == 1){
+		fprintf(stderr, "using a *FULL* matern  covariance function\n");
+	} else if (x->usematern_three ==1){
+		fprintf(stderr, "using 3/2 matern  covariance function\n");
 	} else {
-		fprintf(stderr, "using a matern covariance function\n");
+		fprintf(stderr, "using 5/2 matern  covariance function\n");
 	}
 }
 
@@ -61,7 +68,12 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
 double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
 	if(the_emulator_options.usematern == 1){
 		return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
+	} else if(the_emulator_options.usematern_three ==1){
+		return(covariance_fn_matern_three(xm,xn, thetas, nthetas, nparams));
+	} else if(the_emulator_options.usematern_five ==1){
+		return(covariance_fn_matern_five(xm,xn, thetas, nthetas, nparams));
 	} else {
+		// this is the default option
 		return(covariance_fn_gaussian(xm, xn , thetas, nthetas, nparams, the_emulator_options.alpha));
 	}
 }
@@ -215,11 +227,108 @@ double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
 
 	return(covariance);
 }
-		
-	
-	
-	
 
+//! the matern cov fn but with nu set to 3/2
+/**
+ * uses 3 thetas only, 0 and 1 are for the vert scale and the length scale and 
+ * 3 is the nugget 
+ * 
+ * this doesn't use quite the same normalisation as the other matern function
+ * i don't think this will make much difference although you can't directly 
+ * compare the "best" hyperparams
+ */
+double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+	double covariance = 0.0;
+	int i, truecount = 0;
+	double xm_temp = 0.0;
+	double xn_temp = 0.0;
+	double distance = 0.0;
+	
+	assert(nthetas >= 3); // can throw away the upper ones no problem
+
+	// map the thetas onto some local variables so the formula is more transparent
+	double sigsquared = gsl_vector_get(thetas, 0);
+	double rho = gsl_vector_get(thetas, 1);
+	double nugget = gsl_vector_get(thetas,2);
+	double tempx = 0.0;
+	double root3 = 1.732050808;
+
+	// calculate the euclidean distance between the two points;
+	for(i = 0; i < nparams; i++){
+		xm_temp = gsl_vector_get(xm, i);
+		xn_temp = gsl_vector_get(xn, i);
+		// this is currently the distance squared
+		distance += pow(fabs(xm_temp - xn_temp), 2.0);
+		if(fabs(xm_temp - xn_temp) < 0.0000000000000001){
+			truecount++;
+		}			
+	}
+	// reduce back to the right dimensions
+	distance = sqrt(distance);
+
+	if(distance > 0.0){
+		covariance = sigsquared*(1 + root3*(distance/rho))*exp(-root3*(distance/rho));
+	} else if(distance == 0){
+		covariance = sigsquared;
+	}
+	
+	// this means we're on a diagonal term, golly but i write bad code :(
+	if(truecount == nparams){
+		covariance += nugget;
+	}
+	return(covariance);
+}
+
+	
+//! the matern cov fn but with nu set to 5/2
+/**
+ * uses 3 thetas only, 0 and 1 are for the vert scale and the length scale and 
+ * 3 is the nugget 
+ * 
+ * 
+ * same hyperparam normalisation as covariance_fn_matern_three,
+ */
+double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+	double covariance = 0.0;
+	int i, truecount = 0;
+	double xm_temp = 0.0;
+	double xn_temp = 0.0;
+	double distance = 0.0;
+	
+	assert(nthetas >= 3); // can throw away the upper ones no problem
+
+	// map the thetas onto some local variables so the formula is more transparent
+	double sigsquared = gsl_vector_get(thetas, 0);
+	double rho = gsl_vector_get(thetas, 1);
+	double nugget = gsl_vector_get(thetas,2);
+	double tempx = 0.0;
+	double root5 = 2.236067978;
+
+	// calculate the euclidean distance between the two points;
+	for(i = 0; i < nparams; i++){
+		xm_temp = gsl_vector_get(xm, i);
+		xn_temp = gsl_vector_get(xn, i);
+		// this is currently the distance squared
+		distance += pow(fabs(xm_temp - xn_temp), 2.0);
+		if(fabs(xm_temp - xn_temp) < 0.0000000000000001){
+			truecount++;
+		}			
+	}
+	// reduce back to the right dimensions
+	distance = sqrt(distance);
+
+	if(distance > 0.0){
+		covariance = sigsquared*(1+root5*(distance/rho)+(5.0/3.0)*pow((distance/rho),2.0))*exp(-root5*(distance/rho));
+	} else if(distance == 0){
+		covariance = sigsquared;
+	}
+	
+	// this means we're on a diagonal term, golly but i write bad code :(
+	if(truecount == nparams){
+		covariance += nugget;
+	}
+	return(covariance);
+}
 
 
 //! calculate a vector of the covariances of a given point against all of the model points

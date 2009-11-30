@@ -19,8 +19,13 @@ extern emulator_opts the_emulator_options;
 //! change the covariance function options
 /**
  * set the emulator options
- * @param useGauss, if this is one we'll use the gaussian covariance function
- * otherwise use the matern function
+ * @param emuSelect_in this determines which covariance function to use
+ * 0 -> gaussian
+ * 1 -> matern (full)
+ * 2 -> matern (3/2)
+ * 3 -> matern(5/2)
+ * other -> gaussian
+ * 
  * @param alpha, if we're using the gaussian covariance function this 
  * will set the power in the exponent, you should set it somewhere between 1 and 2 
  * if you're using the matern one and you set alpha to either 1/2, 3/2, 5/2 
@@ -28,29 +33,60 @@ extern emulator_opts the_emulator_options;
  * it will have one fixed param)
  * \bold the matern behaviour is not implemented yet 
  */
-void setEmulatorOptions(int* useGauss_in, double* alpha_in){
-	int useGauss = *useGauss_in;
+void setEmulatorOptions(int* emuSelect_in, double* alpha_in){
+	int emuSelect  = *emuSelect_in;
 	double alpha = *alpha_in;
-	printf("%d\n", useGauss);
+	printf("%d\n", emuSelect);
 	printf("%g\n", alpha);
 
-
-	if(useGauss == 1.0){
-		the_emulator_options.usematern=0;
-		if(alpha > 0 && alpha < 2){
+	// sorry world, it's a switch
+	switch(emuSelect){
+	case 0:
+		the_emulator_options.usematern =0;
+		the_emulator_options.usematern_three =0;
+		the_emulator_options.usematern_five =0;
+		if(alpha > 0 && alpha <= 2.5){
 			the_emulator_options.alpha = alpha;
 		} else {
 			the_emulator_options.alpha = 1.9;
 		}
 		fprintf(stderr, "using Gaussian Cov, with alpha = %g\n", the_emulator_options.alpha);
+		break;
+	case 1:
+		the_emulator_options.usematern = 1;
+		the_emulator_options.usematern_three =0;
+		the_emulator_options.usematern_five =0;
+		fprintf(stderr, "using full Matern\n");
+		break;
+	case 2:
+		the_emulator_options.usematern = 0;
+		the_emulator_options.usematern_three =1;
+		the_emulator_options.usematern_five =0;
+		fprintf(stderr, "using 3/2 Matern\n");
+		break;
+	case 3:
+		the_emulator_options.usematern = 0;
+		the_emulator_options.usematern_three =0;
+		the_emulator_options.usematern_five =1;
+		fprintf(stderr, "using 5/2 Matern\n");
+		break;
+	default:
+		fprintf(stderr,"you called setEmulatorOptions badly, using default options\n");
+		the_emulator_options.usematern =0;
+		the_emulator_options.usematern_three =0;
+		the_emulator_options.usematern_five =0;
+		if(alpha > 0 && alpha <= 2.5){
+			the_emulator_options.alpha = alpha;
+		} else {
+			the_emulator_options.alpha = 1.9;
+		}
+		fprintf(stderr, "using Gaussian Cov, with alpha = %g\n", the_emulator_options.alpha);
+		break;
 	}
-	else if(useGauss==0.0){
-		the_emulator_options.usematern=1;
-		fprintf(stderr, "using Matern Cov, no alpha support yet\n");
-	} else {
-		fprintf(stderr, " bad call to setEmulatorOptions\n");
-		exit(1);
-	}
+
+		
+		
+
 }
 
 
