@@ -136,7 +136,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	pthread_spin_destroy(&results_spin);
 	#endif
 
-	fprintf(stderr, "best_thetas: \t");
+	fprintf(stderr, "THETAS WE WILL USE: \t");
 	print_vector_quiet(best_thetas, options->nthetas);
 
 	// tear down the thread params

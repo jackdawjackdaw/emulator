@@ -152,6 +152,8 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	}
 
 	// fill in final emulated_x
+	// this doesn't seem to work in >1d
+	// should be interleaved
 	for(j = 0; j < nparams; j++){
 		for(i = 0; i < nemupts; i++){
 			final_emulated_x[i+j*nmodel_points] = gsl_matrix_get(new_x, i, j);
@@ -374,6 +376,8 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
 	gsl_vector_free(thetas);
 
 }
+
+
 
 
 /*

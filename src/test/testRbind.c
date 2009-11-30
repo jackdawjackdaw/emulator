@@ -25,17 +25,17 @@ int main (void){
 	double* final_emulated_y;
 	double* final_emulated_variance;
 	double range_min = 0.0;
-	double range_max = 4.0;	
-	int nparams = 1;	
+	double range_max = 1.0;	
+	int nparams = 2;	
 	int nmodelpts;
 	int nthetas = 4;
-	int nemupts= 10;
+	int nemupts= 100;
 
 	the_options.nthetas = 4;
 	the_options.nparams= 1;
 
 
-	sprintf(filename, "../../wobbly-small.dat");
+	sprintf(filename, "../../gauss.dat");
 	
 	if((fptr = fopen(filename, "r")) == NULL){
 		fprintf(stderr, "couldn't open file: %s\n", filename);
