@@ -413,6 +413,38 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
 
 }
 
+//! creates the coeffs for a lagrange poly interpolation
+/**
+ *  @param xin are the points at which we require our polynomial to pass through
+ *  @param valin are the values of the function we wish to interpolate at xin
+ *  @param npts how many of xin there are, this also determines the order of the L poly
+ *  @param where we want this to be evaluated
+ *  @return the value of the polynomial as evaluated at desired_point
+ *
+ * this is clearly possible in R but i just can't quite get it right
+ */
+double lagrange_interp(double* xin, double* valin, int* npts_in, double* desired_point_in){
+	int i, j;
+	double retVal = 0;
+	double weight = 0.0;
+	double npts = *npts_in;
+	double desired_point = *desired_point_in;
+	
+	for(i=0; i<npts; ++i){
+		weight = 1.0;
+		for(j=0; j < npts; ++j){
+			if( j != i){
+				weight *= (desired_point - xin[j]) / (xin[i] - xin[j]);
+			}
+		}
+		retVal += weight*valin[i];
+	}
+
+	return(retVal);
+}
+
+
+
 
 /*
  * driving to atlanta: fixed bug in this
@@ -441,3 +473,4 @@ void convertDoubleToVector(gsl_vector* the_vec, double* input, int nx){
 		gsl_vector_set(the_vec, i, input[i]);
 	}
 }
+

@@ -129,3 +129,22 @@ callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=4)
                as.double(answer))
   likely[[7]]
 }
+
+## interpolate the data given by xvec and yvec at the point
+## xinterp, we need xvec and yvec to be the same length 
+##
+callInterpolate <- function(xvec, yvec, xinterp){
+  if(length(xvec) == length(yvec)){
+    yinterp <- .C("lagrange_interp",
+                as.double(xvec),
+                as.double(yvec),
+                as.int(length(xvec)),
+                as.double(xinterp))
+                
+  } else {
+    print("error xvec not same length as yvec")
+    yinterp <- 0.0
+  }
+  yinterp
+}
+                                              
