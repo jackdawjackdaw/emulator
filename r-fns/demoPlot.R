@@ -7,7 +7,7 @@ library("Matrix")
 
 
 # npts
-npts <- 5
+npts <- 7
 
 
 # this function in testRbind.R creates some model data
@@ -19,8 +19,8 @@ ourModel <- demoModel(npts, lhs=0)
 # now we set the default values for the covariance function
 # we'll need to know this later when we want to rebuild the
 # C matrix
-#setDefaultOps()
-setEmulatorOptions(1,2.0)
+setDefaultOps()
+#setEmulatorOptions(1,2.0)
 
 # now we'll estimate the thetas for our model
 # see EmuRind.R for some info on this one

@@ -74,7 +74,7 @@ compareCovFns <- function(){
 
 # test the linear interpolation model,
 # it works ok but this is not a good demo yet
-testInt <- function(m){
+testLinInt <- function(m){
   model <- demoModel(m, 1)
   f <- lm(model$training ~ model$xmodel + I(model$xmodel^2) + I(model$xmodel^3) )
   plot(model, ylim=range(0,6))
@@ -89,44 +89,80 @@ testInt <- function(m){
   points(ModelPlus, ylim=range(0,6), col="red")
 }
 
+demoInterpolation <- function(){
+  x<- seq(0.0, 1.0, length.out=100)
+  y<- yM(x)
+  
+  for(i in 4:8){
+    model <- demoModel(i, 0)
+    points(model$xmodel, model$training, pch="19", xlim=range(0,1.2), ylim=range(0,6))
+    runLagInt(model)
+  }
+  lines(x,y, col="green", lwd=2, lty=2)
+}
+    
 
-## interpolate (doesnt' work)
-## # y is a vec of values of the fn (evaluated at the pts x)
-## interpolate <- function(y,x, order, npts, rangemin=0.0, rangemax=1.0){
-##   d <- length(x)
-##   F = matrix(0, d, order)
-##   for(i in 1:d){
-##     for(j in order:0){
-##       #print(j)
-##       F[i,order-j] <- x[i]^(j)
-##     }
-##   }
-##   ##this gives you ans where: F %*% ans = y 
-##   ans <- solve(F, y)
-##   ##print(y)
-##   ##print(F %*% ans)
-##   ## fullX <- rep(0, npts)
-##   ## for(i in 1:npts)
-##   ##   fullX[i] <- i*(1/npts)
-##   ## fullY <- rep(0, npts)
-##   ## temp <- rep(0, order)
-##   ## #browser()
-##   ## ## now actually use the thing
-##   ## for(i in 1:npts){
-##   ##   fullY[i] <- intFn(fullX[i], ans)
-##   ## }
-##   ## #browser()
-##   ## final <- data.frame(x=fullX, y=fullY)
-## }
+## will be upset if you call this without an open plot
+runLagInt <- function(model, rangeMin=0.0, rangeMax=1.2, interpPoints=100){
+  interpX <- seq(rangeMin, rangeMax, length.out=interpPoints)
+  interpY <- rep(NA, interpPoints)
+  for(i in 1:interpPoints)
+    interpY[i] <- callInterpolate(model$xmodel, model$training, interpX[i])
+  #plot(model$xmodel, model$training, col="red")
+  lines(interpX, interpY, col="black")
+}
 
-## intFn <- function(x,a){
-##   order <- length(a)
-##   temp <- rep(0, order)
-##   for(i in 1:order)
-##     temp[i] <- (x^(i-1))*a[i]
-##   print(temp)n
-##   ans <- sum(temp)
-## }
+
+
+## for making some demo plots
+yM <- function(z) {5*exp(-3*z)*(sin(z*10)) + 2}
+
+demoModel <- function(m, lhs=0){
+  if(lhs == 1){
+    params <- maximinLHS(m, 1)
+  } else {
+    params <- matrix(0,m,1)
+    params[1,] <- 0
+    for(i in 1:(m-1))
+      params[i+1,] <- (1/m)*i
+  }
+  ymodel = rep(NA, m)
+  for(i in 1:m)
+    ymodel[i] <- yM(params[i,])
+  model <- data.frame(xmodel = params, training = ymodel)
+  model
+}
+
+testNModelPtsGauss <- function(m, lhs=0, title="test", noSet=0){
+  model <- demoModel(m, lhs=lhs)
+  nmodelpts <- m
+  nemupts <- 200
+  print(model)
+  # don't set the emu options if this param has the value 1
+  # allows you to switch the emulator basics etc
+  if(noSet ==0 ){
+  setEmulatorOptions(1,1.9)
+}
+  
+  ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
+  sequence <- seq(0.0,1.0, length=nemupts)
+  actual <- data.frame(x=sequence, y=yM(sequence))
+  plotResultsTest(model, ans, actual, title)
+
+}
+
+
+testNModelPtsMatern <- function(m, lhs=0, title="test"){
+  model <- demoModel(m, lhs=lhs)
+  nmodelpts <- m
+  nemupts <- 200
+  print(model)
+  setEmulatorOptions(0,1.9)  
+  ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
+  sequence <- seq(0.0,1.0, length=nemupts)
+  actual <- data.frame(x=sequence, y=yM(sequence))
+  plotResultsTest(model, ans, actual, title)
+}
 
 
 

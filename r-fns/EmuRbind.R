@@ -138,13 +138,13 @@ callInterpolate <- function(xvec, yvec, xinterp){
     yinterp <- .C("lagrange_interp",
                 as.double(xvec),
                 as.double(yvec),
-                as.int(length(xvec)),
+                as.integer(length(xvec)),
                 as.double(xinterp))
                 
   } else {
     print("error xvec not same length as yvec")
     yinterp <- 0.0
   }
-  yinterp
+  yinterp[[4]][1]
 }
                                               
