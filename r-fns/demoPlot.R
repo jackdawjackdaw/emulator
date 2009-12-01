@@ -31,7 +31,9 @@ print(thetas)
 # now we'll make some emulated data from the thetas
 # by default this assumes 1 param, 4 thetas, 100 emupts and
 # the range [0, 1]
-results <- callEmulate(ourModel, thetas, npts)
+results <- callEmulate(ourModel, thetas, npts, rangemin=0.0, rangemax=1.5)
+
+bigRes <- callEmulate(ourModel, thetas, npts, nemupts=400, rangemin=0.0, rangemax=1.1)
 
 # this is going to be our analytic model for plotting against
 # not transparent but the fn is def'd in testRbind
@@ -41,8 +43,8 @@ actual <- data.frame(x=sequence, y=yM(sequence))
 
 # we can plot the results, and it works!
 # plot a jpg
-#jpeg("model-showing-samples.jpg", quality=100, bg="white", res=200, width=7, height=7, units="in")
-plotResultsTest(ourModel, results, actual, "our model")
+#jpeg("model-showing-samples.jpg", quality=100, bg="white", res=200, width=8, height=5, units="in")
+#plotResultsTest(ourModel, results, actual, "our model")
 
 
 ##
@@ -51,18 +53,38 @@ plotResultsTest(ourModel, results, actual, "our model")
 
 # now make the covMatrix
 cM <- makeCMatrix(npts, thetas, ourModel$xmodel)
-bigpts<- 100
-cMHuge <- makeCMatrix(bigpts, thetas, results$emulatedx)
+bigpts<- 400
+#cMHuge <- makeCMatrix(bigpts, thetas, results$emulatedx)
+cMHuge <- makeCMatrix(bigpts, thetas, bigRes$emulatedx)
 
 # make the cholesky decomp,
 # now have f2' . f2 = cM) up to numeric errors
 f2 <- chol(cMHuge)
 
-for(i in 1:10){
+plot(actual$x, actual$y, type="n", xlim=range(0,1.0), ylim=range(0.0,6.0))
+
+for(i in 1:100){
   z1 <- rnorm(bigpts)
 # now we have some samples with the right correlation
   samples2 <- t(f2) %*% z1
-  points(results$emulatedx, results$emulatedy+samples2, col="lightpink")
-  #lines(results$emulatedx, results$emulatedy+samples2, col="lightpink")
+  colTest <- rgb(190, 190, 190, alpha=30, maxColorValue=255)
+  #points(results$emulatedx, results$emulatedy+samples2, col=colTest, pch=16, type="p" )
+  points(bigRes$emulatedx, bigRes$emulatedy+samples2, col=colTest, pch=16, type="p", cex=1.5 )
+
 }
+
+                                        # this works in 1d now
+points(ourModel$xmodel, ourModel$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19)
+title(main='samples')
+lines(actual$x, actual$y, col="green", lwd=2, lty=2)
+lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
+confidence <- rep(NA, length(results$emulatedvar))
+for(i in 1:length(results$emulatedvar))
+  confidence[i] <- 0.5*sqrt(results$emulatedvar[i])*1.65585
+
+lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
+lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
+grid()
+
+
 #dev.off()

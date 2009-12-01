@@ -89,27 +89,67 @@ testLinInt <- function(m){
   points(ModelPlus, ylim=range(0,6), col="red")
 }
 
+cols=c("blue", "violet", "darkred", "deepskyblue")
+
 demoInterpolation <- function(){
-  x<- seq(0.0, 1.0, length.out=100)
+  x<- seq(0.0, 1.5, length.out=100)
   y<- yM(x)
+  m <- 8
+  master <- demoModel(m, 0, rangeMin=0.0, rangeMax=1.3)
+
+  plot(master$xmodel, master$training, pch=19, col="black", xlim=range(0,1.5), ylim=range(0,6), cex=1.5, xlab="x", ylab="y")  
+  ## now run the emulator and save the day!
+  setEmulatorOptions(0,1.9) ## set default ops gauss cov fn
+  results <- callcode(master, m, rangemin=0.0, rangemax=1.3)
   
-  for(i in 4:8){
-    model <- demoModel(i, 0)
-    points(model$xmodel, model$training, pch="19", xlim=range(0,1.2), ylim=range(0,6))
-    runLagInt(model)
+  confidence <- rep(NA, length(results$emulatedvar))
+  for(i in 1:length(results$emulatedvar))
+    confidence[i] <- 0.5*sqrt(results$emulatedvar[i])*1.65585
+
+  ## colPoly <- rgb(190, 190, 190, alpha=70, maxColorValue=255)
+  ## xxConf <- c(results$emulatedx, rev(results$emulatedx))
+  ## yyConf <- c(results$emulatedy + confidence, rev(results$emulatedy - confidence))
+  ## polygon(xxConf, yyConf, col=colPoly, lty=2)              
+
+  # plot the emulated mean on top of the rest
+  lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
+  
+  title(main="this just feels like spinning plates")
+  lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
+  lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
+
+  ## do the interp parts
+
+
+  for(i in 1:3){
+    order <- i*2+1
+    ## just pull a little bit from the master
+    ## this is not a very elegant way to do things...
+    miniModel <- data.frame(xmodel=master$xmodel[1:order], training=master$training[1:order])
+    #model <- demoModel(i, 0)
+    #interp <- runLagInt(model)
+    interp <- runLagInt(miniModel, interpPoints=200)
+    lines(interp$x, interp$y, col=cols[i], lwd=2)
+
   }
-  lines(x,y, col="green", lwd=2, lty=2)
+  lines(x,y, col="green", lwd=3, lty=2)
+  legend(x=1.0, y=5, legend=c('model', 'emulator', '3rd order interp', '5th order interp', '8th order interp'),
+         col=c('green', 'red', cols[1], cols[2], cols[3]),
+         lwd=2,
+         lty=c(2,1,1,1,1,1))
+  grid()
+
 }
     
 
 ## will be upset if you call this without an open plot
-runLagInt <- function(model, rangeMin=0.0, rangeMax=1.2, interpPoints=100){
+runLagInt <- function(model, rangeMin=0.0, rangeMax=1.5, interpPoints=100){
   interpX <- seq(rangeMin, rangeMax, length.out=interpPoints)
   interpY <- rep(NA, interpPoints)
   for(i in 1:interpPoints)
     interpY[i] <- callInterpolate(model$xmodel, model$training, interpX[i])
-  #plot(model$xmodel, model$training, col="red")
-  lines(interpX, interpY, col="black")
+  result <- data.frame(x=interpX, y=interpY)
+  result
 }
 
 
@@ -117,66 +157,16 @@ runLagInt <- function(model, rangeMin=0.0, rangeMax=1.2, interpPoints=100){
 ## for making some demo plots
 yM <- function(z) {5*exp(-3*z)*(sin(z*10)) + 2}
 
-demoModel <- function(m, lhs=0){
+## the data set for this
+demoModel <- function(m, lhs=0, rangeMin=0.0, rangeMax=1.0){
   if(lhs == 1){
-    params <- maximinLHS(m, 1)
+    params <- (maximinLHS(m, 1))*(rangeMax-rangeMin) + rangeMin
   } else {
     params <- matrix(0,m,1)
-    params[1,] <- 0
-    for(i in 1:(m-1))
-      params[i+1,] <- (1/m)*i
-  }
-  ymodel = rep(NA, m)
-  for(i in 1:m)
-    ymodel[i] <- yM(params[i,])
-  model <- data.frame(xmodel = params, training = ymodel)
-  model
-}
+    x<-  seq(from=rangeMin,to=rangeMax,length.out=m)
+    for(i in 1:m)
+      params[i,] <- x[i]
 
-testNModelPtsGauss <- function(m, lhs=0, title="test", noSet=0){
-  model <- demoModel(m, lhs=lhs)
-  nmodelpts <- m
-  nemupts <- 200
-  print(model)
-  # don't set the emu options if this param has the value 1
-  # allows you to switch the emulator basics etc
-  if(noSet ==0 ){
-  setEmulatorOptions(1,1.9)
-}
-  
-  ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
-  sequence <- seq(0.0,1.0, length=nemupts)
-  actual <- data.frame(x=sequence, y=yM(sequence))
-  plotResultsTest(model, ans, actual, title)
-
-}
-
-
-testNModelPtsMatern <- function(m, lhs=0, title="test"){
-  model <- demoModel(m, lhs=lhs)
-  nmodelpts <- m
-  nemupts <- 200
-  print(model)
-  setEmulatorOptions(0,1.9)  
-  ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
-  sequence <- seq(0.0,1.0, length=nemupts)
-  actual <- data.frame(x=sequence, y=yM(sequence))
-  plotResultsTest(model, ans, actual, title)
-}
-
-
-
-## for making some demo plots
-yM <- function(z) {5*exp(-3*z)*(sin(z*10)) + 2}
-
-demoModel <- function(m, lhs=0){
-  if(lhs == 1){
-    params <- maximinLHS(m, 1)
-  } else {
-    params <- matrix(0,m,1)
-    params[1,] <- 0
-    for(i in 1:(m-1))
-      params[i+1,] <- (1/m)*i
   }
   ymodel = rep(NA, m)
   for(i in 1:m)
