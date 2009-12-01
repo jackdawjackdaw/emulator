@@ -419,11 +419,11 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
  *  @param valin are the values of the function we wish to interpolate at xin
  *  @param npts how many of xin there are, this also determines the order of the L poly
  *  @param where we want this to be evaluated
- *  @return the value of the polynomial as evaluated at desired_point
+ *  @return desired_point_in is set to the correct value
  *
  * this is clearly possible in R but i just can't quite get it right
  */
-double lagrange_interp(double* xin, double* valin, int* npts_in, double* desired_point_in){
+void lagrange_interp(double* xin, double* valin, int* npts_in, double* desired_point_in){
 	int i, j;
 	double retVal = 0;
 	double weight = 0.0;
@@ -439,8 +439,9 @@ double lagrange_interp(double* xin, double* valin, int* npts_in, double* desired
 		}
 		retVal += weight*valin[i];
 	}
-
-	return(retVal);
+	// push the answer back into the desired_point_in
+	*desired_point_in = retVal;
+	
 }
 
 
