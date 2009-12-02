@@ -49,8 +49,8 @@ actual <- data.frame(x=sequence, y=yM(sequence))
 
 # we can plot the results, and it works!
 # plot a jpg
-jpeg("model-showing-samples.jpg", quality=100, bg="white", res=300, width=8, height=5, units="in")
-#plotResultsTest(ourModel, results, actual, "our model")
+#jpeg("model-showing-samples.jpg", quality=100, bg="white", res=300, width=8, height=5, units="in")
+
 
 
 ##
@@ -128,4 +128,4 @@ lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
 ##        lty=c(2,1,2,1))
 
 
-dev.off()
+#dev.off()

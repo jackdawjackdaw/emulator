@@ -15,6 +15,15 @@ setDefaultOps <- function(){
 ## before you CALL CODE or DEATH
 # the function we're calling has no return, it just switches
 # some options around so this should be pretty simple
+#
+# double:alpha -> sets the smoothness of the cov fn
+# 
+# int:useGauss
+# 0 use a gauss cov fn
+# 1 use a full Matern
+# 2 use a 3/2 Matern
+# 3 use a 5/2 Matern
+# 
 setEmulatorOptions <- function(useGauss, alpha){
   foo<-.C("setEmulatorOptions",
      as.integer(useGauss),
