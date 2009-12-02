@@ -100,7 +100,7 @@ demoInterpolation <- function(){
   plot(master$xmodel, master$training, pch=19, col="black", xlim=range(0,1.5), ylim=range(0,6), cex=1.5, xlab="x", ylab="y")  
   ## now run the emulator and save the day!
   setEmulatorOptions(0,1.9) ## set default ops gauss cov fn
-  results <- callcode(master, m, rangemin=0.0, rangemax=1.3)
+  results <- callcode(master, m, rangemin=0.0, rangemax=2.0)
   
   confidence <- rep(NA, length(results$emulatedvar))
   for(i in 1:length(results$emulatedvar))
@@ -114,7 +114,7 @@ demoInterpolation <- function(){
   # plot the emulated mean on top of the rest
   lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
   
-  title(main="this just feels like spinning plates")
+  title(main="Comparing polynomial interpolation against GP emulator")
   lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
   lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
 
@@ -133,10 +133,11 @@ demoInterpolation <- function(){
 
   }
   lines(x,y, col="green", lwd=3, lty=2)
-  legend(x=1.0, y=5, legend=c('model', 'emulator', '3rd order interp', '5th order interp', '8th order interp'),
-         col=c('green', 'red', cols[1], cols[2], cols[3]),
-         lwd=2,
-         lty=c(2,1,1,1,1,1))
+  legend(x=1.0, y=5, legend=c('model', 'emulator',  'emulator 90% confidence',
+                       '3rd order', '5th order', '8th order'),
+         col=c('green', 'red', 'red', cols[1], cols[2], cols[3]),
+         lwd=2, cex=0.75,
+         lty=c(2,1,2,1,1,1))
   grid()
 
 }
@@ -183,10 +184,10 @@ testNModelPtsGauss <- function(m, lhs=0, title="test", noSet=0){
   # don't set the emu options if this param has the value 1
   # allows you to switch the emulator basics etc
   if(noSet ==0 ){
-  setEmulatorOptions(1,1.9)
+  setEmulatorOptions(0,1.9)
 }
   
-  ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
+  ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=2.0)
   sequence <- seq(0.0,1.0, length=nemupts)
   actual <- data.frame(x=sequence, y=yM(sequence))
   plotResultsTest(model, ans, actual, title)
@@ -213,7 +214,7 @@ testNModelPtsMatern <- function(m, lhs=0, title="test"){
 # same as plot results but now we have an analytic actual model to plot
 plotResultsTest <- function(model, results, actual, title="testing"){
   # this works in 1d now
-  plot(model$xmodel, model$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19)
+  plot(model$xmodel, model$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19, xlim=range(0.0,2.0))
   title(main=title)
   lines(actual$x, actual$y, col="green", lwd=2, lty=2)
   lines(results$emulatedx, results$emulatedy, col="red", lwd=2)

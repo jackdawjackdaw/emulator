@@ -5,7 +5,7 @@
 covFn <- function(z1,z2,thetas){
   beta <- thetas[4]^(1.9)
   cov <- exp((-1.0/2.0)*(abs(z1-z2))^(1.9)/beta)
-  ans <- thetas[1]*cov#+thetas[2]  
+  ans <- thetas[1]*cov
 }
 
 # construct the covariance matrix of a given input model

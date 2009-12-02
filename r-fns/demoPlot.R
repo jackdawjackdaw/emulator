@@ -61,21 +61,20 @@ cMHuge <- makeCMatrix(bigpts, thetas, bigRes$emulatedx)
 # now have f2' . f2 = cM) up to numeric errors
 f2 <- chol(cMHuge)
 
-plot(actual$x, actual$y, type="n", xlim=range(0,1.0), ylim=range(0.0,6.0))
+plot(actual$x, actual$y, type="n", xlim=range(0,1.0), ylim=range(0.0,6.0), xlab='x', ylab='y')
 
-for(i in 1:100){
+for(i in 1:20){
   z1 <- rnorm(bigpts)
 # now we have some samples with the right correlation
   samples2 <- t(f2) %*% z1
   colTest <- rgb(190, 190, 190, alpha=30, maxColorValue=255)
-  #points(results$emulatedx, results$emulatedy+samples2, col=colTest, pch=16, type="p" )
-  points(bigRes$emulatedx, bigRes$emulatedy+samples2, col=colTest, pch=16, type="p", cex=1.5 )
+  points(bigRes$emulatedx, bigRes$emulatedy+samples2, col=colTest, pch=16, type="p", cex=0.5 )
 
 }
 
                                         # this works in 1d now
 points(ourModel$xmodel, ourModel$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19)
-title(main='samples')
+title(main='Showing the emulator with samples drawn from the resulting distribution')
 lines(actual$x, actual$y, col="green", lwd=2, lty=2)
 lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
 confidence <- rep(NA, length(results$emulatedvar))
@@ -84,7 +83,12 @@ for(i in 1:length(results$emulatedvar))
 
 lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
 lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
+
+## add a legend
+legend(x=0.8, y=5, legend=c('model', 'emulator', 'confidence', 'samples'),
+       col=c('green', 'red', 'red', colTest),
+       lwd=2,
+       lty=c(2,1,2,1))
 grid()
 
-
-#dev.off()
+dev.off()

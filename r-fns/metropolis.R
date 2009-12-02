@@ -5,7 +5,8 @@ f  <- function(x){
   #exp(-4*x*x)
   #sin(3*x)
   # the cauchy distribution
-  (1.0)/(1+x*x)
+  #(1.0)/(1+x*x)
+  1/((1+x^2)^2)
 }
 
 # this is for integrating the function exp(-4*x^2)
@@ -77,9 +78,9 @@ test <- function(){
   t <- hist(samples,40)
   plot(t$mids, (t$counts/max(t$counts)))
 
-  #lines(density(samples))
+  lines(density(samples))
   lines(t$mids, f(t$mids))
-  samples
+  #samples
 }
   
 
