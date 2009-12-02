@@ -3,8 +3,11 @@ dyn.load("libRbind.so")
 library("lhs")
 library("scatterplot3d")
 
+## this selects the power exponential function
+## with alpha = 1.9
 setDefaultOps <- function(){
-  setEmulatorOptions(1,1.9)
+  
+  setEmulatorOptions(0,1.9)
 }
 
 
