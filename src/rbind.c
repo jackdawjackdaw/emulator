@@ -27,11 +27,6 @@ extern emulator_opts the_emulator_options;
  * other -> gaussian
  * 
  * @param alpha, if we're using the gaussian covariance function this 
- * will set the power in the exponent, you should set it somewhere between 1 and 2 
- * if you're using the matern one and you set alpha to either 1/2, 3/2, 5/2 
- * we get fast versions of besselK and the emulator will be faster (but 
- * it will have one fixed param)
- * \bold the matern behaviour is not implemented yet 
  */
 void setEmulatorOptions(int* emuSelect_in, double* alpha_in){
 	int emuSelect  = *emuSelect_in;
