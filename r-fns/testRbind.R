@@ -24,6 +24,17 @@ testIsing <- function(){
 }
 
 
+yTriv <- function(z) { 0.5*x^2+x+1}
+
+testTrivial <- function(){
+}
+
+
+
+
+
+
+
 ## plots an array of grophs, toprow using lhs sampled input
 ## bottom row using uniformly sampled input
 ##
@@ -159,7 +170,7 @@ runLagInt <- function(model, rangeMin=0.0, rangeMax=1.5, interpPoints=100){
 yM <- function(z) {5*exp(-3*z)*(sin(z*10)) + 2}
 
 ## the data set for this
-demoModel <- function(m, lhs=0, rangeMin=0.0, rangeMax=1.0){
+demoModel <- function(m, lhs=0, rangeMin=0.0, rangeMax=1.0, modelFunc=yM){
   if(lhs == 1){
     params <- (maximinLHS(m, 1))*(rangeMax-rangeMin) + rangeMin
   } else {
@@ -171,7 +182,7 @@ demoModel <- function(m, lhs=0, rangeMin=0.0, rangeMax=1.0){
   }
   ymodel = rep(NA, m)
   for(i in 1:m)
-    ymodel[i] <- yM(params[i,])
+    ymodel[i] <- modelFunc(params[i,])
   model <- data.frame(xmodel = params, training = ymodel)
   model
 }
@@ -214,13 +225,13 @@ testNModelPtsMatern <- function(m, lhs=0, title="test"){
 # same as plot results but now we have an analytic actual model to plot
 plotResultsTest <- function(model, results, actual, title="testing"){
   # this works in 1d now
-  plot(model$xmodel, model$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19, xlim=range(0.0,2.0))
+  plot(model$xmodel, model$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19, xlim=range(0.0,1.5))
   title(main=title)
-  lines(actual$x, actual$y, col="green", lwd=2, lty=2)
+  lines(actual$x, actual$y, col="darkolivegreen", lwd=2, lty=2)
   lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
   confidence <- rep(NA, length(results$emulatedvar))
   for(i in 1:length(results$emulatedvar))
-    confidence[i] <- 0.5*sqrt(results$emulatedvar[i])*1.65585
+    confidence[i] <- sqrt(results$emulatedvar[i])*1.65585
  
   lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
   lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)

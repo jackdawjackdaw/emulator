@@ -37,18 +37,41 @@ makeAdjustedC <- function(npts, m, thetas, xmodel, bigXmodel){
   ## this is the cov matrix for the grid of points we need to
   ## make a nice plot of the samples
   cBig <- makeCMatrix(npts, thetas, bigXmodel)
-
-  ##
-  Kij <- matrix(0, npts, m)
-  for(i in 1:npts){
-    for(j in 1:m){
-      ## ahh unfortunate notation here
-      Kij[i,j] <- covFn(bigXmodel[i],xmodel[j], thetas)
+  cFinal <- matrix(0, npts, npts)
+  ki <- rep(NA, m)
+  kj <- rep(NA, m)
+  for(j in 1:(npts-1)){
+    for(i in (1+j):npts){
+      ki <- makeK(xmodel, bigXmodel[i], thetas)
+      kj <- makeK(xmodel, bigXmodel[j], thetas)
+      tempVal <- cBig[i,j] - t(ki)%*%cModelInv %*% kj
+##       if(tempVal < 0){
+##         tepVal <- 0.0
+##       }
+      cFinal[i,j] <- cFinal[j,i] <- abs(tempVal )
     }
   }
+  ##
+##   Kij <- matrix(0, npts, m)
+##   for(i in 1:npts){
+##     for(j in 1:m){
+##       ## ahh unfortunate notation here
+##       Kij[i,j] <- covFn(bigXmodel[i],xmodel[j], thetas)
+##     }
+##   }
 
-  cFinal <- matrix(0, npts, npts)
-  #browser()
-  cFinal <- cBig - (Kij %*% (cModelInv %*% t(Kij)))
+##   cFinal <- matrix(0, npts, npts)
+##   #browser()
+##  cFinal <- cBig - (Kij %*% (cModelInv %*% t(Kij)))
+  #kibrowser()
   cFinal
 }
+
+makeK <- function(xmodel, x, thetas){
+  ret <- rep(NA, length(xmodel))
+  for(i in 1:length(xmodel)){
+    ret[i] <- covFn(xmodel[i], x, thetas)
+  }
+  ret
+}
+ 

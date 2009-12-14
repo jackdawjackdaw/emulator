@@ -1,7 +1,7 @@
 dyn.load("libRbind.so")
 #source("emulator-test-data.R")
 library("lhs")
-library("scatterplot3d")
+#library("scatterplot3d")
 
 ## this selects the power exponential function
 ## with alpha = 1.9
