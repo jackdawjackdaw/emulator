@@ -10,7 +10,7 @@ library("Matrix")
 npts <- 8
 
 # number of repeat draws to make from the cov fn
-nreps <- 5
+nreps <- 9
 
 # what region to do the emulation in
 xmin <- 0.0
@@ -70,57 +70,82 @@ cMHuge <- makeAdjustedC(bigpts, npts, thetas, ourModel$xmodel, bigRes$emulatedx)
 f2 <- chol(cMHuge)
 f3 <- chol(cMHugeOrig)
 
-# setup the dual plot
-par(mfrow=c(1,2))
+## try the eval decomp too
+#eSys <- eigen(cMHuge)
 
-plot(actual$x, actual$y, type="n", xlim=range(xmin,xmax), ylim=range(0.0,6.0), xlab='x', ylab='y')
-grid()
+
+# setup the dual plot
+par(mfrow=c(3,nreps/3))
+
+cols=c('coral', 'red', 'pink', 'lightblue', 'green', 'orange', 'grey', 'purple', 'black')     
+#plot(actual$x, actual$y, type="n", xlim=range(xmin,xmax), ylim=range(0.0,6.0), xlab='x', ylab='y')
+#grid()
+
+
+
 for(i in 1:nreps){
   z1 <- rnorm(bigpts)
-# now we have some samples with the right correlation
+  ## this doesn't seem to work well
+  #z2 <- rnorm(bigpts, sd=eSys$values)
+  ## z2 <- rep(NA, bigpts)
+  ##   for(j in 1:bigpts)
+  ##     z2[j] <- rnorm(1, sd=eSys$values[j])
+  ## # 
+  ##now we have some samples with the right correlation
   samples2 <- t(f2) %*% z1
+  #hist(samples2)
+  #lines(density(samples2), col=cols[i])
+  qqnorm(samples2, col=cols[i])
+  qqline(samples2, col='black')
+  #eSamples <- eSys$vector %*% z2
   # this is a color object, the alpha option makes the points quite transparent
-  colTest <- rgb(0, 0, 190, alpha=50, maxColorValue=255)
-  points(bigRes$emulatedx, bigRes$emulatedy+samples2, col=colTest, pch=16, type="p", cex=0.75 )
-
+  #colTest <- rgb(0, 0, 190, alpha=50, maxColorValue=255)
+  #points(bigRes$emulatedx, bigRes$emulatedy+samples2, col=colTest, pch=16, type="p", cex=0.75 )
+  
 }
 
                                         # this works in 1d now
-points(ourModel$xmodel, ourModel$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19)
-title(main='Adjusted Sample Cov Matrix')
-lines(actual$x, actual$y, col="black", lwd=2, lty=2)
-lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
-confidence <- rep(NA, length(results$emulatedvar))
-for(i in 1:length(results$emulatedvar))
-  confidence[i] <- 0.5*sqrt(results$emulatedvar[i])*1.65585
+## points(ourModel$xmodel, ourModel$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19)
+## title(main='Adjusted Sample Cov Matrix')
+## lines(actual$x, actual$y, col="black", lwd=2, lty=2)
+## lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
+## confidence <- rep(NA, length(results$emulatedvar))
+## for(i in 1:length(results$emulatedvar))
+##   # should there be a 1/2 here?
+##   #confidence[i] <- sqrt(results$emulatedvar[i])*1.65585
+##   # a 90% interval
+##   confidence[i] <- sqrt(results$emulatedvar[i])*1.96
 
-lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
-lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
+## lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
+## lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
 
-## add a legend
-## legend(x=0.8, y=5, legend=c('model', 'emulator', 'confidence', 'samples calculated Correctly'),
-##        col=c('black', 'red', 'red', colTest),
-##        lwd=2,
-##        lty=c(2,1,2,1))
+## ## or plot the cov fn
+## ##plot(results$emulatedx, covFn(results$emulatedx,0, thetas))
+
+## ## add a legend
+## ## legend(x=0.8, y=5, legend=c('model', 'emulator', 'confidence', 'samples calculated Correctly'),
+## ##        col=c('black', 'red', 'red', colTest),
+## ##        lwd=2,
+## ##        lty=c(2,1,2,1))
 
 
-# and now we'll plot the old one on another graph to comapre?
-plot(actual$x, actual$y, type="n", xlim=range(xmin,xmax), ylim=range(0.0,6.0), xlab='x', ylab='y')
-grid()
-for(i in 1:nreps){
-  z1 <- rnorm(bigpts)
-# now we have some samples with the right correlation
-  samples2 <- t(f3) %*% z1
-  # this is a color object, the alpha option makes the points quite transparent
-  colTest <- rgb(0, 200, 190, alpha=50, maxColorValue=255)
-  points(bigRes$emulatedx, bigRes$emulatedy+samples2, col=colTest, pch=16, type="p", cex=0.75 )
-}
-points(ourModel$xmodel, ourModel$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19)
-title(main='Naiive Sample Cov Matrix')
-lines(actual$x, actual$y, col="black", lwd=2, lty=2)
-lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
-lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
-lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
+## ## # and now we'll plot the old one on another graph to comapre?
+## plot(actual$x, actual$y, type="n", xlim=range(xmin,xmax), ylim=range(0.0,6.0), xlab='x', ylab='y')
+## grid()
+## for(i in 1:nreps){
+##   z1 <- rnorm(bigpts)
+## # now we have some samples with the right correlation
+##   samples2 <- t(f3) %*% z1
+##   # this is a color object, the alpha option makes the points quite transparent
+##   colTest <- rgb(0, 200, 190, alpha=50, maxColorValue=255)
+##   points(bigRes$emulatedx, bigRes$emulatedy+samples2, col=colTest, pch=16, type="p", cex=0.75 )
+## }
+## points(ourModel$xmodel, ourModel$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19)
+## title(main='Naiive Sample Cov Matrix')
+## lines(actual$x, actual$y, col="black", lwd=2, lty=2)
+## lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
+## lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
+## lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
 
 ## legend(x=0.8, y=5, legend=c('model', 'emulator', 'confidence', 'samples badly'),
 ##        col=c('black', 'red', 'red', colTest),

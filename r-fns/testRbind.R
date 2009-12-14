@@ -187,8 +187,8 @@ demoModel <- function(m, lhs=0, rangeMin=0.0, rangeMax=1.0, modelFunc=yM){
   model
 }
 
-testNModelPtsGauss <- function(m, lhs=0, title="test", noSet=0){
-  model <- demoModel(m, lhs=lhs)
+testNModelPtsGauss <- function(m, lhs=0, title="test", noSet=0, rangeMin=0.0, rangeMax=1.5, printL=0){
+  model <- demoModel(m, lhs=lhs, rangeMin, rangeMax)
   nmodelpts <- m
   nemupts <- 200
   print(model)
@@ -197,22 +197,32 @@ testNModelPtsGauss <- function(m, lhs=0, title="test", noSet=0){
   if(noSet ==0 ){
   setEmulatorOptions(0,1.9)
 }
-  
-  ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=2.0)
+
+  if(printL == 1){
+    thetas <- callEstimate(model, nmodelpts)
+    ans <- callEmulate(model, thetas, nmodelpts, nemupts=nemupts, rangemin=rangeMin, rangemax=rangeMax)
+    
+    } else { 
+      ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=rangeMin, rangemax=rangeMax)
+    }
   sequence <- seq(0.0,1.0, length=nemupts)
   actual <- data.frame(x=sequence, y=yM(sequence))
   plotResultsTest(model, ans, actual, title)
 
+  if(printL==1){
+    mtext(toString(thetas[4], width=9))
+  }
+    
 }
 
 
-testNModelPtsMatern <- function(m, lhs=0, title="test"){
-  model <- demoModel(m, lhs=lhs)
+testNModelPtsMatern <- function(m, lhs=0, title="test", rangeMin=0.0, rangeMax=1.5){
+  model <- demoModel(m, lhs=lhs, rangeMin, rangeMax)
   nmodelpts <- m
   nemupts <- 200
   print(model)
-  setEmulatorOptions(0,1.9)  
-  ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=0.0, rangemax=1.0)
+  setEmulatorOptions(1,1.9)  
+  ans <- callcode(model, nmodelpts, nemupts=nemupts, rangemin=rangeMin, rangemax=rangeMax)
   sequence <- seq(0.0,1.0, length=nemupts)
   actual <- data.frame(x=sequence, y=yM(sequence))
   plotResultsTest(model, ans, actual, title)
