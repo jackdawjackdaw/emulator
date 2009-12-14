@@ -4,14 +4,17 @@ source("testRbind.R")
 
 ## run this to build all the plots
 printPlots <- function(){
-  postscript("demoModel-pts-only.ps")
+  postscript("~/Projects/EmuPresent/images/ps/demoModel-pts-only.ps")
   plotPlainModel()
   dev.off()
-  postscript("demoModel-emulated.ps")
+  postscript("~/Projects/EmuPresent/images/ps/demoModel-emulated.ps")
   plotEmulatedModel()
   dev.off()
-  postscript("demoModel-emu-interp.ps")
+  postscript("~/Projecst/EmuPresent/images/ps/demoModel-emu-interp.ps")
   demoInterpolation()
+  dev.off()
+  postscript("~/Projects/EmuPresent/images/ps/cddemoModel-cov-fn-compare.ps")
+  plotCovFnCompare()
   dev.off()
 }
 
@@ -55,5 +58,18 @@ plotEmulatedModel <- function(){
          lty=c(0,2,1,2),
          pch=c(19,-1,-1,-1))
   
-}  
+}
 
+plotVaryingN <- function(){
+  par(mfrow=c(2,2))
+  for(i in 1:4){
+    string <- toString(2*i+4)
+    testNModelPtsGauss( 2*i+4, lhs=0, string, printL=1)
+  }
+}
+
+plotCovFnCompare <- function(){
+  par(mfrow=c(1,2))
+  testNModelPtsGauss(8, lhs=0, "Power Exp Covariance")
+  testNModelPtsMatern(8,lhs=0, "Matern Covariance")
+}
