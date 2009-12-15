@@ -10,8 +10,6 @@ nbig <- 150
 model <- makeReal(1.0, nbig, thetaLength=0.1)
 
 
-
-
 emulateOU <- function(ouModel, m, color){
 
  design <- data.frame(xmodel=rep(NA, m), training=rep(NA, m))
@@ -40,13 +38,16 @@ emulateOU <- function(ouModel, m, color){
 }
 
 
-
-plot(model, ylim=range(-2.5,2.5), pch="+")
-
+plot(model, ylim=range(floor(min(model$y))-0.25,floor(model$y)+0.5), pch="+")
 title(main="Sampling the OU process")
-
 lines(model, lwd=1)
 grid()
-
 emulateOU(model, 12, 'red')
 #emulateOU(model, 15, 'darkolivegreen')
+
+legend(x=0.8, y=1.1, legend=c('model', 'emulator', 'confidence intervals'),
+         col=c('black', 'red', 'red'),
+         lwd=2,
+         #pch=c(12, "+", -1, -1),
+         lty=c(1,1,2),
+         bg='white')

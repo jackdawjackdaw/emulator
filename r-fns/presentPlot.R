@@ -8,21 +8,31 @@ source("testRbind.R")
 ## the command pdf("filename.pdf") sets a pdf as the default output device but this
 ## somehow doesn't seem to come out anywhere near as nice as the post-script
 printPlots <- function(){
-  postscript("ps/demoModel-pts-only")
-  plotPlainModel()
+##   postscript("ps/demoModel-pts-only.ps")
+##   plotPlainModel()
+##   dev.off()
+##   postscript("ps/demoModel-emulated.ps")
+##   plotEmulatedModel()
+##   dev.off()
+##   postscript("ps/demoModel-emu-interp.ps")
+##   demoInterpolation()
+##   dev.off()
+##   postscript("ps/demoModel-cov-fn-compare.ps")
+##   plotCovFnCompare()
+##   dev.off()
+##   postscript("ps/demoModel-varying-n.ps")
+##   plotVaryingN()
+##   dev.off()
+
+##   ## this one is special :(
+##   png("ps/demoModel-samples.png", width=1200, height=1024)
+##   source("demoPlot.R")
+##   dev.off()
+
+  postscript("ps/ouProcess.ps")
+  source("tryOU.R")
   dev.off()
-  postscript("ps/demoModel-emulated")
-  plotEmulatedModel()
-  dev.off()
-  postscript("ps/demoModel-emu-interp")
-  demoInterpolation()
-  dev.off()
-  postscript("ps/demoModel-cov-fn-compare")
-  plotCovFnCompare()
-  dev.off()
-  postscript("ps/demoModel-varying-n")
-  plotVaryingN()
-  dev.off()
+             
 }
 
 plotPlainModel <- function(){
