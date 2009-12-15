@@ -10,7 +10,7 @@ mkdir ps
 
 echo "starting R"
 ## run the R to make new plots
-R --vanilla <presentPlot.R> dump.txt
+R --vanilla <presentPlot.R > /dev/null;
 
 cd ps
 for FILE in `ls *.ps`
