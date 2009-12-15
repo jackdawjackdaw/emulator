@@ -13,11 +13,16 @@ echo "starting R"
 R --vanilla <presentPlot.R > /dev/null;
 
 cd ps
-for FILE in `ls *.ps`
+
+## adjusted presentPlot.R to output only blank named files sp
+## you can covert them to pdf without trying to trim the 
+## extension off
+for FILE in `ls *.`
 do
 		ps2pdf $FILE $FILE.pdf
 done
 
 cp *.pdf ~/Projects/EmuPresent/images
+
 cd ..
 

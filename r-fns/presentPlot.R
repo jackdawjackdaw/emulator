@@ -8,19 +8,19 @@ source("testRbind.R")
 ## the command pdf("filename.pdf") sets a pdf as the default output device but this
 ## somehow doesn't seem to come out anywhere near as nice as the post-script
 printPlots <- function(){
-  postscript("ps/demoModel-pts-only.ps")
+  postscript("ps/demoModel-pts-only")
   plotPlainModel()
   dev.off()
-  postscript("ps/demoModel-emulated.ps")
+  postscript("ps/demoModel-emulated")
   plotEmulatedModel()
   dev.off()
-  postscript("ps/demoModel-emu-interp.ps")
+  postscript("ps/demoModel-emu-interp")
   demoInterpolation()
   dev.off()
-  postscript("ps/demoModel-cov-fn-compare.ps")
+  postscript("ps/demoModel-cov-fn-compare")
   plotCovFnCompare()
   dev.off()
-  postscript("ps/demoModel-varying-n.ps")
+  postscript("ps/demoModel-varying-n")
   plotVaryingN()
   dev.off()
 }
@@ -82,4 +82,4 @@ plotCovFnCompare <- function(){
 }
 
 
-#printPlots()
+printPlots()
