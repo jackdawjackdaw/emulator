@@ -61,6 +61,17 @@ plotReals <- function(){
 
 }
 
+testPlotCov <- function(){
+  thetas <- c(0.8, 0.787, 0.1, 0.109)
+  m <- 8
+  bigpts <- 100
+  model <- demoModel(m, lhs=0, rangeMin=0.0, rangeMax=1.5)
+  setDefaultOps()
+  bigRes <- callEmulate(model, thetas, m, nemupts=bigpts, rangemin=0.0, rangemax=1.5)
+  bigC <- makeAdjustedC(bigpts, m, thetas, model$xmodel, bigRes$emulatedx)
+  
+}
+
 ## takes into account the conditioning on the covariance
 ## due to the model points (not just the hyper params)
 ## npts -> number of points in bigmodel
@@ -79,18 +90,27 @@ makeAdjustedC <- function(npts, m, thetas, xmodel, bigXmodel){
   ## this is the cov matrix for the grid of points we need to
   ## make a nice plot of the samples
   cBig <- makeCMatrix(npts, thetas, bigXmodel)
-
-  ##
-  Kij <- matrix(0, npts, m)
-  for(i in 1:npts){
-    for(j in 1:m){
-      ## ahh unfortunate notation here
-      Kij[i,j] <- covFn(bigXmodel[i],xmodel[j], thetas)
+  cFinal <- matrix(0, npts, npts)
+  ki <- rep(NA, m)
+  kj <- rep(NA, m)
+  for(j in 1:(npts-1)){
+    for(i in (1+j):npts){
+      ki <- makeK(xmodel, bigXmodel[i], thetas)
+      kj <- makeK(xmodel, bigXmodel[j], thetas)
+      tempVal <- cBig[i,j] - t(ki)%*%cModelInv%*% kj 
+      cFinal[i,j] <- cFinal[j,i] <- tempVal 
     }
   }
-
-  cFinal <- matrix(0, npts, npts)
-  #browser()
-  cFinal <- cBig - (Kij %*% (cModelInv %*% t(Kij)))
+  ## force some nugget term
+  diag(cFinal) <- 1+ thetas[3]
   cFinal
 }
+
+makeK <- function(xmodel, x, thetas){
+  ret <- rep(NA, length(xmodel))
+  for(i in 1:length(xmodel)){
+    ret[i] <- covFn(xmodel[i], x, thetas)
+  }
+  ret
+}
+ 
