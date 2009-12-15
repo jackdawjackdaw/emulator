@@ -63,28 +63,28 @@ cMHuge <- makeAdjustedC(bigpts, npts, thetas, ourModel$xmodel, bigRes$emulatedx)
 f2 <- chol(cMHuge)
 f3 <- chol(cMHugeOrig)
 
-plot(actual$x, actual$y, type="l", xlim=range(xmin,xmax), ylim=range(0.0,6.0), xlab='x', ylab='y', col="darkolivegreen", lty=2, lwd=2)
+plot(actual$x, actual$y, type="l", xlim=range(xmin,xmax), ylim=range(0.0,6.0), xlab='x', ylab='y', col="darkolivegreen", lty=2, lwd=4)
 grid()
 for(i in 1:nreps){
   z1 <- rnorm(bigpts)
 # now we have some samples with the right correlation
   samples2 <- t(f2) %*% z1
   # this is a color object, the alpha option makes the points quite transparent
-  colTest <- rgb(0, 0, 190, alpha=25, maxColorValue=255)
-  points(bigRes$emulatedx, bigRes$emulatedy+samples2, col=colTest, pch=16, type="p", cex=0.75 )
+  colTest <- rgb(0, 102, 153, alpha=35, maxColorValue=255)
+  points(bigRes$emulatedx, bigRes$emulatedy+samples2, col=colTest, pch=16, type="p", cex=2.0 )
 }
 
 # this works in 1d now
 points(ourModel$xmodel, ourModel$training, ylim=range(0.0,6.0), xlab="x", ylab="y", pch=19)
 title(main='y=5exp(-3x)sin(10x)+2')
 ## lines(actual$x, actual$y, col="black", lwd=2, lty=2)
-lines(results$emulatedx, results$emulatedy, col="red", lwd=2)
+lines(results$emulatedx, results$emulatedy, col="red", lwd=4)
 confidence <- rep(NA, length(results$emulatedvar))
 for(i in 1:length(results$emulatedvar))
   confidence[i] <- sqrt(results$emulatedvar[i])*1.65585
 
-lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2)
-lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2)
+lines(results$emulatedx, results$emulatedy + confidence, col="red", lty=2, lwd=4)
+lines(results$emulatedx, results$emulatedy - confidence, col="red", lty=2, lwd=4)
 
 legend(x=1.2, y=5, legend=c('training points', 'model', 'emulator', 'confidence', 'samples'),
        col=c('black', 'darkolivegreen', 'red', 'red', colTest),

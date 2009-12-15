@@ -162,10 +162,10 @@ demoInterpolation <- function(){
     lines(interp$x, interp$y, col=cols[i], lwd=2)
 
   }
-  lines(x,y, col="green", lwd=3, lty=2)
+  lines(x,y, col="darkolivegreen", lwd=3, lty=2)
   legend(x=1.0, y=5, legend=c('model', 'emulator',  'emulator 90% confidence',
                        '3rd order', '5th order', '7th order'),
-         col=c('green', 'red', 'red', cols[1], cols[2], cols[3]),
+         col=c('darkolivegreen', 'red', 'red', cols[1], cols[2], cols[3]),
          bg='white',
          lwd=2, cex=0.75,
          lty=c(2,1,2,1,1,1))
