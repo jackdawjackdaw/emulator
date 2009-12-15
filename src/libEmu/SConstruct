@@ -7,8 +7,9 @@ debug = '-O -c -O0 -g'
 # use the matern covariance function
 #usematern = ' -DMATERN'
 
+
 env_prod = Environment(CCFLAGS = cflags)
-env_shared = Environment(CCFLAGS = cflags)
+env_shared = Environment(CCFLAGS = debug)
 
 # source files to make the lib
 src_files = Split('estimator.c emulator.c maximise.c maxbfgs.c bfgs.c')
@@ -19,3 +20,4 @@ libs=Split('gsl gslcblas m')
 env_prod.Library('libEmu', src_files, LIBS=libs)
 # make the shared one
 env_shared.SharedLibrary('libEmu', src_files, LIBS=libs)
+

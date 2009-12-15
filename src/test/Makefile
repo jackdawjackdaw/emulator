@@ -5,7 +5,7 @@ CFLAGS = -O0 -Wall -g -pedantic -Wextra -std=gnu99 -I../libEmu
 TAGS = etags #for emacs
 LTOOL = libtool
 LINK = --mode=link gcc
-LIBEMU = ../libEmu/libEmu.la
+LIBEMU = ../libEmu/libEmu.a
 
 
 all: gradtest testing estimatortest test-resize list-test array-test testRbind

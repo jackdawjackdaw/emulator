@@ -1,7 +1,7 @@
 ## makefile for libEmu
 LTOOL = libtool
 COMPILE = --mode=compile gcc 
-CFLAGS = -O -c -O2 -Wextra -pedantic -std=c99  
+CFLAGS = -O -c -O2 -Wextra -pedantic -std=c99 -DMATERN
 #CFLAGSDEBUG = -O -c -O0 -g 
 #CFLAGS = $(CFLAGSDEBUG)
 LFLAGS = -lgsl -lgslcblas -lm
@@ -25,8 +25,11 @@ bfgs:
 	$(LTOOL) $(COMPILE) $(CFLAGS) bfgs.c
 
 libEmu: estimator emulator maximise maxbfgs bfgs
-	$(LTOOL) $(LINK) -o libEmu.la estimator.lo emulator.lo maximise.lo maxbfgs.lo bfgs.lo $(CFLAGS) $(LFLAGS)
+	$(LTOOL) $(LINK) -o libEmu.la estimator.lo emulator.lo maximise.lo maxbfgs.lo bfgs.lo $(CFLAGS) $(LFLAGS) -DMATERN
+
+
 
 clean:
 	rm *.la
 	rm *.lo
+	rm *.o

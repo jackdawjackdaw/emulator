@@ -1,5 +1,7 @@
 #include "stdio.h"
 #include "math.h"
+#include "gsl/gsl_rng.h"
+
 
 /* generate a gaussian or more in 2d and smush them together into 
  * some overall function, then try to emulate them 
@@ -10,13 +12,20 @@ double gauss(double x, double y, double x0, double y0, double a, double b, doubl
 	return(exp(-f));
 }
 
+const gsl_rng_type *T;
+gsl_rng *r;
+
 int main (void){
 	// the density of points to evaluate 
 	int nx = 16;
 	int ny = 16;
 	double world[nx][ny];
 	int i,j;
-
+	 
+	gsl_rng_env_setup();
+	T = gsl_rng_default;
+	r = gsl_rng_alloc(T);
+	
 	double x =0;
 	double y = 0;
 	double m1x = 0.5;
@@ -32,7 +41,7 @@ int main (void){
 			x = ((double) i)/((double) nx);
 			y = ((double) j)/((double) nx);
 			world[i][j] += gauss(x,y, m1x, m1y, a1,a2,a3);
-			world[i][j] += gauss(x,y, 0.1, 0.1, 75,0,75);
+			//world[i][j] += gauss(x,y, 0.1, 0.1, 75,0,75);
 		}
 	}
 	
@@ -40,12 +49,15 @@ int main (void){
 		for(j= 0; j < ny; j++){
 			x = ((double) i)/((double) nx);
 			y = ((double) j)/((double) nx);
-			
-			fprintf(stdout, "%g\t%g\t%g\n", x,y, world[i][j]);
+			if(world[i][j] > 1E-5){
+				fprintf(stdout, "%g\t%g\t%g\n", x,y, world[i][j]);
+			} else {
+				fprintf(stdout, "%g\t%g\t%g\n", x,y, 0.01*gsl_rng_uniform(r));
+			}
 		}
 	}
 
-
+	gsl_rng_free(r);
 	return(0);
 }
 	
