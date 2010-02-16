@@ -616,21 +616,66 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	int lu_signum =0;
 	double cinverse_det = 0.0;
 	double the_likelyhood = 0.0;
+	int cholesky_test = 0;
+	int i;
 	
 
 	// make the covariance matrix 
 	// using the random initial conditions! (xold not thetas)
 	makeCovMatrix(covariance_matrix, xmodel, vertex, nmodel_points, nthetas, nparams);
+	//
+	// the matrix is by definition symmetric and positive def so 
+	// we can use a cholesky decomp which goes like O(n^3/3)
+	// the LU decomp goes like O(2n^3/3), so the cholesky decomp is
+	// twice as fast! woo
+	
 	//DEBUG	print_matrix(covariance_matrix, nmodel_points, nmodel_points);
 
+	
 
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
+	#ifdef _LUDECOMP_
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
+	
 	// now get the determinant of the inverse			
 	gsl_matrix_memcpy(temp_matrix, cinverse);
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
+	// testing
+	//printf("LU:%g\n", cinverse_det);
+
+	
+  #else
+	// do the decomp and then run along
+	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
+	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
+	if(cholesky_test == GSL_EDOM){
+		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
+		exit(1);
+	}
+	gsl_linalg_cholesky_invert(temp_matrix);
+	gsl_matrix_memcpy(cinverse, temp_matrix);
+	
+	// now get the determinant of the inverse
+	// for a cholesky decomp matrix L.L^T = A the determinant of A is 
+	// the square of the product of the diagonal elements of L	
+	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
+	if(cholesky_test == GSL_EDOM){
+		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
+		exit(1);
+	}
+	
+	cinverse_det = 1.0;
+	for(i = 0; i < nmodel_points; i++){
+		cinverse_det *= gsl_matrix_get(temp_matrix, i,i);
+	}
+	cinverse_det = cinverse_det * cinverse_det;
+	// testing
+	//printf("CHOL:%g\n", cinverse_det);
+	//exit(1);
+	#endif
+	
 	//debug vector_print(vertex, nthetas);
 	the_likelyhood  = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, vertex, nmodel_points, nthetas, nparams);
 

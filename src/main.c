@@ -132,13 +132,15 @@ int main (int argc, char ** argv){
 			// it will come up null when you're done
 			assert(split_string != NULL);
 			sscanf(split_string, "%lg", &temp_value);
-			fprintf(stderr,"param: %s\n", split_string);
+			// this is annoying me
+			//fprintf(stderr,"param: %s\n", split_string);
 			gsl_matrix_set(xmodel_input, i, j, temp_value);
 			split_string = strtok(NULL, "\t ");
 		}
 		assert(split_string != NULL);
 		sscanf(split_string,"%lg", &temp_value);
-		fprintf(stderr,"train: %s\n", split_string);
+		// annoying
+		//fprintf(stderr,"train: %s\n", split_string);
 		gsl_vector_set(training_vector, i, temp_value);
 		}
 
@@ -155,7 +157,10 @@ int main (int argc, char ** argv){
 	// fills in a structure in libEmu which 
 	// sets gaussian or matern cov fn and 
 	// the alpha option for the gaussian
-	set_emulator_defaults(&the_emulator_options);
+	//set_emulator_defaults(&the_emulator_options);
+	// use the matern cov fn
+	the_emulator_options.usematern = 1;
+	the_emulator_options.alpha = 1.9;
 	// show the default options in the lib
 	print_emulator_options(&the_emulator_options);
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
