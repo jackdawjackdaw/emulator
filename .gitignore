@@ -1,0 +1,7 @@
+r-fns/*.ps
+r-fns/*.png
+r-fns/*.jpg
+*.so
+*.a
+*.os
+*.tar.gz
