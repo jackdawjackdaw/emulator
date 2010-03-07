@@ -1,24 +1,6 @@
 #ifndef __INC_MAIN__
 #define __INC_MAIN__
 
-//! holds command line options
-/** 
- * designed to hold basic command line 
- * options
- */
-typedef struct optstruct{
-	int nthetas;
-	int nparams;
-	int nmodel_points;
-	int nemulate_points;
-	double emulate_min;
-	double emulate_max;
-	char  filename[128];
-	char outputfile[128];
-} optstruct;
-
-
-
 #include "stdio.h"
 #include "stdlib.h"
 #include "unistd.h"
@@ -26,11 +8,11 @@ typedef struct optstruct{
 #include "libEmu/emulator.h"
 #include "libEmu/maximise.h"
 #include "libEmu/maxbfgs.h"
+#include "libEmu/estimate_threaded.h"
 #include "ioread.h"
 #include "sys/time.h"
 #include "useful.h"
-#include "estimate_threaded.h"
-
+#include "optstruct.h"
 
 #define NELDER
 
