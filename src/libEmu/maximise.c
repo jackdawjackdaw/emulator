@@ -270,7 +270,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 /* 		exit(1); */
 /* 	} */
 
-	evalList = malloc(sizeof(evalunit)*nverticies);
+	evalList = MallocChecked(sizeof(evalunit)*nverticies);
 
 	
 	while(tries < max_tries){
