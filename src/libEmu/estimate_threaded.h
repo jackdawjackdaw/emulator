@@ -1,9 +1,18 @@
 #ifndef __INC_ESTIMATE_THREADED__
 #define __INC_ESTIMATE_THREADED__
 
-#include "main.h"
+//#include "main.h"
 #include "pthread.h"
+#include "gsl/gsl_rng.h"
+#include "gsl/gsl_matrix.h"
+#include "gsl/gsl_vector.h"
 
+#include "../main.h"
+
+/* common data block for most options to be passed around */
+#include "../optstruct.h"
+
+#define USEMUTEX
 
 void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options);
 
