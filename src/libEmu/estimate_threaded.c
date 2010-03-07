@@ -5,7 +5,7 @@
 extern emulator_opts the_emulator_options;
 
 
-#define NUMBERTHREADS 2
+//#define NUMBERTHREADS 2
 
 #ifdef USEMUTEX
 // globals for the threads to use
@@ -25,21 +25,29 @@ gsl_vector *best_thetas;
 /* the best value of theta */
 double best_theta_val = -1000;
 
- 
-
+int get_number_cpus(void){
+	int ncpus = 0;
+	/* now try and find the number of threads by seeing how many cpus we have */
+	ncpus = sysconf(_SC_NPROCESSORS_ONLN); // man 3 sysconf
+	fprintf(stderr, "NCPUS: %d\n", ncpus);
+	return(ncpus);
+}
 
 //! threaded estimate thetas 
 /** 
  * uses the nelder mead estimator (or the probably broken) bfgs method to 
- * esimate the most likley hyperparams, the number of threads used can be set by defining 
- * NUMBERTHREADS and you can switch between mutexes and spinlocks for threadsynch which 
+ * esimate the most likley hyperparams, the number of threads is set to the number of cpus
+ * you can switch between mutexes and spinlocks for threadsynch which 
  * by defining USEMUTEX (or not and then using spins). 
  * Spinlocks are slightly faster but they are probably not universally supported...
  */
 void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options){
 	
 	/* thread data */
-	int nthreads = NUMBERTHREADS;
+	int nthreads = get_number_cpus();
+	
+	fprintf(stderr, "nthreads = %d\n", nthreads);
+	
 	/* how many attempts to maximise should we make */
 	/* each thread will make this number of tries and then compare its best values 
 	 * to the ones in best_thetas, if it wins it will save them
@@ -47,10 +55,21 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	 * the rest out the window... 
 	 */
 	int thread_level_tries = 5; 
+	if(nthreads > 2) {
+		thread_level_tries = thread_level_tries / nthreads;		
+	}
+	fprintf(stderr, "thread_level_tries %d\n", thread_level_tries);
+
+	pthread_t *threads;
+	struct estimate_thetas_params *params;
+
+	threads = MallocChecked(sizeof(pthread_t)*nthreads);
+	params = MallocChecked(sizeof(struct estimate_thetas_params)*nthreads);
+
 	best_thetas = gsl_vector_alloc(options->nthetas);
 
-	pthread_t threads[NUMBERTHREADS];
-	struct estimate_thetas_params params[NUMBERTHREADS];
+
+
 	
 	// set the jobnumber back to zero otherwise running twice will kill ya
 	jobnumber = 0;
@@ -153,6 +172,9 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	// now free best_thetas
 	gsl_vector_free(best_thetas);
 	gsl_matrix_free(grad_ranges);
+
+	free(threads);
+	free(params);
 	
 }	
 

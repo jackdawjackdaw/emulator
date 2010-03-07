@@ -18,7 +18,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 
 // this won't work unless it has access to the nasty globals in estimate_threaded.c
 void* estimate_thread_function(void* args);
-
+int get_number_cpus(void);
 
 //! used to pass the args into estimate_thread_function
 struct estimate_thetas_params{
