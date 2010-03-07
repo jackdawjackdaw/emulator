@@ -263,14 +263,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 	double evalContracted = 0.0;
 	double evalExtended = 0.0;
 	
-
-/* 	FILE *comptr = fopen("com-vals.txt", "w"); */
-/* 	if(comptr == NULL){  */
-/* 		fprintf(stderr, "couldn't open comptr\n"); */
-/* 		exit(1); */
-/* 	} */
-
-	evalList = MallocChecked(sizeof(evalunit)*nverticies);
+	evalList = (evalunit *)MallocChecked(sizeof(evalunit)*nverticies);
 
 	
 	while(tries < max_tries){

@@ -1,5 +1,6 @@
 import os
 
+cc = 'clang'
 # set some options to use
 cflags = '-O -c -O2 -Wextra -pedantic -std=c99'
 # debug flags
@@ -7,8 +8,8 @@ debug = '-O -c -O0 -g'
 # use the matern covariance function
 #usematern = ' -DMATERN'
 
-env_prod = Environment(CCFLAGS = cflags)
-env_shared = Environment(CCFLAGS = cflags)
+env_prod = Environment(CCFLAGS = debug)
+env_shared = Environment(CCFLAGS = debug)
 
 # source files to make the lib
 src_files = Split('estimator.c emulator.c maximise.c maxbfgs.c bfgs.c estimate_threaded.c')

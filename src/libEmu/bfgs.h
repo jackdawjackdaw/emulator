@@ -44,7 +44,8 @@ double fPowers( gsl_vector*x, int nparams);
 void getGradientNumeric(double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* gradient, int nparams);
 
 void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int),
-								void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector* ,int),
+								void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector* ,int),	\
+								gsl_matrix* ranges,\
 								gsl_vector* xk, int nparams, gsl_matrix* bkInv);
 
 // can use macros void obtainStep(gsl_vector* step, FNTYPE, GRADTYPE,gsl_vector* xk, int nparams, gsl_matrix* bkInv);

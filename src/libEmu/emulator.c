@@ -200,6 +200,10 @@ double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
 	tempx = (2.0*sqrt(nu)*distance/rho);
 
 	if(distance > 0.0){
+		// debug
+		if(nu < 0){
+			fprintf(stderr, "nu = %g, x = %g\n", nu, tempx);
+		}
 		assert(nu > 0); // otherwise it'll crash anyway
 		//fprintf(stderr, "tempx = %g\n", tempx);
 		/*
@@ -218,8 +222,11 @@ double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
 		 */
 	} else if (distance == 0){ 
 		covariance = sigsquared; 
+	} else {
+		fprintf(stderr, "distance is negative in covariance_fn_matern!\n");
+		fprintf(stderr, "nu = %g, x = %g\n", nu, 2*sqrt(nu)*(distance/rho));
+		exit(1);
 	}
-
 	// this means it's diagonal, i.e the distance is less than zero
 	if(truecount == nparams){
 		covariance += nugget;

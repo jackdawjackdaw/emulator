@@ -62,6 +62,7 @@ void getGradientNumeric(double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vecto
  */
 void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), \
 								void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector*, int), \
+								gsl_matrix* ranges, \
 								gsl_vector* xk, int nparams, gsl_matrix* bkInv){
 	double norm = 0.0;
 	int i;
@@ -73,6 +74,15 @@ void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), \
 	
 	// step = -Binv.grad
 	gsl_blas_dgemv(CblasNoTrans, -1.0, bkInv, gradient, 0.0, step);
+
+	// hackity hack, force the ranges to be considered when making a step
+	for(i = 0; i < nparams; i++){
+		if(gsl_matrix_get(ranges, i, 0) < gsl_vector_get(step,i)){
+			gsl_vector_set(step,i, gsl_matrix_get(ranges,i,0));
+		} else if(gsl_matrix_get(ranges,i,1) > gsl_vector_get(step,i)){
+			gsl_vector_set(step,i, gsl_matrix_get(ranges,i,1));
+		}
+	}
 
 	// now we should normalise the step
 	for(i = 0; i < nparams; i++){
@@ -270,12 +280,10 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 	// gonna cheat and just copy the init matrix to the inverse too,
 	gsl_matrix_memcpy(bkInv, Binit);
 	
-
-
 	while(count < nsteps){
 
 		//void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), gsl_vector* xk, int nparams, gsl_matrix* bkInv){
-		obtainStep(step, fn, gradientFn, xk, nparams, bkInv);
+		obtainStep(step, fn, gradientFn, ranges,xk, nparams, bkInv);
 
 		/* for(i = 0; i<nparams;i++) */
 /* 			printf("%g ", gsl_vector_get(step, i)); */
@@ -318,21 +326,24 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 		for(i = 0; i < nparams; i++)
 			absGrad += pow(gsl_vector_get(temp, i),2.0);
 		absGrad = sqrt(absGrad);
+
+		// check the ranges
+		if(test_range_vector(xk1, ranges, nparams) == 1){
+			/* fprintf(stderr, "fell out of range\n"); */
+			/* print_vec(xk1, nparams); */
+			break;
+		}
+
 		
 		if(fabs(absGrad - absGradPrev) < convergedValue){
 			fprintf(stderr, "converged after %d steps\n", count);
+			print_vec(xk1, nparams);
 			break;
 		}
 		
 		// save the gradient as the previous one
 		absGradPrev = absGrad;
 		
-		// check the ranges
-		if(test_range_vector(xk1, ranges, nparams) == 1){
-			fprintf(stderr, "fell out of range\n");
-			print_vec(xk1, nparams);
-			break;
-		}
 
 	}
 	
@@ -353,7 +364,8 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 int test_range_vector( gsl_vector *x, gsl_matrix *ranges, int nparams){
 	int i;
 	int bad_flag =0;
-	double temp_val;
+	double temp_val = 0.0;
+	//fprintf(stderr, "in range test\n");
 	for(i = 0; i < nparams; i++){
 		temp_val = gsl_vector_get(x, i);
 		if(temp_val < gsl_matrix_get(ranges, i, 0) || temp_val > gsl_matrix_get(ranges, i, 1)){
@@ -362,7 +374,7 @@ int test_range_vector( gsl_vector *x, gsl_matrix *ranges, int nparams){
 		}
 	}
 	if(bad_flag == 1){
-		return(2);
+		return(1);
 	} else {
 		return(0);
 	}

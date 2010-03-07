@@ -11,7 +11,7 @@ void print_usage(void){
 	printf("t->number of thetas should be (2+nparams) for gaussian or 4 for matern\n");
 	printf("p->number of params\n");
 	printf("n->number of model_points\n");
-	printf("m->number of emulator poits\n");
+	printf("m->number of emulator points\n");
 	printf("a->min emulator value\n");
 	printf("b->max emulator value\n");
 }

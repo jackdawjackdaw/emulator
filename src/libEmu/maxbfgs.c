@@ -1,5 +1,5 @@
 #include "maxbfgs.h"
-
+#include "pthread.h"
 
 
 /** 
@@ -97,21 +97,32 @@ void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, g
 	
 	while(tries < max_tries){
 		doSimpleBFGS(&evalFn, &gradFn, ranges,  xInit, xFinal, Binit, nthetas, nsteps);
-		//vector_print(xFinal, nthetas);
-		likelyHood = -1*evalFn(xFinal, nthetas);
-		printf("L = %g\n", likelyHood);
-		if(likelyHood > bestLikleyHood){
-			bestLikleyHood = likelyHood;
-			gsl_vector_memcpy(xBest, xFinal);
+		
+		// now if the function fell out of range it'll come back here with some stupid
+		// answer, so we need to test the range again and then do something
+		if(test_range_vector(xFinal, ranges, nparams) != 1){
+			// it's in range, so we're ok
+			//vector_print(xFinal, nthetas);
+			likelyHood = -1*evalFn(xFinal, nthetas);
+			printf("%lu:L = %g\n", likelyHood, pthread_self());
+			if(likelyHood > bestLikleyHood){
+				bestLikleyHood = likelyHood;
+				gsl_vector_memcpy(xBest, xFinal);
 
-			printf("best = %g\n", bestLikleyHood);
-		}
+				printf("%lu:best = %g\n", bestLikleyHood, pthread_self());
+			}
+		} 
 		tries++;
+
 	}
 	
 	
 
 	printf(" Final best = %g\n", bestLikleyHood);
+
+	if(bestLikleyHood == -100){
+		fprintf(stderr, "maximisation didn't work at all, relax your ranges\n");
+	}
 
 	// should now save the best values
 	gsl_vector_memcpy(thetas, xBest);

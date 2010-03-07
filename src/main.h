@@ -14,7 +14,7 @@
 #include "useful.h"
 #include "optstruct.h"
 
-#define NELDER
+//#define NELDER
 
 /**
  * @file
