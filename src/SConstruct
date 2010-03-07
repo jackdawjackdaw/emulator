@@ -6,7 +6,7 @@ SConscript(['libEmu/SConstruct'])
 
 libs=Split('gsl gslcblas m pthread Emu')
 libs2 = Split('gsl gslcblas m pthread')
-cflags='-O2 -Wall -pg -g -pedantic -Wextra -std=gnu99'
+cflags='-O2 -Wall -pg -g -pedantic -Wextra -std=gnu99 -I. -I.. -I./libEmu -I./multi'
 
 env = Environment(CCFLAGS = cflags, CPPPATH=['./libEmu'], LIBPATH=['./libEmu'])
 
@@ -15,5 +15,5 @@ main_src = Split('main.c ioread.c persist.c useful.c estimate_threaded.c')
 env.Program('emulator', main_src, LIBS=libs, LIBPATH=['./libEmu'])
 
 # make the rbind lib
-rbind_src = Split('rbind.c multifit.c multihelper.c estimate_threaded.c useful.c')
+rbind_src = Split('rbind.c multi/multifit.c multi/multihelper.c estimate_threaded.c useful.c')
 env.SharedLibrary('libRbind', rbind_src, LIBS=libs, LIBPATH=['./libEmu'])

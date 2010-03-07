@@ -6,7 +6,7 @@
 #include "libEmu/emulator.h"
 #include "libEmu/estimator.h"
 #include "libEmu/maximise.h"
-#include "multifit.h"
+#include "multi/multifit.h"
 #include "useful.h"
 
 void dump_emuresult(emuResult* eres, FILE* fptr);

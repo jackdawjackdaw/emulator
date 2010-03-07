@@ -634,7 +634,8 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	
 
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
-	#ifndef _CHOLDECOMP
+ 
+#ifndef _CHOLDECOMP
 	// do the LU decomp instead
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
@@ -674,7 +675,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	// testing
 	//printf("CHOL:%g\n", cinverse_det);
 	//exit(1);
-	#endif
+ #endif
 	
 	//debug vector_print(vertex, nthetas);
 	the_likelyhood  = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, vertex, nmodel_points, nthetas, nparams);

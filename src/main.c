@@ -132,14 +132,12 @@ int main (int argc, char ** argv){
 			// it will come up null when you're done
 			assert(split_string != NULL);
 			sscanf(split_string, "%lg", &temp_value);
-			// this is annoying me
 			//fprintf(stderr,"param: %s\n", split_string);
 			gsl_matrix_set(xmodel_input, i, j, temp_value);
 			split_string = strtok(NULL, "\t ");
 		}
 		assert(split_string != NULL);
 		sscanf(split_string,"%lg", &temp_value);
-		// annoying
 		//fprintf(stderr,"train: %s\n", split_string);
 		gsl_vector_set(training_vector, i, temp_value);
 		}
