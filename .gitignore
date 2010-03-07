@@ -1,7 +1,16 @@
 r-fns/*.ps
 r-fns/*.png
 r-fns/*.jpg
+r-fns/ps/
+r-fns/*.pdf
 *.so
 *.a
 *.os
 *.tar.gz
+*#*
+*.dat
+.Rhistory
+docs
+*.txt
+# junk fron scons i guess?
+*.sconsign.dblite
