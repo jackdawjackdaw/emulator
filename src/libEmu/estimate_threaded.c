@@ -34,7 +34,7 @@ int get_number_cpus(void){
 }
 
 // hack
-#define DEBUGMODE
+//#define DEBUGMODE
 
 //! threaded estimate thetas 
 /** 
