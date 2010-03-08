@@ -5,11 +5,11 @@ import os
 SConscript(['libEmu/SConstruct'])
 libs=Split('gsl gslcblas m pthread Emu')
 libs2 = Split('gsl gslcblas m pthread')
-cflags='-O2 -Wall -pg -g -pedantic -Wextra -std=gnu99 -I. -I.. -I./libEmu -I./multi'
+cflags='-O2 -Wall -pg  -pedantic -Wextra -std=gnu99 -I. -I.. -I./libEmu -I./multi'
 
 env = Environment(CCFLAGS = cflags, CPPPATH=['./libEmu'], LIBPATH=['./libEmu'])
 env.Append( LINKFLAGS = Split ('-z origin'))
-env.Append( RPATH = env.Literal(os.path.join('\\$$ORIGIN', os.pardir, 'libEmu')))
+env.Append( RPATH = env.Literal(os.path.join('\\$$ORIGIN', 'libEmu')))
 
 
 # make the emulator program
