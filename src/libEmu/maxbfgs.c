@@ -113,7 +113,8 @@ void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, g
 			}
 		} 
 		tries++;
-
+		// set a new initial value
+		set_random_initial_value(rand, xInit, ranges, nthetas);
 	}
 	
 	

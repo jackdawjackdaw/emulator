@@ -22,8 +22,8 @@ int ntries = 2;
 int jobnumber = 0; 
 /* global spot for the best thetas to be kept in */
 gsl_vector *best_thetas;
-/* the best value of theta */
-double best_theta_val = -1000;
+/* the best likelyhood we find */
+double best_likelyhood_val = -1000;
 
 int get_number_cpus(void){
 	int ncpus = 0;
@@ -32,6 +32,9 @@ int get_number_cpus(void){
 	fprintf(stderr, "NCPUS: %d\n", ncpus);
 	return(ncpus);
 }
+
+// hack
+#define DEBUGMODE
 
 //! threaded estimate thetas 
 /** 
@@ -45,7 +48,12 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	
 	/* thread data */
 	int nthreads = get_number_cpus();
-	
+
+	#ifdef DEBUGMODE
+	nthreads = 1;
+  #endif
+
+
 	fprintf(stderr, "nthreads = %d\n", nthreads);
 	
 	/* how many attempts to maximise should we make */
@@ -73,7 +81,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	
 	// set the jobnumber back to zero otherwise running twice will kill ya
 	jobnumber = 0;
-	best_theta_val = -1000;
+	best_likelyhood_val = -1000;
 
 	/* regular stuff */
 	const gsl_rng_type *T;
@@ -155,6 +163,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	pthread_spin_destroy(&results_spin);
 	#endif
 
+	fprintf(stderr, "final best L: %g\n", best_likelyhood_val);
 	fprintf(stderr, "THETAS WE WILL USE: \t");
 	print_vector_quiet(best_thetas, options->nthetas);
 
@@ -230,11 +239,11 @@ void* estimate_thread_function(void* args){
 		pthread_spin_lock(&results_spin);
 		#endif
 		printf("results locked by %lu\n", my_id);
-		if(my_theta_val > best_theta_val){
+		if(my_theta_val > best_likelyhood_val){
 			// this thread has produced better thetas than previously there
 			gsl_vector_memcpy(best_thetas, p->thetas); // save them
 			// save the new best too
-			best_theta_val = my_theta_val;
+			best_likelyhood_val = my_theta_val;
 			printf("thread %lu, won with %g\n", my_id, my_theta_val);
 		}
 		#ifdef USEMUTEX

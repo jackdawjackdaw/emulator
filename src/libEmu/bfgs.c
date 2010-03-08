@@ -76,10 +76,13 @@ void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), \
 	gsl_blas_dgemv(CblasNoTrans, -1.0, bkInv, gradient, 0.0, step);
 
 	// hackity hack, force the ranges to be considered when making a step
+	// this seems to be the only place where this remotely works
 	for(i = 0; i < nparams; i++){
 		if(gsl_matrix_get(ranges, i, 0) < gsl_vector_get(step,i)){
+			// this just sets the step to the border of the allowed region
 			gsl_vector_set(step,i, gsl_matrix_get(ranges,i,0));
 		} else if(gsl_matrix_get(ranges,i,1) > gsl_vector_get(step,i)){
+			// same here
 			gsl_vector_set(step,i, gsl_matrix_get(ranges,i,1));
 		}
 	}
@@ -289,9 +292,13 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 /* 			printf("%g ", gsl_vector_get(step, i)); */
 /* 		printf("\n"); */
 		
+
+		
+
 		// find the stepsize
 		//double lineSearch(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* position, int nparams){		
 		stepsize = lineSearch(fn, gradientFn, step, xk, nparams);
+
 		
 
 		//printf("%g\n", stepsize);
@@ -301,6 +308,15 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 		gsl_vector_memcpy(temp, step);
 		gsl_vector_scale(temp, stepsize);
 		gsl_vector_add(xk1, temp);
+
+		// check the ranges have to call this here to stop us getting
+		// a blow up for negative nu
+		if(test_range_vector(xk1, ranges, nparams) == 1){
+			/* fprintf(stderr, "fell out of range\n"); */
+			/* print_vec(xk1, nparams); */
+			break;
+		}
+
 		//void getYk(gsl_vector* yk, double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* xk1, int nparams){	
 		getYk(yk, fn, gradientFn, xk, xk1, nparams);
 		// find the new Bk
