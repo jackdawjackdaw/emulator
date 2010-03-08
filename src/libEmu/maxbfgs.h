@@ -2,6 +2,7 @@
 #define __INC_MAXBFGS__
 
 #include "bfgs.h"
+#include "../useful.h"
 #include "maximise.h"
 
 void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, gsl_matrix* xmodel,

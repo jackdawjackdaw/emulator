@@ -2,6 +2,7 @@
 #define __INC__MAXIMISE__
 #include "emulator.h"
 #include "estimator.h"
+#include "../useful.h"
 #include "gsl/gsl_rng.h"
 
 void gradDesc(gsl_rng* rand, int max_tries, int nsteps, double gamma, gsl_matrix* ranges,  gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nthetas, int nparams);
