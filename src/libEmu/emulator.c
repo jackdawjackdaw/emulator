@@ -65,7 +65,7 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
  * it seems that the matern version doesn't work very well compared to the 
  * gaussian covariance function, at least not on the ising model.
  */
-double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+inline double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
 	if(the_emulator_options.usematern == 1){
 		return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
 	} else if(the_emulator_options.usematern_three ==1){

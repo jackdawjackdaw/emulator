@@ -24,15 +24,18 @@ double fPowers( gsl_vector*x, int nparams){
 	double result = 0.0;
 	int i;
 	for(i = 0; i < nparams; i++){
-		result += fabs(pow(gsl_vector_get(x, i), i));
+		result += fabs(pow(gsl_vector_get(x, i), (double)i+1));
 	}
 	return(result);
 }
 
+
+
+
 // first order finite diffs, not very accurate
 void getGradientNumeric(double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* gradient, int nparams){
 	double stepsize = 1.0E-10;
-	int i, j;
+	int i;
 	gsl_vector* temp = gsl_vector_alloc(nparams);
 	gsl_vector* localGradient = gsl_vector_alloc(nparams);
 	double xtemp = 0.0;
@@ -75,17 +78,17 @@ void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), \
 	// step = -Binv.grad
 	gsl_blas_dgemv(CblasNoTrans, -1.0, bkInv, gradient, 0.0, step);
 
-	// hackity hack, force the ranges to be considered when making a step
-	// this seems to be the only place where this remotely works
-	for(i = 0; i < nparams; i++){
-		if(gsl_matrix_get(ranges, i, 0) < gsl_vector_get(step,i)){
-			// this just sets the step to the border of the allowed region
-			gsl_vector_set(step,i, gsl_matrix_get(ranges,i,0));
-		} else if(gsl_matrix_get(ranges,i,1) > gsl_vector_get(step,i)){
-			// same here
-			gsl_vector_set(step,i, gsl_matrix_get(ranges,i,1));
-		}
-	}
+	/* // hackity hack, force the ranges to be considered when making a step */
+	/* // this seems to be the only place where this remotely works */
+	/* for(i = 0; i < nparams; i++){ */
+	/* 	if(gsl_matrix_get(ranges, i, 0) < gsl_vector_get(step,i)){ */
+	/* 		// this just sets the step to the border of the allowed region */
+	/* 		gsl_vector_set(step,i, gsl_matrix_get(ranges,i,0)); */
+	/* 	} else if(gsl_matrix_get(ranges,i,1) > gsl_vector_get(step,i)){ */
+	/* 		// same here */
+	/* 		gsl_vector_set(step,i, gsl_matrix_get(ranges,i,1)); */
+	/* 	} */
+	/* } */
 
 	// now we should normalise the step
 	for(i = 0; i < nparams; i++){
@@ -180,17 +183,22 @@ void getNewBInverse(gsl_matrix *bprev,  gsl_vector *s, gsl_vector *y, int nparam
 double lineSearch(double(*fn)(gsl_vector*, int),\
 					 void (*gradientFn)( double (*fn)(gsl_vector*, int), gsl_vector*, gsl_vector*, int), \
 									gsl_vector* direction, gsl_vector* position, int nparams){
-	double a = 2.0; // the max stepsize
+	double a = 10.0; // the max stepsize
 	double tau = 0.35; // the shrink factor
+	int count = 0;
 	while(armGold(fn, gradientFn, direction, position, a, nparams) == 0){
 		a = tau *a;
 		//printf("%g\n", a); 
 		if( a < 1E-15){
 			//printf("a is very very small: %g\n", a);
 			// just use it anyway!
+			fprintf(stderr, "linesearch'd  %d\n", count);
 			return(a);
 		}
+
+		count++;
 	}
+	fprintf(stderr, "linesearch'd  %d\n", count);
 	return(a);
 }
 
@@ -262,7 +270,7 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 	double stepsize = 0.0;
 	double absGrad = 0.0;
 	double absGradPrev = 0.0;
-	double convergedValue = 1e-8;
+	double convergedValue = 1e-10;
 	gsl_vector *xk = gsl_vector_alloc(nparams);
 	gsl_vector *xk1 = gsl_vector_alloc(nparams);
 	gsl_vector *temp = gsl_vector_alloc(nparams);
@@ -284,24 +292,20 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 	gsl_matrix_memcpy(bkInv, Binit);
 	
 	while(count < nsteps){
-
+		absGrad = 0;
 		//void obtainStep(gsl_vector* step, double (*fn)(gsl_vector*, int), gsl_vector* xk, int nparams, gsl_matrix* bkInv){
-		obtainStep(step, fn, gradientFn, ranges,xk, nparams, bkInv);
+		obtainStep(step, fn, gradientFn, ranges, xk, nparams, bkInv);
 
 		/* for(i = 0; i<nparams;i++) */
 /* 			printf("%g ", gsl_vector_get(step, i)); */
 /* 		printf("\n"); */
 		
-
-		
-
 		// find the stepsize
 		//double lineSearch(double(*fn)(gsl_vector*, int), gsl_vector* direction, gsl_vector* position, int nparams){		
+		// this is REALLY killing execution!
 		stepsize = lineSearch(fn, gradientFn, step, xk, nparams);
 
-		
-
-		//printf("%g\n", stepsize);
+		fprintf(stderr,"stepsize = %g\n", stepsize);
 		
 		// find the new position
 		gsl_vector_memcpy(xk1, xk);
@@ -309,11 +313,14 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 		gsl_vector_scale(temp, stepsize);
 		gsl_vector_add(xk1, temp);
 
+		/* print_vec(xk,nparams); */
+		/* print_vec(xk1,nparams); */
+
 		// check the ranges have to call this here to stop us getting
 		// a blow up for negative nu
 		if(test_range_vector(xk1, ranges, nparams) == 1){
-			/* fprintf(stderr, "fell out of range\n"); */
-			/* print_vec(xk1, nparams); */
+			fprintf(stderr, "fell out of range\n");
+			print_vec(xk1, nparams);
 			break;
 		}
 
@@ -350,13 +357,15 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 			break;
 		}
 
-		
+		fprintf(stderr, "dGrad = %g\n", fabs(absGrad - absGradPrev));
 		if(fabs(absGrad - absGradPrev) < convergedValue){
 			fprintf(stderr, "converged after %d steps\n", count);
 			print_vec(xk1, nparams);
 			break;
 		}
 		
+		fprintf(stderr, "L = %g\n", fn(xk1, nparams));
+
 		// save the gradient as the previous one
 		absGradPrev = absGrad;
 		
@@ -401,10 +410,9 @@ int test_range_vector( gsl_vector *x, gsl_matrix *ranges, int nparams){
 // just to test
 #ifdef EXECUTE
 int main (void){
-	int nparams = 2.0;
+	int nparams = 5;
 	int i;
 
-	double stepsize = 0.0;
 	gsl_vector* xTest = gsl_vector_alloc(nparams);
 	gsl_vector* xFinal = gsl_vector_alloc(nparams);
 	gsl_matrix* Binit = gsl_matrix_alloc(nparams, nparams);
@@ -412,12 +420,12 @@ int main (void){
 
 	
 	for(i =0; i < nparams; i++){
-		gsl_matrix_set(ranges, i, 0, 0.0);
+		gsl_matrix_set(ranges, i, 0, -1.0);
 		gsl_matrix_set(ranges, i, 1, 1.0);
+		gsl_vector_set(xTest, i, 0.8);
 	}
 
-	gsl_vector_set(xTest, 0, 0.3);
-	gsl_vector_set(xTest, 1, 0.35);
+	gsl_vector_set_zero(xFinal);
 
 	gsl_matrix_set_identity(Binit);
 
@@ -429,7 +437,7 @@ int main (void){
 
 
 	//void doSimpleBFGS( double(*fn)(gsl_vector*, int), gsl_vector* xkInit, gsl_vector* xkFinal, gsl_matrix* Binit, int nparams, int nsteps){
-	doSimpleBFGS(&fRosenbrock, &getGradientNumeric, ranges, xTest, xFinal, Binit, nparams, 100000);
+	doSimpleBFGS(&fPowers, &getGradientNumeric, ranges, xTest, xFinal, Binit, nparams, 1000);
 	print_vec(xFinal, nparams);
 	
 	gsl_matrix_free(Binit);
