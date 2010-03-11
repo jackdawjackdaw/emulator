@@ -137,7 +137,7 @@ int main (int argc, char ** argv){
 	// the alpha option for the gaussian
 	//set_emulator_defaults(&the_emulator_options);
 	// use the matern cov fn
-	the_emulator_options.usematern = 1;
+	the_emulator_options.usematern = 0;
 	the_emulator_options.alpha = 1.9;
 	// show the default options in the lib
 	print_emulator_options(&the_emulator_options);
@@ -145,7 +145,7 @@ int main (int argc, char ** argv){
 
 
 	// we only need 4, so maximisation is a little nicer
-	if(the_emulator_options.usematern == 1){
+	if(the_emulator_options.usematern == 1 || the_emulator_options.usematern_three == 1 || the_emulator_options.usematern_five == 1){
 		options.nthetas = 4;
 	}
 	
