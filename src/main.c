@@ -97,6 +97,11 @@ int main (int argc, char ** argv){
 
 	parse_arguments(argc, argv, &options);	
 	
+
+	#ifndef NELDER
+	fprintf(stderr, "using BFGS\n");
+	#endif
+
 	
 	// testing
 	//sprintf(input_file, "%s",  "../short.dat");	
