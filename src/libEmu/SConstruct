@@ -2,21 +2,31 @@ import os
 
 cc = 'clang'
 # set some options to use
-cflags = '-O -c -O2 -Wextra -pedantic -std=c99'
+cflags = '-O -pg -c -O2 -Wextra -pedantic -std=c99'
 # debug flags
-debug = '-O -c -O0 -g'
+debug = '-O -c -O0 -g -pg'
 # use the matern covariance function
 #usematern = ' -DMATERN'
+
+SConscript(['lbfgs/Sconstruct'])
 
 env_prod = Environment(CCFLAGS = debug)
 env_shared = Environment(CCFLAGS = debug)
 
+
+
+
 # source files to make the lib
 src_files = Split('estimator.c emulator.c maximise.c maxbfgs.c bfgs.c estimate_threaded.c')
 
+libsbfgs=Split('gsl gslcblas m pthread LBFGS gfortran')
 libs=Split('gsl gslcblas m pthread')
+
+env_prod.Program('lbfgs-test', 'lbfgs.c', LIBS=libsbfgs, LIBPATH=['./lbfgs'])
 
 # make the libEmu library 
 env_prod.Library('libEmu', src_files, LIBS=libs)
 # make the shared one
 env_shared.SharedLibrary('libEmu', src_files, LIBS=libs)
+
+

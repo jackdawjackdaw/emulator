@@ -57,7 +57,7 @@ void getGradientNumeric(double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vecto
 
 /**
  * work out the step vector
- * fn is the thing we're trying to optimise
+o * fn is the thing we're trying to optimise
  * xk is the current position in the parameter space,
  * step is a vector of the direction we want to move in,
  * nparams is the number of dimensions in step and xk
@@ -384,6 +384,7 @@ void doSimpleBFGS( double(*fn)(gsl_vector*, int),\
 	gsl_matrix_free(bk);
 	gsl_matrix_free(bkInv);
 }
+
 
 // short circuting range test
 int test_range_vector( gsl_vector *x, gsl_matrix *ranges, int nparams){

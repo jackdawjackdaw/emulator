@@ -236,16 +236,6 @@ c     ************
       lyg  = isave(19)
       lygo = isave(20)
 
-c$$$      write(6,*) n, m
-c$$$      write(6,*) x(1), x(2), x(3), x(4), x(5)
-c$$$      write(6,*) l(1), l(2), l(3), l(4), l(5)
-c$$$      write(6,*) u(1), u(2), u(3), u(4), u(5)
-c$$$      write(6,*) nbd(1), nbd(2), nbd(3), nbd(4), nbd(5)
-c$$$      write(6,*) factr, pgtol
-c$$$      write(6,*) task, csave
-
-
-
       call mainlb(n,m,x,l,u,nbd,f,g,factr,pgtol,
      +  wa(lws),wa(lwy),wa(lsy),wa(lss),wa(lyy),wa(lwt),
      +  wa(lwn),wa(lsnd),wa(lz),wa(lr),wa(ld),wa(lt),
