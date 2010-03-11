@@ -1,33 +1,5 @@
-#include "stdio.h"
-#include "unistd.h"
-#include "math.h"
-#include "gsl/gsl_vector.h"
-#include "gsl/gsl_matrix.h"
-#include "gsl/gsl_linalg.h"
-#include "gsl/gsl_blas.h"
-#include "gsl/gsl_rng.h"
-#include "assert.h"
-#include "../useful.h"
+#include "lbfgs.h"
 
-double fSphere(double *x, int nparams, void* args);
-double fPowers( double *x, int nparams, void* args);
-double fRosenbrock( double* x, int nparams, void* args);
-void copy_gslvec_vec(gsl_vector* gsl_vec, double* vec, int n);
-void copy_vec_gslvec(double* vec, gsl_vector* gsl_vec, int n);
-void set_random_initial_value(gsl_rng* rand, double* x, gsl_matrix* ranges,int  nthetas);
-void set_bounds(double *vec, gsl_matrix *ranges, int index, int nparams);
-void set_nbd(int *vec, int nparams, int nmax);
-void set_zero( double *vec, int size);
-void print_vec(gsl_vector* x, int n);
-
-void doBoundedBFGS( double(*fn)(double*, int, void*),													\
-										void(*gradientFn)(double(*fn)(double*, int, void*), double*, double*, int, void*), \
-										gsl_matrix* ranges, 
-										gsl_vector *xkInit, gsl_vector* xkFinal, int nparams, int nsteps);
-
-extern int setulb_(int* n, int*m, double* x, double* l, double*u, int*nbd, double*f, double* g, \
-										double* factr, double*pgtol, double* wa, int*iwa, char* task, int* iprint, char* csave,
-										long int *lsave, int* isave, double* dsave, int nstr1, int nstr2);
 
 /**
  * function pointers
@@ -71,7 +43,7 @@ double fPowers( double *x, int nparams, void *args){
 
 
 // adpated from the bfgs.c version
-void getGradientNumeric(double(*fn)(double*, int, void*), double* xk, double* gradient, int nparams, void* args){
+void getGradientNumericLBFGS(double(*fn)(double*, int, void*), double* xk, double* gradient, int nparams, void* args){
 	double stepsize = 1.0E-10;
 	int i;
 	int j;
@@ -106,7 +78,7 @@ void getGradientNumeric(double(*fn)(double*, int, void*), double* xk, double* gr
 void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 										void(*gradientFn)(double(*fn)(double*, int, void*), double*, double*, int, void*), \
 										gsl_matrix* ranges, 
-										gsl_vector *xkInit, gsl_vector* xkFinal, int nparams, int nsteps){
+										gsl_vector *xkInit, gsl_vector* xkFinal, int nparams, int nsteps, void* args){
 	int count = 0;
 	int go_flag = 1;
 	int i;
@@ -183,37 +155,37 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 		// call the fortran driver
 		setulb_(&nparams, &memsize, xvalue, lower, upper, nbd, &fnval, grad, &factor, &gradtol, wa, iwa, task, &iprint, csave, lsave, isave ,dsave, stringlength, stringlength);
 
-		printf("%s\n", task);
+		//printf("%s\n", task);
 
 		//printf("%f %f %f \n", dsave[1], dsave[4], dsave[12]);
 
-		printf("xval = ");
-		for(i = 0; i < nparams; i++){
-			printf("%f\t", xvalue[i]);
-		}
-		printf("\n");
+		/* printf("xval = "); */
+		/* for(i = 0; i < nparams; i++){ */
+		/* 	printf("%f\t", xvalue[i]); */
+		/* } */
+		/* printf("\n"); */
 
 
 		
 		if(strncmp(task, "FG",2) == 0){
-			fprintf(stderr,"task is go!\n");
+			//fprintf(stderr,"task is go!\n");
 			/* evaluate the eval-fn at the point xvalue */
-			fnval = fn(xvalue, nparams, NULL);  // this is just for testing, will be a bit more complicated... 
-			fprintf(stderr,"fnval = %g\n", fnval);
+			fnval = fn(xvalue, nparams, args);  // this is just for testing, will be a bit more complicated... 
+			//fprintf(stderr,"fnval = %g\n", fnval);
 			/* evaluate the gradient here */
-			gradientFn(fn, xvalue, grad, nparams, NULL);
-			fprintf(stderr,"grad = ");
-			for(i = 0; i < nparams; i++){
-				fprintf(stderr,"%f\t", grad[i]);
-			}
-			fprintf(stderr,"\n");
+			gradientFn(fn, xvalue, grad, nparams, args);
+			/* fprintf(stderr,"grad = "); */
+			/* for(i = 0; i < nparams; i++){ */
+			/* 	fprintf(stderr,"%f\t", grad[i]); */
+			/* } */
+			/* fprintf(stderr,"\n"); */
 
 			// done
 		}  else if(strncmp(task,"NEW_X",5) == 0){
-			fprintf(stderr,"%s - new_x\n", task);
+			//fprintf(stderr,"%s - new_x\n", task);
 			// we have a new iterate and we're going to continue
 		} else {
-			fprintf(stderr, "%s", task);
+			//fprintf(stderr, "%s", task);
 			// we didn't have a new_x and we don't need the grad so
 			// this is the end, beautiful friend
 			go_flag = 0;
@@ -238,6 +210,8 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 	free(wa);
 }
 
+
+/* these are very confusing, work out something better!*/
 void copy_gslvec_vec(gsl_vector* gsl_vec, double* vec, int n){
 	int i;
 	for(i = 0; i < n; i++){
@@ -254,27 +228,6 @@ void copy_vec_gslvec(double* vec, gsl_vector* gsl_vec, int n){
 }
 
 
-//! set a random starting point in nthetas dimensions, sampled from the ranges
-/**
- * @param rand a pre setup gsl_rng
- * @return x is set to the correct values
- */
-void set_random_initial_value(gsl_rng* rand, double* x, gsl_matrix* ranges,int  nthetas){
-	int i;
-	double range_min; 
-	double range_max;
-	double the_value;
-	
-	for(i = 0; i < nthetas; i++){
-		range_min = gsl_matrix_get(ranges, i, 0);
-		range_max = gsl_matrix_get(ranges, i, 1);
-		// set the input vector to a random value in the range
-		the_value = gsl_rng_uniform(rand) * (range_max - range_min) + range_min;
-		//printf("theta %d set to %g\n", i, the_value);
-		//gsl_vector_set(x, gsl_rng_uniform(rand)*(range_max-range_min)+range_min, i);
-		x[i] = the_value;
-	}
-}
 	
 void print_vec(gsl_vector* x, int n){
 	int i;
@@ -317,7 +270,7 @@ void set_nbd(int *vec, int nparams, int nmax){
 
 
 // just to test
-//#ifdef EXECUTE
+#ifdef EXECUTE
 int main (void){
 	int nparams = 2;
 	int i;
@@ -334,7 +287,7 @@ int main (void){
 
 	gsl_vector_set_zero(xFinal);
 
-	doBoundedBFGS(&fRosenbrock, &getGradientNumeric, ranges, xTest, xFinal,  nparams, 1000);
+	doBoundedBFGS(&fRosenbrock, &getGradientNumericLBFGS, ranges, xTest, xFinal,  nparams, 1000, NULL);
 
 	print_vec(xFinal, nparams);
 	
@@ -343,4 +296,4 @@ int main (void){
 	gsl_vector_free(xFinal);
 	return(0);
 }
-//#endif
+#endif

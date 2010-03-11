@@ -98,9 +98,15 @@ int main (int argc, char ** argv){
 	parse_arguments(argc, argv, &options);	
 	
 
-	#ifndef NELDER
-	fprintf(stderr, "using BFGS\n");
+	#ifdef NELDER
+	fprintf(stderr, "using nelder-mead\n");
+	#elif BFGS
+	fprintf(stderr, "using bfgs\n");
+	#else 
+	fprintf(stderr, "using lbfgs\n");
 	#endif
+
+
 
 	
 	// testing
@@ -122,6 +128,25 @@ int main (int argc, char ** argv){
 		fprintf(stderr, "redfining options.nmodel_points to reflect read in value\n");
 		// change the value to match what we actually read
 		options.nmodel_points = number_lines;
+	}
+
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// this is key
+	// fills in a structure in libEmu which 
+	// sets gaussian or matern cov fn and 
+	// the alpha option for the gaussian
+	//set_emulator_defaults(&the_emulator_options);
+	// use the matern cov fn
+	the_emulator_options.usematern = 1;
+	the_emulator_options.alpha = 1.9;
+	// show the default options in the lib
+	print_emulator_options(&the_emulator_options);
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+	// we only need 4, so maximisation is a little nicer
+	if(the_emulator_options.usematern == 1){
+		options.nthetas = 4;
 	}
 	
 	xmodel_input = gsl_matrix_alloc(options.nmodel_points, options.nparams);
@@ -155,18 +180,6 @@ int main (int argc, char ** argv){
 	fprintf(stderr, "nthetas = %d\n", options.nthetas);
 	fprintf(stderr, "nparams = %d\n", options.nparams);
 	
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// this is key
-	// fills in a structure in libEmu which 
-	// sets gaussian or matern cov fn and 
-	// the alpha option for the gaussian
-	//set_emulator_defaults(&the_emulator_options);
-	// use the matern cov fn
-	the_emulator_options.usematern = 1;
-	the_emulator_options.alpha = 1.9;
-	// show the default options in the lib
-	print_emulator_options(&the_emulator_options);
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	estimate_thetas_threaded(xmodel_input, training_vector, thetas, &options);
 

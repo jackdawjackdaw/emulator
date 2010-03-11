@@ -3,18 +3,19 @@ import os
 
 # pull in the libEmu file too and run it
 SConscript(['libEmu/SConstruct'])
-libs=Split('gsl gslcblas m pthread Emu')
+libs=Split('gsl gslcblas m pthread Emu LBFGS')
 libs2 = Split('gsl gslcblas m pthread')
-cflags='-O2 -Wall -pg  -pedantic -Wextra -std=gnu99 -I. -I.. -I./libEmu -I./multi'
+cflags='-O2 -Wall -pg -g  -pedantic -Wextra -std=gnu99 -I. -I.. -I./libEmu -I./multi'
 
 env = Environment(CCFLAGS = cflags, CPPPATH=['./libEmu'], LIBPATH=['./libEmu'])
 env.Append( LINKFLAGS = Split ('-z origin'))
 env.Append( RPATH = env.Literal(os.path.join('\\$$ORIGIN', 'libEmu')))
 
 
+
 # make the emulator program
 main_src = Split('main.c ioread.c persist.c useful.c')
-env.Program('emulator', main_src, LIBS=libs, LIBPATH=['./libEmu'])
+env.Program('emulator', main_src, LIBS=libs)
 
 # make the rbind lib
 rbind_src = Split('rbind.c multi/multifit.c multi/multihelper.c useful.c')

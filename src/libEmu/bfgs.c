@@ -2,32 +2,32 @@
 
 void print_vec(gsl_vector* x, int n);
 
-double fRosenbrock( gsl_vector* x, int nparams){
-	double xp, yp;
-	assert(nparams == 2);
-	xp = gsl_vector_get(x, 0);
-	yp = gsl_vector_get(x, 1);
-	return(pow((1-xp), 2.0) + 100.0*pow((yp-pow(xp, 2.0)), 2.0));
-}
+/* double fRosenbrock( gsl_vector* x, int nparams){ */
+/* 	double xp, yp; */
+/* 	assert(nparams == 2); */
+/* 	xp = gsl_vector_get(x, 0); */
+/* 	yp = gsl_vector_get(x, 1); */
+/* 	return(pow((1-xp), 2.0) + 100.0*pow((yp-pow(xp, 2.0)), 2.0)); */
+/* } */
 
-double fSphere(gsl_vector *x, int nparams){
-	double result = 0.0;
-	int i;
-	for(i = 0; i < nparams; i++){
-		result += pow(gsl_vector_get(x, i), 2.0);
-	}
-	return(result);
-}
+/* double fSphere(gsl_vector *x, int nparams){ */
+/* 	double result = 0.0; */
+/* 	int i; */
+/* 	for(i = 0; i < nparams; i++){ */
+/* 		result += pow(gsl_vector_get(x, i), 2.0); */
+/* 	} */
+/* 	return(result); */
+/* } */
 
-// this one works in any order...
-double fPowers( gsl_vector*x, int nparams){
-	double result = 0.0;
-	int i;
-	for(i = 0; i < nparams; i++){
-		result += fabs(pow(gsl_vector_get(x, i), (double)i+1));
-	}
-	return(result);
-}
+/* // this one works in any order... */
+/* double fPowers( gsl_vector*x, int nparams){ */
+/* 	double result = 0.0; */
+/* 	int i; */
+/* 	for(i = 0; i < nparams; i++){ */
+/* 		result += fabs(pow(gsl_vector_get(x, i), (double)i+1)); */
+/* 	} */
+/* 	return(result); */
+/* } */
 
 
 
@@ -448,11 +448,11 @@ int main (void){
 }
 #endif
 
-void print_vec(gsl_vector* x, int n){
-	int i;
-	for(i =0; i < n;i++){
-		fprintf(stdout, "%g ", gsl_vector_get(x, i));
-	}
-	fprintf(stdout, "\n");
-}
+/* void print_vec(gsl_vector* x, int n){ */
+/* 	int i; */
+/* 	for(i =0; i < n;i++){ */
+/* 		fprintf(stdout, "%g ", gsl_vector_get(x, i)); */
+/* 	} */
+/* 	fprintf(stdout, "\n"); */
+/* } */
 

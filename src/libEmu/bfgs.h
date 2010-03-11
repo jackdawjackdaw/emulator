@@ -36,9 +36,9 @@
 
 
 /* test functions */
-double fRosenbrock( gsl_vector* x, int nparams); 
-double fSphere(gsl_vector *x, int nparams);
-double fPowers( gsl_vector*x, int nparams);
+/* double fRosenbrock( gsl_vector* x, int nparams);  */
+/* double fSphere(gsl_vector *x, int nparams); */
+/* double fPowers( gsl_vector*x, int nparams); */
 
 /* actual bfgs functions */
 void getGradientNumeric(double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* gradient, int nparams);

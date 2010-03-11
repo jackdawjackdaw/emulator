@@ -34,7 +34,7 @@ int get_number_cpus(void){
 }
 
 // hack
-#define DEBUGMODE
+//#define DEBUGMODE
 
 //! threaded estimate thetas 
 /** 
@@ -67,6 +67,10 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 		thread_level_tries = thread_level_tries / nthreads;		
 	}
 	fprintf(stderr, "thread_level_tries %d\n", thread_level_tries);
+
+	#ifdef DEBUGMODE
+	thread_level_tries = 1;
+	#endif
 
 	pthread_t *threads;
 	struct estimate_thetas_params *params;
@@ -224,9 +228,11 @@ void* estimate_thread_function(void* args){
 		#ifdef NELDER
 		/* else we do the nelder mead stuff */
 		nelderMead(p->random_number, p->max_tries, p->number_steps, p->thetas, p->grad_ranges, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams);
-		#else
+		#elif BFGS
 		maxWithBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas,	\
 								p->nmodel_points, p->nthetas, p->nparams);
+		#else 
+		maxWithLBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas, p->nmodel_points, p->nthetas, p->nparams);
 		#endif
 
 
