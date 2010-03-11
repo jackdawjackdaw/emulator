@@ -1,0 +1,7 @@
+import os
+cflags = '-O2 -pg -Wall'
+
+env_lbfgs = Environment(CCFLAGS = cflags, CC='gfortran')
+src_lbfgs = Split('routines.f')
+
+env_lbfgs.Library('libLBFGS', src_lbfgs)
