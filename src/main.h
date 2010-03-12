@@ -61,6 +61,6 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options);
 void read_input_bounded(gsl_matrix* model, gsl_vector* training, optstruct * options);
 void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *options);
-
+void write_thetas(char* theta_file, gsl_vector* thetas, optstruct *options);
 
 #endif

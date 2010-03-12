@@ -156,12 +156,12 @@ void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, g
 			// it's in range, so we're ok
 			//vector_print(xFinal, nthetas);
 			likelyHood = -1*evalFn(xFinal, nthetas);
-			printf("%lu:L = %g\n", likelyHood, pthread_self());
+			printf("%lu:L = %g\n", pthread_self(),likelyHood);
 			if(likelyHood > bestLikleyHood){
 				bestLikleyHood = likelyHood;
 				gsl_vector_memcpy(xBest, xFinal);
 
-				printf("%lu:best = %g\n", bestLikleyHood, pthread_self());
+				printf("%lu:best = %g\n", pthread_self(),bestLikleyHood);
 			}
 		} 
 		tries++;

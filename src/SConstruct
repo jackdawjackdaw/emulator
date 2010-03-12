@@ -13,6 +13,7 @@ env.Append( RPATH = env.Literal(os.path.join('\\$$ORIGIN', 'libEmu')))
 
 
 
+
 # make the emulator program
 main_src = Split('main.c ioread.c persist.c useful.c')
 env.Program('emulator', main_src, LIBS=libs)
@@ -20,3 +21,6 @@ env.Program('emulator', main_src, LIBS=libs)
 # make the rbind lib
 rbind_src = Split('rbind.c multi/multifit.c multi/multihelper.c useful.c')
 env.SharedLibrary('libRbind', rbind_src, LIBS=libs, LIBPATH=['./libEmu'])
+
+coverage_src = Split('coverage.c ioread.c useful.c')
+env.Program('coverage', coverage_src, LIBS=libs)

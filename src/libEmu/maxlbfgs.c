@@ -25,7 +25,7 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 
 	int tries = 0;
 	double likelyHood = 0.0;
-	double bestLikleyHood = SCREWUPVALUE;
+	double bestLikelyHood = SCREWUPVALUE;
 	gsl_vector *xInit = gsl_vector_alloc(nthetas);
 	gsl_vector *xFinal = gsl_vector_alloc(nthetas);
 	gsl_vector *xBest = gsl_vector_alloc(nthetas);
@@ -50,12 +50,12 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 		
 		copy_gslvec_vec(xFinal, tempVec, nthetas);
 		likelyHood = -1*evalFnLBFGS(tempVec, nthetas, (void*)&eval_fn_args);
-		printf("%lu:L = %g\n", likelyHood, pthread_self());
-		if(likelyHood > bestLikleyHood){
-			bestLikleyHood = likelyHood;
+		printf("%lu:L = %g\n", pthread_self(), likelyHood);
+		if(likelyHood > bestLikelyHood){
+			bestLikelyHood = likelyHood;
 			gsl_vector_memcpy(xBest, xFinal);
 
-			printf("%lu:best = %g\n", bestLikleyHood, pthread_self());
+			printf("%lu:best = %g\n", pthread_self(), bestLikelyHood);
 		}
 		tries++;
 		set_random_initial_value(rand, xInit, ranges, nthetas);
@@ -63,7 +63,7 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 	}
 	
 	//printf("Final Best = %g\n", bestLikleyHood);
-	if(bestLikleyHood == SCREWUPVALUE) {
+	if(bestLikelyHood == SCREWUPVALUE) {
 		fprintf(stderr, "maximisation didn't work at all, relax your ranges\n");
 	}
 
@@ -74,6 +74,7 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 	gsl_vector_free(xInit);
 	gsl_vector_free(xFinal);
 	gsl_vector_free(xBest);
+	free(tempVec);
 }
 
 
@@ -145,5 +146,6 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	gsl_matrix_free(cinverse);
 	gsl_matrix_free(temp_matrix);
 	gsl_permutation_free(c_LU_permutation);
+	gsl_vector_free(xk);
 	return(-1*temp_val);
 }

@@ -92,6 +92,7 @@ int main (int argc, char ** argv){
 	gsl_vector* training_vector;
 	gsl_vector* thetas;	
 	char input_file[128];
+	char theta_file[128];
 	char** input_data;
 	int number_lines = 0;
 
@@ -107,7 +108,7 @@ int main (int argc, char ** argv){
 	#endif
 
 
-
+	sprintf(theta_file, "thetas.txt");
 	
 	// testing
 	//sprintf(input_file, "%s",  "../short.dat");	
@@ -137,7 +138,7 @@ int main (int argc, char ** argv){
 	// the alpha option for the gaussian
 	//set_emulator_defaults(&the_emulator_options);
 	// use the matern cov fn
-	the_emulator_options.usematern = 0;
+	the_emulator_options.usematern = 1;
 	the_emulator_options.alpha = 1.9;
 	// show the default options in the lib
 	print_emulator_options(&the_emulator_options);
@@ -170,7 +171,7 @@ int main (int argc, char ** argv){
 		sscanf(split_string,"%lg", &temp_value);
 		//fprintf(stderr,"train: %s\n", split_string);
 		gsl_vector_set(training_vector, i, temp_value);
-		}
+	}
 
 	fprintf(stderr, "read the following input matrix: %d x %d\n", options.nmodel_points, options.nparams);
 	//print_matrix(xmodel_input, options.nmodel_points, options.nparams);
@@ -183,6 +184,8 @@ int main (int argc, char ** argv){
 
 	estimate_thetas_threaded(xmodel_input, training_vector, thetas, &options);
 
+	write_thetas(theta_file, thetas, &options);
+
 	// calc the new means, new variance and dump to emulator-out.txt
 	emulate_model(xmodel_input, training_vector, thetas, &options);
 
@@ -193,6 +196,18 @@ int main (int argc, char ** argv){
 	//exit(1);
 	return(0);
 }
+
+void write_thetas(char* theta_file, gsl_vector* thetas, optstruct *options){
+	int i;
+	FILE *fptr;
+	fptr = fopen(theta_file, "w");
+	for(i = 0; i < options->nthetas; i++){
+		fprintf(fptr, "%g\t", gsl_vector_get(thetas, i));
+	}
+	fprintf(fptr, "\n");
+	fclose(fptr);
+}
+						
 
 
 /**
