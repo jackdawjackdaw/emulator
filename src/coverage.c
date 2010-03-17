@@ -1,7 +1,10 @@
 #include "main.h"
 
-int do_coverage_test(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* reference_values, gsl_matrix* reference_points, int number_reference_points, optstruct *options);
+int do_coverage_test(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* reference_values, gsl_matrix* reference_points, gsl_vector* emulated_mean, gsl_vector* emulated_var, int  number_reference_points, optstruct *options);
 void emulate_model_at_point(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* point, optstruct* options, double* emulated_mean, double* emulated_var);
+void calculate_errors(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* reference_values, gsl_matrix* reference_points, gsl_vector* calculated_errors, gsl_vector* emulated_mean, gsl_vector* emulated_var, int number_reference_points, optstruct *options);
+
+void dump_errors(FILE* fptr, gsl_vector* reference_values, gsl_matrix* reference_points, gsl_vector* reference_errors, gsl_vector* emulated_mean, gsl_vector* emulated_var, int number_reference_points, optstruct* options);
 
 // this lives in libEmu/emulator.c it's important!
 extern emulator_opts the_emulator_options;
@@ -94,9 +97,12 @@ int main (int argc, char **argv){
 
 	gsl_matrix* reference_points;
 	gsl_vector* reference_values;
+	gsl_vector* emulated_mean;
+	gsl_vector* emulated_var;
 	gsl_matrix* xmodel_input;
 	gsl_vector* training_vector;
 	gsl_vector* thetas;	
+	gsl_vector* reference_errors;
 	char input_file[128];
 	char input_file_reference[128];
 	char input_file_thetas[128];
@@ -220,28 +226,49 @@ int main (int argc, char **argv){
 	printf("\n");
 					 
 
+	/**
+	 * left the coverage test in here,but its really bad because it doesn't take into account
+	 * how large the actual variance is at each point. the errors test is a bit more sensible
+	 */
 
-	fprintf(stderr, "starting coverage test\n");
-	number_covered_points = do_coverage_test(xmodel_input, training_vector, thetas, reference_values, reference_points, number_reference_points, &options);
+	/* fprintf(stderr, "starting coverage test\n"); */
+	/* number_covered_points = do_coverage_test(xmodel_input, training_vector, thetas, reference_values, reference_points, number_reference_points, &options); */
+	/* fprintf(stderr, "coverage test\n"); */
+	/* printf("%d / %d\n", number_covered_points, number_reference_points); */
+	/* printf("%g\n", (double)number_covered_points / (double)number_reference_points); */
+	/* fptr = fopen("coverage-results.txt", "a"); */
+	/* fprintf(fptr, "%d\t%g\n", options.nmodel_points, (double)number_covered_points / (double)number_reference_points); */
+	/* fclose(fptr); */
 
+	fprintf(stderr, "calculating errors\n");
+	reference_errors = gsl_vector_alloc(number_reference_points);
+	emulated_mean = gsl_vector_alloc(number_reference_points);
+	emulated_var = gsl_vector_alloc(number_reference_points);
 
-	
-	fprintf(stderr, "coverage test\n");
-	printf("%d / %d\n", number_covered_points, number_reference_points);
-	printf("%g\n", (double)number_covered_points / (double)number_reference_points);
-
-	fptr = fopen("coverage-results.txt", "a");
-	fprintf(fptr, "%d\t%g\n", options.nmodel_points, (double)number_covered_points / (double)number_reference_points);
+	calculate_errors(xmodel_input, training_vector, thetas, reference_values, reference_points, reference_errors, emulated_mean, emulated_var, number_reference_points, &options);
+	fptr = fopen("cov-errors.txt", "w");
+	dump_errors(fptr, reference_values, reference_points, reference_errors, emulated_mean, emulated_var, number_reference_points, &options);
 	fclose(fptr);
-
-	
 
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
+	gsl_vector_free(emulated_mean);
+	gsl_vector_free(emulated_var);
 	gsl_matrix_free(xmodel_input);
 	gsl_vector_free(reference_values);
 	gsl_matrix_free(reference_points);
+	gsl_vector_free(reference_errors);
 	return(0);
+}
+
+
+void dump_errors(FILE* fptr, gsl_vector* reference_values, gsl_matrix* reference_points, gsl_vector* reference_errors, gsl_vector* emulated_mean, gsl_vector* emulated_var, int number_reference_points, optstruct* options){
+	int i, j;
+	for(i = 0; i < number_reference_points; i++){
+		for(j = 0; j < options->nparams; j++)
+			fprintf(fptr, "%g\t", gsl_matrix_get(reference_points, i, j));
+		fprintf(fptr, "%g\t%g\t%g\t%g\n", gsl_vector_get(emulated_mean, i), gsl_vector_get(emulated_var,i),gsl_vector_get(reference_values,i), gsl_vector_get(reference_errors, i));
+	}
 }
 
 /** 
@@ -250,8 +277,10 @@ int main (int argc, char **argv){
  * using the given thetas and a call to emulate_model_at_point and then
  * compares the reference_value of the point to the range given by 
  * emulated_mean +- emulated_var /2
+ *
+ * this is not a good test!
  */
-int do_coverage_test(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* reference_values, gsl_matrix* reference_points, int number_reference_points, optstruct *options){
+int do_coverage_test(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* reference_values, gsl_matrix* reference_points, gsl_vector* emulated_mean, gsl_vector* emulated_var, int number_reference_points, optstruct *options){
 	int coverage_count = 0;
 	int i,j;
 	gsl_vector* the_point = gsl_vector_alloc(options->nparams);
@@ -273,7 +302,8 @@ int do_coverage_test(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* theta
 		emulate_model_at_point(xmodel, training, thetas, the_point, options, &temp_mean, &temp_var);
 		temp_sd = sqrt(temp_var/2);
 		//printf("rv:%g\tmean:%g\tvar:%g\ttsd:%g\n", reference_value, temp_mean, temp_var, temp_sd);
-		
+		gsl_vector_set(emulated_mean, i, temp_mean);
+		gsl_vector_set(emulated_var, i, temp_var);
 
 		//chi_sq += (pow(temp_mean - reference_value, 2.0) / reference_value + temp_mean);
 
@@ -287,7 +317,37 @@ int do_coverage_test(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* theta
 	return(coverage_count);
 }
 	
+/**
+ * calculate the error at each reference point as given by eqn 14 from o'hagan and bastos
+ * 
+ * Di = (emulated_mean(x_i) - reference_value(x_i)) / sqrt[var(x_i)]
+ */
+void calculate_errors(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* reference_values, gsl_matrix* reference_points, gsl_vector* calculated_errors, gsl_vector* emulated_mean, gsl_vector* emulated_var, int number_reference_points, optstruct *options){
+	int i,j;
+	gsl_vector* the_point = gsl_vector_alloc(options->nparams);
+	gsl_vector* errors = gsl_vector_alloc(number_reference_points);
+	double temp_mean,temp_var, temp_sd;
+	double temp_error;
+	double reference_value;
 
+	for(i = 0; i < number_reference_points; i++){
+		for(j = 0; j < options->nparams; j++){
+			gsl_vector_set(the_point, j , gsl_matrix_get(reference_points, i, j));
+		}
+		
+		reference_value = gsl_vector_get(reference_values, i);
+		emulate_model_at_point(xmodel, training, thetas, the_point, options, &temp_mean, &temp_var);
+		temp_sd = sqrt(temp_var/2);
+
+		temp_error = (temp_mean - reference_value)/(temp_sd);
+		gsl_vector_set(errors, i, temp_error);
+		gsl_vector_set(emulated_mean, i, temp_mean);
+		gsl_vector_set(emulated_var, i, temp_var);
+		//chi_sq += (pow(temp_mean - reference_value, 2.0) / reference_value + temp_mean);
+	}
+	gsl_vector_memcpy(calculated_errors, errors);
+}
+	
 
 /**
  * for a given model and emulator (thetas) this will
