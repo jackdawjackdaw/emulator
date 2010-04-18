@@ -22,6 +22,8 @@ void set_emulator_defaults(emulator_opts* x){
 	x->usematern = 0;
 	x->usematern_three = 0;
 	x->usematern_five = 0;
+	// don't use the crazy non-diagonal matrix function
+	x->use_gaussian_nondiag = 0;
 }
 	
 
@@ -33,6 +35,8 @@ void print_emulator_options(emulator_opts* x){
 		fprintf(stderr, "using a *FULL* matern  covariance function\n");
 	} else if (x->usematern_three ==1){
 		fprintf(stderr, "using 3/2 matern  covariance function\n");
+	} else if (x->use_gaussian_nondiag ==1){
+		fprintf(stderr, "using nondiagonal gaussian covariance, need nthetas = nparams^2 + 2");
 	} else {
 		fprintf(stderr, "using 5/2 matern  covariance function\n");
 	}
@@ -72,6 +76,8 @@ inline double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
 		return(covariance_fn_matern_three(xm,xn, thetas, nthetas, nparams));
 	} else if(the_emulator_options.usematern_five ==1){
 		return(covariance_fn_matern_five(xm,xn, thetas, nthetas, nparams));
+	} else if(the_emulator_options.use_gaussian_nondiag == 1){
+		return(covariance_fn_gaussian_nondiag(xm, xn , thetas, nthetas, nparams, the_emulator_options.alpha));
 	} else {
 		// this is the default option
 		return(covariance_fn_gaussian(xm, xn , thetas, nthetas, nparams, the_emulator_options.alpha));
@@ -157,6 +163,46 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 
 	return(covariance);
 }
+
+
+//! calculate the covariance between xm and xn but with a full matrix of covariance parameters between
+//! xm and xn, not just diagonal entries
+/** 
+ * this needs nthetas to go lke nparams ^2 + 2
+ * doesn't seem to work because this covariance matrix is not symmetric.
+ * doh
+ */
+double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*thetas, int nthetas, int nparams, double alpha){
+	double the_covariance = 0.0;  
+	double nugget = gsl_vector_get(thetas, 1);
+	double amplitude = gsl_vector_get(thetas,0);
+	double sigma_temp = 0.0;
+	double distance = 0.0;
+	double r_temp = 0.0;
+	double small_no = 1E-10;
+	int i, j, diagcount = 0; 
+
+	assert(thetas->size == (nparams*nparams) + 2);
+
+	for(i = 0; i < nparams; i++){
+		for(j = 0; j < nparams; j++){
+			// the vairance matrix elements are index-offest by 2, since we have the nugget and amplitude stored in the same vector
+			sigma_temp = gsl_vector_get(thetas, i+2);
+			r_temp = gsl_vector_get(xm,i) - gsl_vector_get(xn, j);
+			if(sigma_temp  > small_no){
+				distance += pow(fabs(r_temp), alpha)/sigma_temp;
+			} 
+		}
+		if(fabs(gsl_vector_get(xm,i) - gsl_vector_get(xn,i)) < 1E-10) diagcount++;
+	}
+	
+	the_covariance = amplitude * exp(-distance);
+	if(diagcount == nparams) the_covariance += nugget;
+	//fprintf(stderr, "%g\n", the_covariance);
+	return(the_covariance);
+}
+	
+
 
 
 // this only works with exactly 4 thetas! irregardless of how many params there are

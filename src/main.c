@@ -136,10 +136,11 @@ int main (int argc, char ** argv){
 	// fills in a structure in libEmu which 
 	// sets gaussian or matern cov fn and 
 	// the alpha option for the gaussian
-	//set_emulator_defaults(&the_emulator_options);
+	set_emulator_defaults(&the_emulator_options);
 	// use the matern cov fn
 	the_emulator_options.usematern = 0;
 	the_emulator_options.alpha = 1.9;
+	the_emulator_options.use_gaussian_nondiag = 1;
 	// show the default options in the lib
 	print_emulator_options(&the_emulator_options);
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -148,6 +149,8 @@ int main (int argc, char ** argv){
 	// we only need 4, so maximisation is a little nicer
 	if(the_emulator_options.usematern == 1 || the_emulator_options.usematern_three == 1 || the_emulator_options.usematern_five == 1){
 		options.nthetas = 4;
+	} else if(the_emulator_options.use_gaussian_nondiag == 1){
+		options.nthetas = options.nparams * options.nparams + 2;
 	}
 	
 	xmodel_input = gsl_matrix_alloc(options.nmodel_points, options.nparams);

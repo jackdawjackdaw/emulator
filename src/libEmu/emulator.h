@@ -20,6 +20,7 @@ typedef struct emulator_opts{
 	int usematern_three;
 	//! set this to 1 to use a 5/2 (fixed nu) matern cov fn
 	int usematern_five;
+	int use_gaussian_nondiag;
 } emulator_opts;
 
 
@@ -28,6 +29,7 @@ void print_emulator_options(emulator_opts* x);
 void set_emulator_defaults(emulator_opts* x);
 double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
 double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams, double alpha);
+double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*thetas, int nthetas, int nparams, double alpha);
 double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
 double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
 double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
