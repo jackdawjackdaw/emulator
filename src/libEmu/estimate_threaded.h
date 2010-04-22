@@ -32,6 +32,7 @@ struct estimate_thetas_params{
 	int nmodel_points;
 	int nthetas;
 	int nparams;
+	int nregression_fns;
 } estimate_thetas_params;
 // why do you need this ^ ident?
 

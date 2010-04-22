@@ -131,8 +131,9 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 		params[i].training_vector = gsl_vector_alloc(options->nmodel_points);
 		params[i].nmodel_points = options->nmodel_points;
 		params[i].nthetas = options->nthetas;
-		params[i].nparams = options->nparams;
+		params[i].nparams = options->nparams;		
 		params[i].number_steps = number_steps;
+		params[i].nregression_fns = options->nregression_fns;
 		// now actually copy the stuff into the vectors / matrices
 		gsl_vector_memcpy(params[i].thetas, thetas);
 		gsl_matrix_memcpy(params[i].grad_ranges, grad_ranges);
@@ -227,17 +228,18 @@ void* estimate_thread_function(void* args){
 		
 		#ifdef NELDER
 		/* else we do the nelder mead stuff */
-		nelderMead(p->random_number, p->max_tries, p->number_steps, p->thetas, p->grad_ranges, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams);
+		nelderMead(p->random_number, p->max_tries, p->number_steps, p->thetas, p->grad_ranges, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
 		#elif BFGS
 		maxWithBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas,	\
-								p->nmodel_points, p->nthetas, p->nparams);
+								p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
 		#else 
-		maxWithLBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas, p->nmodel_points, p->nthetas, p->nparams);
+		maxWithLBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
 		#endif
 
 
 		// kind of sneakily calling into the maximise.c api (aah well...)
-		my_theta_val = evalLikelyhood(p->thetas, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams);
+		// won't work without some more fiddling
+		my_theta_val = evalLikelyhood(p->thetas, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
 
 		#ifdef USEMUTEX
 		pthread_mutex_lock(&results_mutex);

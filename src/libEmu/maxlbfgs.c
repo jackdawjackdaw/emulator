@@ -5,7 +5,7 @@
 /**
  * @file 
  * @author Chris Coleman-Smith cec24@phy.duke.edu
- * @version 1
+ * @version 1.1
  * @section DESCRIPTION
  * 
  * contains routines to use the lbfgs maximisation method
@@ -15,10 +15,12 @@
  *
  * the maxWithBLAH interface of rand, max_tries etc has become kind of standard, see the neldermead, and 
  * plain bfgs methods.
+ *  
+ * April '10 updated with support for linear regression model
  */
 
 void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, gsl_matrix *xmodel,
-									gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nthetas, int nparams){
+									gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nthetas, int nparams, int nregression_fns){
 	/* 
 	 * this is the main routine for driving the lbfgs method
 	 */
@@ -29,8 +31,10 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 	gsl_vector *xInit = gsl_vector_alloc(nthetas);
 	gsl_vector *xFinal = gsl_vector_alloc(nthetas);
 	gsl_vector *xBest = gsl_vector_alloc(nthetas);
+	gsl_matrix *h_matrix = gsl_matrix_alloc(nmodel_points, nregression_fns);
 	double *tempVec = malloc(sizeof(double)*nthetas);
 	
+	makeHMatrix(h_matrix, xmodel,nmodel_points, nparams, nregression_fns);
 
 	/* setup the arguments which will be used in the eval and gradient functions */
 	struct evalFnLBFGSArgs eval_fn_args;
@@ -38,8 +42,12 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 	eval_fn_args.nmodel_points = nmodel_points;
 	eval_fn_args.xmodel = gsl_matrix_alloc(nmodel_points, nparams);
 	eval_fn_args.training_vector = gsl_vector_alloc(nmodel_points);
+	eval_fn_args.h_matrix = gsl_matrix_alloc(nmodel_points, nregression_fns);
+	eval_fn_args.nregression_fns = nregression_fns;
 	gsl_matrix_memcpy(eval_fn_args.xmodel, xmodel);
+	gsl_matrix_memcpy(eval_fn_args.h_matrix, h_matrix);
 	gsl_vector_memcpy(eval_fn_args.training_vector, trainingvector);
+
 
 	gsl_vector_set_zero(xBest);
 	gsl_vector_set_zero(xFinal);
@@ -70,7 +78,9 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 	gsl_vector_memcpy(thetas, xBest);
 	
 	gsl_matrix_free(eval_fn_args.xmodel);
+	gsl_matrix_free(eval_fn_args.h_matrix);
 	gsl_vector_free(eval_fn_args.training_vector);
+	gsl_matrix_free(h_matrix);
 	gsl_vector_free(xInit);
 	gsl_vector_free(xFinal);
 	gsl_vector_free(xBest);
@@ -87,6 +97,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	gsl_matrix* covariance_matrix = gsl_matrix_alloc(params->nmodel_points, params->nmodel_points);
 	gsl_matrix* cinverse = gsl_matrix_alloc(params->nmodel_points, params->nmodel_points);
 	gsl_matrix* temp_matrix = gsl_matrix_alloc(params->nmodel_points, params->nmodel_points);
+
 	gsl_vector *xk = gsl_vector_alloc(nthetas);
 	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(params->nmodel_points);
 	double cinverse_det = 0.0;
@@ -137,7 +148,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 #endif
 		
 	// temp_val is now the likelyhood for this answer
-	temp_val = getLogLikelyhood(cinverse, cinverse_det, params->xmodel, params->training_vector, xk, params->nmodel_points, nthetas, params->nparams);
+	temp_val = getLogLikelyhood(cinverse, cinverse_det, params->xmodel, params->training_vector, xk, params->h_matrix, params->nmodel_points, nthetas, params->nparams, params->nregression_fns);
 
 		
 	//fprintf(stderr,"L:%f\n", temp_val);
