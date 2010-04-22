@@ -5,7 +5,7 @@ import os
 SConscript(['libEmu/SConstruct'])
 libs=Split('gsl gslcblas m pthread Emu LBFGS')
 libs2 = Split('gsl gslcblas m pthread')
-cflags='-O2 -Wall -pg -g  -pedantic -Wextra -std=gnu99 -I. -I.. -I./libEmu -I./multi'
+cflags='-O0 -Wall -pg -g  -pedantic -Wextra -std=gnu99 -I. -I.. -I./libEmu -I./multi'
 
 env = Environment(CCFLAGS = cflags, CPPPATH=['./libEmu'], LIBPATH=['./libEmu'])
 env.Append( LINKFLAGS = Split ('-z origin'))
@@ -22,5 +22,8 @@ env.Program('emulator', main_src, LIBS=libs)
 rbind_src = Split('rbind.c multi/multifit.c multi/multihelper.c useful.c')
 env.SharedLibrary('libRbind', rbind_src, LIBS=libs, LIBPATH=['./libEmu'])
 
-coverage_src = Split('coverage.c ioread.c useful.c')
-env.Program('coverage', coverage_src, LIBS=libs)
+# coverage_src = Split('coverage.c ioread.c useful.c')
+# env.Program('coverage', coverage_src, LIBS=libs)
+
+likely_src = Split('likelyhoody.c ioread.c useful.c')
+env.Program('likelyhood', likely_src, LIBS=libs)

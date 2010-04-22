@@ -123,16 +123,18 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 	// calc the covariance for a given set of input points
 	int i, truecount  = 0;
 	double covariance = 0.0;
+	double exponent = 0.0;
 	double xm_temp = 0.0;
 	double xn_temp = 0.0;
 	double r_temp = 0.0;
+	
 	for(i = 0; i < nparams; i++){
 		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
 		xn_temp = gsl_vector_get(xn, i);
-		r_temp = gsl_vector_get(thetas, i+3);
+		r_temp = gsl_vector_get(thetas, i+2);
 		r_temp = pow(r_temp , alpha); 
 		// gaussian term				
-		covariance += exp((-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp));
+		exponent += (-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp);
 		//DEBUGprintf("%g\n", covariance);
 		/*
 		 * this is slightly dangerous float comparison
@@ -143,7 +145,7 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 	}
 	// get rid of the offset it doesn't make sense
 	//covariance = covariance * gsl_vector_get(thetas,0) + gsl_vector_get(thetas,1);
-	covariance = covariance*gsl_vector_get(thetas, 0);
+	covariance = exp(covariance)*gsl_vector_get(thetas, 0);
 
 	/** 
 	 * the nugget is only added to the diagonal covariance terms,
@@ -152,8 +154,9 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 	if(truecount == nparams) {
 		// i.e the two vectors are hopefully the same
 		// add the nugget
-		covariance += gsl_vector_get(thetas,2);
+		covariance += gsl_vector_get(thetas,1);
 	}
+
 
 	return(covariance);
 }
