@@ -136,9 +136,6 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 		// gaussian term				
 		exponent += (-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp);
 		//DEBUGprintf("%g\n", covariance);
-		/*
-		 * this is slightly dangerous float comparison
-		 */
 		if (fabs(xm_temp - xn_temp) < 0.0000000000000001){
 			truecount++; 		
 		}
@@ -263,7 +260,7 @@ double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* th
 	double tempx = 0.0;
 	double root3 = 1.732050808;
 
-	// calculate the euclidean distance between the two points;
+n	// calculate the euclidean distance between the two points;
 	for(i = 0; i < nparams; i++){
 		xm_temp = gsl_vector_get(xm, i);
 		xn_temp = gsl_vector_get(xn, i);
@@ -398,18 +395,41 @@ void makeCovMatrix(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* theta
  * @param inverse_cov_matrix the inverse of the covariance matrix
  * @param training_vector -> the scalar output of the model
  * @param kplus_vector -> a K vector, from makeKVector, evaluated at the t+1 point
+ * @param h_vector -> the vector of linear regression functions evaluated at t+1
+ * @param h_matrix -> matrix of linear regression functions evaluated at all of the design points
+ * @param beta_vector -> vector of linear regression coeffs, this should be constant once you have a set of thetas
  * @param nmodel_points -> the length of training_vector and also the length of inverse_cov_matrix
+ * 
+ * so now emulated_mean = h_vector.beta + kplus_vector.inverse_cov_matrix.(training_vector - h_matrix.beta_vector)
  */
-double makeEmulatedMean(gsl_matrix *inverse_cov_matrix, gsl_vector *training_vector, gsl_vector *kplus_vector, int nmodel_points){
-	gsl_vector *result_holder = gsl_vector_alloc(nmodel_points);
+double makeEmulatedMean(gsl_matrix *inverse_cov_matrix, gsl_vector *training_vector, gsl_vector *kplus_vector, gsl_vector* h_vector, gsl_matrix* h_matrix, gsl_vector* beta_vector,  int nmodel_points){
+	gsl_vector *result_1 = gsl_vector_alloc(nmodel_points);
+	gsl_vector *result_2 = gsl_vector_alloc(nmodel_points);
 	double emulated_mean;
+	double regresion_cpt; // transpose(h).beta 
+	double residual_cpt;  // -k_vector.inverse_cov_matrix.Hmatrix.beta
 	//— Function: int gsl_blas_dgemv (CBLAS_TRANSPOSE_t TransA, double alpha, const gsl_matrix * A, const gsl_vector * x, double beta, gsl_vector * y)
 	// result_holder = inverse_cov_matrix . training_vector (matrix, vec multiply)
-	gsl_blas_dgemv(CblasNoTrans, 1.0, inverse_cov_matrix, training_vector, 0.0, result_holder);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, inverse_cov_matrix, training_vector, 0.0, result_1);
 	//— Function: int gsl_blas_sdsdot (float alpha, const gsl_vector_float * x, const gsl_vector_float * y, float * result)
-	// emulatedMean = kplusvector . result_holder
-	gsl_blas_ddot(kplus_vector, result_holder, &emulated_mean);
-	gsl_vector_free(result_holder);
+	// emulatedMean = kplusvector . result_1
+	gsl_blas_ddot(kplus_vector, result_1, &emulated_mean) ;
+	// regression_cpt = transpose(h).beta
+	gsl_blas_ddot(h_vector, beta_vector, &regression_cpt);
+	// residual_cpt = -k_vector.inverse_cov_matrix.Hmatrix.beta
+	// do result_1 = Hmatrix.beta first (this comes out as a nmodel_points long vector)
+	gsl_blas_dgemv(CblasNoTrans, 1.0, h_matrix, beta_vector, 0.0, result_1); 
+	// result_2 = inverse_cov_matrix.result_1
+	gsl_blas_dgemv(CblasNoTrans, 1.0, inverse_cov_matrix, result_1, 0.0, result_2);
+	// -residual_cpt = kplusvector . result_2
+	gsl_blas_ddot(kplus_vector, result_2, &residual_cpt);
+
+	// now we have the correct result
+	// m(x) = h(x)^{T}\hat\beta + t(x)^{T}A^{-1}(y - H\hat\beta)
+	emulated_mean += regression_cpt - residual_cpt;
+
+	gsl_vector_free(result_1);
+	gsl_vector_free(result_2);
 	return(emulated_mean);
 }
 
@@ -420,14 +440,58 @@ double makeEmulatedMean(gsl_matrix *inverse_cov_matrix, gsl_vector *training_vec
  * constant variance for the process.
  * @return -> the new variance
  * @param kappa -> the constant variance for the process.
+ * @param h_vector -> regression functions evaluated at t+1
+ * @param h_matrix -> matrix of the regression fns evaluated at the design points
+ * 
+ * the regression cpt to this is a bit more complicated than for the mean we have
+ * c*(x,x') = c(x,x') - t(x)^{T}A^{-1}t(x') + (h(x)^{T} - t(x)^{T}A^{-1}H)(H^{T}A^{-1}H)^{-1}(h(x')^{T} - t(x')^{T}A^{-1}H)
+ *
  */
-double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_vector, double kappa, int nmodel_points){
+double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_vector, gsl_vector *h_vector, gsl_matrix *h_matrix, double kappa, int nmodel_points, int nregression_fns){
 	double emulated_variance;
+	double regression_cpt;
+	gsl_vector *result_nreg = gsl_vector_alloc(nregression_fns);
+	gsl_vector *result_nreg_2 = gsl_vector_alloc(nregression_fns);
 	gsl_vector *result_holder = gsl_vector_alloc(nmodel_points);
+	gsl_matrix *result_minverse_dot_h = gsl_matrix_alloc(nmodel_points, nregression_fns);
+	gsl_matrix *result_inverse_h_minverse_h = gsl_matrix_alloc(nregression_fns, nregression_fns);	
+	
+	// result_nreg = (h(x)^T - t(x)^T A^(-1).H) 
+	// where t -> kplus_
+	//int gsl_blas_dgemm (CBLAS_TRANSPOSE_t TransA, CBLAS_TRANSPOSE_t TransB, double alpha, const gsl_matrix * A, const gsl_matrix * B, double beta, gsl_matrix * C)
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, inverse_cov_matrix, h_matrix, result_minverse_dot_h);
+	// now result_nreg = t(x)^(T).result_minverse_dot_h
+	// but since we can't do vector.matrix we do
+	// result_nreg = result_minverse_dot_h^(T).t(x)
+	gsl_blas_dgemv(CblasTrans, -1.0, result_minverse_dot_h, kplus_vector, result_nreg);
+	// note that we scaled the previous matrix multiply by -1.0
+	// gsl_vector_add(a,b) := a <- a + b so
+	gsl_vector_add(result_nreg, kplus_vector);
+	
+	// result_inverse_h_minverse_h := (H^{t} .A^{-1} . H)^{-1}
+	//                              = H^{t} . result_minverse.h
+	gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, h_matrix, result_minverse_dot_h, result_inverse_h_minverse_h);
+	
+	// now result_inverse_h_minverse_h is symmetric and so we can consider it as triangular etc and then
+	// do linear solves etc to get the inverse and all that malarky, but since it's only nreg * nreg its 
+	// probably not worth the pain in the blass (arf)
+	gsl_linalg_cholesky_decomp(result_inverse_h_minverse_h);
+	gsl_linalg_cholesky_invert(result_inverse_h_minverse_h); // now it really is the inverse
+	
+	// now compute regression_cpt = result_nreg . (result_inverse_h_minverse_h)^{-1} . result_nreg
+	// result_nreg_2 = result_inverse_h_minverse_h^{-1}.result_nreg
+	gsl_blas_dgemv(CblasNoTrans, 1.0, result_inverse_h_minverse_h, result_nreg_2);
+	// regression_cpt = result_nreg. result_nreg_2
+	gsl_blas_ddot(result_nreg, result_nreg_2, &regression_cpt);
+
 	gsl_blas_dgemv(CblasNoTrans, 1.0, inverse_cov_matrix, kplus_vector, 0.0, result_holder);
 	gsl_blas_ddot(kplus_vector, result_holder, &emulated_variance);
 	gsl_vector_free(result_holder);
-	return(kappa-emulated_variance);
+	gsl_vector_free(result_nreg);
+	gsl_vector_free(result_nreg_2);
+	gsl_matrix_free(result_minverse_dot_h);
+	gsl_matrix_free(result_inverse_h_minverse_h);
+	return(kappa-emulated_variance + regression_cpt);
 }
 
 
