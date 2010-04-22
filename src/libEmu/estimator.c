@@ -150,6 +150,10 @@ void getdCdt(gsl_matrix* dcdt, gsl_matrix* xmodel, gsl_vector* thetas, int index
 
 	assert(index <= nthetas-1);
 
+	fprintf(stderr, "getdCdt is deprecated!\n");
+	exit(1);
+					
+
 	for(i = 0; i < nmodel_points; i++){
 		for(j=0; j < nmodel_points; j++){
 			xmodel_row_i = gsl_matrix_row(xmodel, i);
