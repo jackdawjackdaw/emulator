@@ -510,7 +510,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 
 	// we need to make the h_matrix for this set of design points (xmodel)
 	// call regression.c:makeHMatrix
-	makeHMatrix(h_matrix, xmdoel, nmodel_points, nparams, nregression_fns);
+	makeHMatrix(h_matrix, xmodel, nmodel_points, nparams, nregression_fns);
 
 	// make the covariance matrix 
 	// using the random initial conditions! (xold not thetas)

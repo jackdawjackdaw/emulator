@@ -70,7 +70,7 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	if(options->nthetas != options->nparams + 3){
 		fprintf(stderr, "you have possbily selected a crazy value of nthetas...\n");
 		// for the moment force them to work
-		options->nthetas = options->nparams +3;
+		options->nthetas = options->nparams +2;
 	}
 		
 
@@ -86,7 +86,7 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 int main (int argc, char ** argv){
 	optstruct options;
 	char* split_string;
-	int i,j, nregression_fns;
+	int i,j;
 	double temp_value;
 	gsl_matrix* xmodel_input;
 	gsl_vector* training_vector;
@@ -154,6 +154,8 @@ int main (int argc, char ** argv){
 	// we only need 4, so maximisation is a little nicer
 	if(the_emulator_options.usematern == 1 || the_emulator_options.usematern_three == 1 || the_emulator_options.usematern_five == 1){
 		options.nthetas = 4;
+	} else {
+		options.nthetas = 3;
 	}
 	
 	xmodel_input = gsl_matrix_alloc(options.nmodel_points, options.nparams);
@@ -258,7 +260,7 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	estimateBeta(beta_vector, h_matrix, cinverse, training, options->nmodel_points, options->nregression_fns);
 	
 	fprintf(stderr, "regression cpts: ");
-	for(i = 0; i < optionrs->nregression_fns; i++)
+	for(i = 0; i < options->nregression_fns; i++)
 		fprintf(stderr, "%g ", gsl_vector_get(beta_vector, i));
 	fprintf(stderr, "\n");
 	
@@ -268,7 +270,7 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	for(i = 0; i < n_emu_points; i++){
 		new_x_row = gsl_matrix_row(new_x, i);
 		makeKVector(kplus, xmodel, &new_x_row.vector, thetas, options->nmodel_points, options->nthetas, options->nparams);
-		makeHVctor(h_vector, &new_x_row.vector, options->nparams);
+		makeHVector(h_vector, &new_x_row.vector, options->nparams);
 
 		temp_mean = makeEmulatedMean(cinverse, training, kplus, h_vector, h_matrix, beta_vector, options->nmodel_points);
 

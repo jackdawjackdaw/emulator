@@ -53,7 +53,8 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cinverse,  gsl_matrix *
 	for(i = 0; i < nmodel_points; i++){
 		xmodel_row = gsl_matrix_row(xmodel, i);
 		makeHVector(h_vector, &xmodel_row.vector, nparams);
-		gsl_vector_set(estimated_mean, i, gsl_blas_ddot(beta_vector, h_vector));
+		gsl_blas_ddot(beta_vector, h_vector, &estimated_mean_val);
+		gsl_vector_set(estimated_mean, i, estimated_mean_val);
 	}
 
 	/* train_sub_mean = trainingvector- estimated_mean */

@@ -258,7 +258,7 @@ double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* th
 	double tempx = 0.0;
 	double root3 = 1.732050808;
 
-n	// calculate the euclidean distance between the two points;
+	// calculate the euclidean distance between the two points;
 	for(i = 0; i < nparams; i++){
 		xm_temp = gsl_vector_get(xm, i);
 		xn_temp = gsl_vector_get(xn, i);
@@ -404,7 +404,7 @@ double makeEmulatedMean(gsl_matrix *inverse_cov_matrix, gsl_vector *training_vec
 	gsl_vector *result_1 = gsl_vector_alloc(nmodel_points);
 	gsl_vector *result_2 = gsl_vector_alloc(nmodel_points);
 	double emulated_mean;
-	double regresion_cpt; // transpose(h).beta 
+	double regression_cpt; // transpose(h).beta 
 	double residual_cpt;  // -k_vector.inverse_cov_matrix.Hmatrix.beta
 	//— Function: int gsl_blas_dgemv (CBLAS_TRANSPOSE_t TransA, double alpha, const gsl_matrix * A, const gsl_vector * x, double beta, gsl_vector * y)
 	// result_holder = inverse_cov_matrix . training_vector (matrix, vec multiply)
@@ -478,7 +478,7 @@ double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_ve
 	
 	// now compute regression_cpt = result_nreg . (result_inverse_h_minverse_h)^{-1} . result_nreg
 	// result_nreg_2 = result_inverse_h_minverse_h^{-1}.result_nreg
-	gsl_blas_dgemv(CblasNoTrans, 1.0, result_inverse_h_minverse_h, 0.0, result_nreg_2);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, result_inverse_h_minverse_h, result_nreg, 0.0, result_nreg_2);
 	// regression_cpt = result_nreg. result_nreg_2
 	gsl_blas_ddot(result_nreg, result_nreg_2, &regression_cpt);
 

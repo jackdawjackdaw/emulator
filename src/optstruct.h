@@ -11,6 +11,7 @@ typedef struct optstruct{
 	int nparams;
 	int nmodel_points;
 	int nemulate_points;
+	int nregression_fns;
 	double emulate_min;
 	double emulate_max;
 	char  filename[128];

@@ -123,6 +123,13 @@ int main (int argc, char ** argv){
 		options.nmodel_points = number_lines;
 	}
 
+	//!!!! set the number of regression fns
+	// this is regression model dependant
+	// this is correct for the simple linear fit in each dimension plus a constant intercept
+	options.nregression_fns = options.nparams + 1;
+	//!!!! 
+
+
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// this is key
 	// fills in a structure in libEmu which 
@@ -200,6 +207,7 @@ void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_v
 	double the_likelyhood, theta_zero_offset, theta_one_offset, theta_initial;
 	gsl_vector *thetas = gsl_vector_alloc(options->nthetas);
 	gsl_matrix *local_like_matrix = gsl_matrix_alloc(options->nemulate_points, options->nemulate_points);
+	
 
 	theta_initial = 0.001;
 
@@ -217,7 +225,7 @@ void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_v
 		for(j = 0; j < options->nemulate_points; j++){
 			gsl_vector_set(thetas,2, theta_initial + (double)j*theta_one_offset);
 
-			the_likelyhood = evalLikelyhood(thetas, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams);
+			the_likelyhood = evalLikelyhood(thetas, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams, options->nregression_fns);
 			gsl_matrix_set(local_like_matrix, i, j, the_likelyhood);
 			printf("%g, %g, %g\n", gsl_vector_get(thetas, 0), gsl_vector_get(thetas,2), the_likelyhood);
 		}

@@ -7,6 +7,8 @@
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
 
+#include "maxlbfgs.h"
+
 #include "../main.h"
 
 /* common data block for most options to be passed around */
