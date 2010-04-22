@@ -86,7 +86,7 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 int main (int argc, char ** argv){
 	optstruct options;
 	char* split_string;
-	int i,j;
+	int i,j, nregression_fns;
 	double temp_value;
 	gsl_matrix* xmodel_input;
 	gsl_vector* training_vector;
@@ -130,6 +130,12 @@ int main (int argc, char ** argv){
 		// change the value to match what we actually read
 		options.nmodel_points = number_lines;
 	}
+
+	//!!!! set the number of regression fns
+	// this is regression model dependant
+	// this is correct for the simple linear fit in each dimension plus a constant intercept
+	options.nregression_fns = options.nparams + 1;
+	//!!!! 
 
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// this is key
@@ -227,6 +233,9 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	gsl_matrix *c_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
 	gsl_matrix *cinverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
 	gsl_vector *kplus = gsl_vector_alloc(options->nmodel_points);
+	gsl_vector *h_vector = gsl_vector_alloc(options->nregression_fns);
+	gsl_vector *beta_vector = gsl_vector_alloc(options->nregression_fns);
+	gsl_matrix *h_matrix = gsl_matrix_alloc(options->nmodel_points, options->nregression_fns);
 	gsl_vector_view new_x_row;
 
 	gsl_matrix *temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
@@ -238,22 +247,33 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 
 
 
+
 	makeCovMatrix(c_matrix, xmodel, thetas,options->nmodel_points, options->nthetas, options->nparams);
 	gsl_matrix_memcpy(temp_matrix, c_matrix);
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse);
+
+	// regression cpts
+	makeHMatrix(h_matrix, xmodel, options->nmodel_points, options->nparams, options->nregression_fns);
+	estimateBeta(beta_vector, h_matrix, cinverse, training, options->nmodel_points, options->nregression_fns);
+	
+	fprintf(stderr, "regression cpts: ");
+	for(i = 0; i < optionrs->nregression_fns; i++)
+		fprintf(stderr, "%g ", gsl_vector_get(beta_vector, i));
+	fprintf(stderr, "\n");
 	
 	// set the new_x values
 	initialise_new_x(new_x, options->nparams, options->nemulate_points, options->emulate_min, options->emulate_max);
 
-
-
 	for(i = 0; i < n_emu_points; i++){
 		new_x_row = gsl_matrix_row(new_x, i);
 		makeKVector(kplus, xmodel, &new_x_row.vector, thetas, options->nmodel_points, options->nthetas, options->nparams);
-		temp_mean = makeEmulatedMean(cinverse, training, kplus, options->nmodel_points);
+		makeHVctor(h_vector, &new_x_row.vector, options->nparams);
+
+		temp_mean = makeEmulatedMean(cinverse, training, kplus, h_vector, h_matrix, beta_vector, options->nmodel_points);
+
 		kappa = covariance_fn(&new_x_row.vector, &new_x_row.vector, thetas, options->nthetas, options->nparams);
-		temp_var = makeEmulatedVariance(cinverse, kplus, kappa, options->nmodel_points);
+		temp_var = makeEmulatedVariance(cinverse, kplus, h_vector, h_matrix, kappa, options->nmodel_points, options->nregression_fns);
 		gsl_vector_set(new_mean, i, temp_mean);
 		gsl_vector_set(new_variance, i, temp_var);
 	}
@@ -269,8 +289,11 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	gsl_matrix_free(new_x);
 	gsl_vector_free(new_mean);
 	gsl_vector_free(new_variance);
+	gsl_vector_free(h_vector);
+	gsl_vector_free(beta_vector);
 	gsl_matrix_free(c_matrix);
 	gsl_matrix_free(cinverse);
+	gsl_matrix_free(h_matrix);
 	gsl_vector_free(kplus);
 	gsl_matrix_free(temp_matrix);
 	gsl_permutation_free(c_LU_permutation);

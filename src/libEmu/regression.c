@@ -12,7 +12,7 @@ void makeHVector(gsl_vector *h_vector, gsl_vector *x_location, int nparams){
 	int i;
 	gsl_vector_set(h_vector, 0, 1); // the first element is always a constant
 	for(i = 0; i < nparams; i++) 
-		gsl_vector_set(h_vector, i, gsl_vector_get(x_location, i));
+		gsl_vector_set(h_vector, i+1, gsl_vector_get(x_location, i));
 }
 
 /**
@@ -20,9 +20,9 @@ void makeHVector(gsl_vector *h_vector, gsl_vector *x_location, int nparams){
  * design point from xmodel
  * where h_matrix is defined to be n_model_points x nregression_fns
  */
-void makeHMatrix(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, int nparams, int nregresion_fns){
-	int i; 
-	gsl_vector *h_vec = gsl_vector_alloc(nregresion_fns);
+void makeHMatrix(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, int nparams, int nregression_fns){
+	int i,j; 
+	gsl_vector *h_vec = gsl_vector_alloc(nregression_fns);
 	gsl_vector_view xmodel_row_i;
 	for(i = 0; i < nmodel_points; i++){
 		xmodel_row_i = gsl_matrix_row(xmodel, i);
@@ -47,7 +47,7 @@ void estimateBeta(gsl_vector *beta_vector, gsl_matrix *h_matrix, gsl_matrix* cin
 	gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, h_matrix, cinverse, 0.0, htrans_cinverse);
 	// now calculate htrans_cinverse.hmatrix
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, htrans_cinverse, h_matrix, 0.0 ,temp_denominator);
-
+	
 	gsl_linalg_cholesky_decomp(temp_denominator);
 	gsl_linalg_cholesky_invert(temp_denominator); // temp_denominator = (h_matrix^{T}.cinverse.hmatrix)^{-1}
 	
