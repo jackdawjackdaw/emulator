@@ -40,23 +40,23 @@ void makeHMatrix(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, in
 void estimateBeta(gsl_vector *beta_vector, gsl_matrix *h_matrix, gsl_matrix* cinverse, gsl_vector *trainingvector, int nmodel_points, int nregression_fns){
 	int i;
 	gsl_matrix *htrans_cinverse = gsl_matrix_alloc(nregression_fns, nmodel_points);
-	gsl_matrix *temp_denominator = gsl_matrix_alloc(nregresion_fns, nregression_fns);
-	gsl_vector *temp_numerator = gsl_matrix_alloc(nregression_fns);
+	gsl_matrix *temp_denominator = gsl_matrix_alloc(nregression_fns, nregression_fns);
+	gsl_vector *temp_numerator = gsl_vector_alloc(nregression_fns);
 
 	// first calculate h_matrix^{T}.cinverse (since we'll use this twice)
-	gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, h_matrix, inverse_cov_matrix, htrans_cinverse);
+	gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, h_matrix, cinverse, 0.0, htrans_cinverse);
 	// now calculate htrans_cinverse.hmatrix
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, htrans_cinverse, h_matrix, temp_denominator);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, htrans_cinverse, h_matrix, 0.0 ,temp_denominator);
 
 	gsl_linalg_cholesky_decomp(temp_denominator);
 	gsl_linalg_cholesky_invert(temp_denominator); // temp_denominator = (h_matrix^{T}.cinverse.hmatrix)^{-1}
 	
 	// temp_numerator = htrans_cinverse.trainingvector
-	gsl_blas_dgemv(CblasNoTrans, 1.0, htrans_cinverse, trainingvector, temp_numerator);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, htrans_cinverse, trainingvector,0.0, temp_numerator);
 	
 	// and finally we set the value of the beta vector
 	// beta = temp_denominator.temp_numerator
-	gsl_blas_dgemv(CblasNoTrans, 1.0, temp_denominator, temp_numerator, beta_vector);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, temp_denominator, temp_numerator, 0.0, beta_vector);
 	
 	gsl_vector_free(temp_numerator);
 	gsl_matrix_free(temp_denominator);
