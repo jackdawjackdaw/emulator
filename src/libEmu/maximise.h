@@ -2,6 +2,7 @@
 #define __INC__MAXIMISE__
 #include "emulator.h"
 #include "estimator.h"
+#include "regression.h"
 #include "../useful.h"
 #include "gsl/gsl_rng.h"
 
