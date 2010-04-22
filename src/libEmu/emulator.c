@@ -140,9 +140,7 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 			truecount++; 		
 		}
 	}
-	// get rid of the offset it doesn't make sense
-	//covariance = covariance * gsl_vector_get(thetas,0) + gsl_vector_get(thetas,1);
-	covariance = exp(covariance)*gsl_vector_get(thetas, 0);
+	covariance = exp(exponent)*gsl_vector_get(thetas, 0);
 
 	/** 
 	 * the nugget is only added to the diagonal covariance terms,
