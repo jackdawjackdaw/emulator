@@ -17,14 +17,15 @@
 
 
 void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, gsl_matrix* xmodel,
-								 gsl_vector *trainingvector, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams){
+								 gsl_vector *trainingvector, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams, int nregression_fns){
 
 	// a wrapper to evaluate, relies on inherited scope!
 	double evalFn(gsl_vector* xk, int nt){
 		gsl_matrix* covariance_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points);
 		gsl_matrix* cinverse = gsl_matrix_alloc(nmodel_points, nmodel_points);
 		gsl_matrix* temp_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points);
-		gsl_permutation *c_LU_permutation = gsl_permutation_alloc(nmodel_points);
+		gsl_matrix* h_matrix = gsl_matrix_alloc(nmodel_points, nregression_fns);
+		gsl_permutation *c_LU_permutation = gsl_permutation_alloc(nmodel_points);		
 		double cinverse_det = 0.0;
 		double temp_val = 0.0;
 		int lu_signum = 0, i;
@@ -34,6 +35,9 @@ void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, g
 		// using the random initial conditions! (xold not thetas)
 		makeCovMatrix(covariance_matrix, xmodel, xk, nmodel_points, nthetas, nparams);
 		gsl_matrix_memcpy(temp_matrix, covariance_matrix);
+
+		// create the design matrix
+		makeHMatrix(h_matrix, xmodel, nmodel_points, nparams, nregression_fns);
 
 
 		#ifndef _CHOLDECOMP
@@ -70,7 +74,7 @@ void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, g
 		#endif
 		
 		// temp_val is now the likelyhood for this answer
-		temp_val = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, xk, nmodel_points, nthetas, nt);
+		temp_val = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, xk, h_matrix, nmodel_points, nthetas, nt, nregression_fns);
 
 		
 		//fprintf(stderr,"L:%f\n", temp_val);
@@ -78,58 +82,10 @@ void maxWithBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, g
 		gsl_matrix_free(covariance_matrix);
 		gsl_matrix_free(cinverse);
 		gsl_matrix_free(temp_matrix);
+		gsl_matrix_free(h_matrix);
 		gsl_permutation_free(c_LU_permutation);
 		return(-1*temp_val);
 	}
-	
-	/* don't use this if you're not using the power-exp covfn, since estimator.c:getGradient is HARD CODED
-	 * to only return the grad of the power-exp 
-	 * you are WARNED
-	 */
-	/* // a wrapper to calculate the gradient */
-	/* void gradFn( double(*fn)(gsl_vector*, int), gsl_vector* xk, gsl_vector* gradient, int nt){ */
-	/* 	// now the function estimator.c:getGradient in its wisdom only returns the gradient along one  */
-	/* 	// dimension so we have to call it nparams times, joy */
-	/* 	gsl_matrix* covariance_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points); */
-	/* 	gsl_matrix* cinverse = gsl_matrix_alloc(nmodel_points, nmodel_points); */
-	/* 	gsl_matrix* temp_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points); */
-	/* 	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(nmodel_points); */
-	/* 	int cholesky_test = 0; */
-	/* 	double cinverse_det = 0.0; */
-	/* 	double gradTemp = 0.0; */
-	/* 	int lu_signum = 0; */
-	/* 	int i; */
-		
-	/* 	// make the covariance matrix  */
-	/* 	// using the random initial conditions! (xold not thetas) */
-	/* 	makeCovMatrix(covariance_matrix, xmodel, xk, nmodel_points, nthetas, nparams); */
-	/* 	gsl_matrix_memcpy(temp_matrix, covariance_matrix); */
-	/* 	#ifndef _CHOLDECOMP */
-	/* 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum); */
-	/* 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse */
-	/* 	#else */
-	/* 	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix); */
-	/* 	if(cholesky_test == GSL_EDOM){ */
-	/* 	fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n"); */
-	/* 	exit(1); */
-	/* 	} */
-	/* 	gsl_linalg_cholesky_invert(temp_matrix); */
-	/* 	gsl_matrix_memcpy(cinverse, temp_matrix); */
-	/* 	#endif */
-
-	/* 		/\* oh man how could you even begin to think this is ok if you're not using the gaussian? */
-	/* 			 fucking hell */
-	/* 		*\/ */
-	/* 		for(i = 0; i < nparams; i++){ */
-	/* 			gradTemp = getGradient(cinverse, xmodel, trainingvector, xk, i, nmodel_points,  nt, nparams); */
-	/* 			gsl_vector_set(gradient, i, gradTemp); */
-	/* 		} */
-			
-	/* 	gsl_matrix_free(covariance_matrix); */
-	/* 	gsl_matrix_free(cinverse); */
-	/* 	gsl_matrix_free(temp_matrix); */
-	/* 	gsl_permutation_free(c_LU_permutation); */
-	/* } */
 	
 	int tries  = 0;
 	double likelyHood = 0.0;
