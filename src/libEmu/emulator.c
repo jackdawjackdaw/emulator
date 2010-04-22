@@ -457,18 +457,18 @@ double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_ve
 	// result_nreg = (h(x)^T - t(x)^T A^(-1).H) 
 	// where t -> kplus_
 	//int gsl_blas_dgemm (CBLAS_TRANSPOSE_t TransA, CBLAS_TRANSPOSE_t TransB, double alpha, const gsl_matrix * A, const gsl_matrix * B, double beta, gsl_matrix * C)
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, inverse_cov_matrix, h_matrix, result_minverse_dot_h);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, inverse_cov_matrix, h_matrix, 0.0, result_minverse_dot_h);
 	// now result_nreg = t(x)^(T).result_minverse_dot_h
 	// but since we can't do vector.matrix we do
 	// result_nreg = result_minverse_dot_h^(T).t(x)
-	gsl_blas_dgemv(CblasTrans, -1.0, result_minverse_dot_h, kplus_vector, result_nreg);
+	gsl_blas_dgemv(CblasTrans, -1.0, result_minverse_dot_h, kplus_vector, 0.0, result_nreg);
 	// note that we scaled the previous matrix multiply by -1.0
 	// gsl_vector_add(a,b) := a <- a + b so
 	gsl_vector_add(result_nreg, kplus_vector);
 	
 	// result_inverse_h_minverse_h := (H^{t} .A^{-1} . H)^{-1}
 	//                              = H^{t} . result_minverse.h
-	gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, h_matrix, result_minverse_dot_h, result_inverse_h_minverse_h);
+	gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, h_matrix, result_minverse_dot_h, 0.0, result_inverse_h_minverse_h);
 	
 	// now result_inverse_h_minverse_h is symmetric and so we can consider it as triangular etc and then
 	// do linear solves etc to get the inverse and all that malarky, but since it's only nreg * nreg its 
@@ -478,7 +478,7 @@ double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_ve
 	
 	// now compute regression_cpt = result_nreg . (result_inverse_h_minverse_h)^{-1} . result_nreg
 	// result_nreg_2 = result_inverse_h_minverse_h^{-1}.result_nreg
-	gsl_blas_dgemv(CblasNoTrans, 1.0, result_inverse_h_minverse_h, result_nreg_2);
+	gsl_blas_dgemv(CblasNoTrans, 1.0, result_inverse_h_minverse_h, 0.0, result_nreg_2);
 	// regression_cpt = result_nreg. result_nreg_2
 	gsl_blas_ddot(result_nreg, result_nreg_2, &regression_cpt);
 
