@@ -217,7 +217,7 @@ void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_v
 
 	gsl_vector_set_zero(thetas);
 	gsl_vector_set(thetas, 0, theta_initial);
-	gsl_vector_set(thetas, 1, 0.1);
+	gsl_vector_set(thetas, 1, 1.0E-5);
 	gsl_vector_set(thetas, 2, theta_initial);
 	
 	for(i = 0; i < options->nemulate_points; i++){

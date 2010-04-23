@@ -145,7 +145,7 @@ int main (int argc, char ** argv){
 	//set_emulator_defaults(&the_emulator_options);
 	// use the matern cov fn
 	the_emulator_options.usematern = 0;
-	the_emulator_options.alpha = 1.9;
+	the_emulator_options.alpha = 2.0;
 	// show the default options in the lib
 	print_emulator_options(&the_emulator_options);
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -155,17 +155,19 @@ int main (int argc, char ** argv){
 	if(the_emulator_options.usematern == 1 || the_emulator_options.usematern_three == 1 || the_emulator_options.usematern_five == 1){
 		options.nthetas = 4;
 	} else {
-		options.nthetas = 3;
+		options.nthetas = options.nparams + 2;
 	}
-	
+
 	xmodel_input = gsl_matrix_alloc(options.nmodel_points, options.nparams);
 	training_vector = gsl_vector_alloc(options.nmodel_points);
 	thetas = gsl_vector_alloc(options.nthetas);
 	
 	// proc the input_data
+	// there's a bug, this can't handle empty lines at the end of the input!
 	for(i = 0; i < options.nmodel_points; i++){
-		split_string = strtok(input_data[i], "\t ");
+		split_string = strtok(input_data[i], "\t ");		
 		for(j=0; j < options.nparams; j++){
+			printf("%s\n", split_string);
 			// split string into tab or space tokens
 			// each time you do it split_string is pointed to the next block
 			// it will come up null when you're done

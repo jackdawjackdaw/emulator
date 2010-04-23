@@ -10,8 +10,8 @@ debug = '-O -c -O0 -g -pg'
 fortran = '-O2 -pg -Wall'
 
 
-env_prod = Environment(CCFLAGS = cflags )
-env_shared = Environment(CCFLAGS = cflags)
+env_prod = Environment(CCFLAGS = debug )
+env_shared = Environment(CCFLAGS = debug)
 env_lbfgs = Environment(CCFLAGS = fortran, CC='gfortran')
 
 src_lbfgs = Split('routines.f')

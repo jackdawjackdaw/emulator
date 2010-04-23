@@ -34,7 +34,7 @@ int get_number_cpus(void){
 }
 
 // hack
-//#define DEBUGMODE
+#define DEBUGMODE
 
 //! threaded estimate thetas 
 /** 
@@ -100,20 +100,22 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	/* \TODO replace this this set_likelyhood_ranges ? */
 	for(i = 0; i < options->nthetas; i++){
 		gsl_matrix_set(grad_ranges, i, 0, 0.001);
-		gsl_matrix_set(grad_ranges, i, 1, 2.0);
+		gsl_matrix_set(grad_ranges, i, 1, 1);
 		gsl_vector_set(best_thetas, i, 0.0);
 	}
 
 	if(the_emulator_options.usematern ==0){
 		// hackity hack, force the nugget to be small
-		gsl_matrix_set(grad_ranges, 1, 0, 0.000001);
-		gsl_matrix_set(grad_ranges, 1, 1, 0.0001);
+		gsl_matrix_set(grad_ranges, 1, 0, 0.00001);
+		gsl_matrix_set(grad_ranges, 1, 1, 0.1);
 	} else {
 		// also force the nugget to be small for the matern
 		gsl_matrix_set(grad_ranges, 3, 0, 0.000001);
 		gsl_matrix_set(grad_ranges, 3, 1, 0.001);
 	}
 		
+	for(i = 0; i < options->nthetas;i++)
+		fprintf(stderr, "%d %g %g\n", i, gsl_matrix_get(grad_ranges, i, 0), gsl_matrix_get(grad_ranges, i, 1));
 	
 
 
