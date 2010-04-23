@@ -118,7 +118,7 @@ int main (int argc, char **argv){
 	parse_arguments(argc, argv, &options);	
 	
 	/* hand code this for now */
-	sprintf(input_file_reference, "2d-gauss-full.txt");
+	//sprintf(input_file_reference, "2d-gauss-full.txt");
 	//sprintf(input_file, "../2d-gauss-emu-sample.txt");
 	sprintf(input_file, "%s", "stdin");
 	sprintf(input_file_thetas, "thetas.txt");
@@ -129,35 +129,35 @@ int main (int argc, char **argv){
 	assert(options.nparams >0);
 
 	// hard coded, bad news here
-	options.nthetas = 4;
+	options.nthetas = 3;
 
 	// read the reference distribution for the coverage test
-	input_data = unconstrained_read(input_file_reference, &number_lines); 
-	fprintf(stderr, "reference:read in %d lines\n", number_lines);
-	assert(number_lines >0);
-	number_reference_points = number_lines;
+	/* input_data = unconstrained_read(input_file_reference, &number_lines);  */
+	/* fprintf(stderr, "reference:read in %d lines\n", number_lines); */
+	/* assert(number_lines >0); */
+	/* number_reference_points = number_lines; */
 
 	fprintf(stderr, "nthetas = %d\n", options.nthetas);
 	fprintf(stderr, "nparams = %d\n", options.nparams);
 
 	
-	reference_points = gsl_matrix_alloc(number_reference_points, options.nparams);
-	reference_values = gsl_vector_alloc(number_reference_points);
+	/* reference_points = gsl_matrix_alloc(number_reference_points, options.nparams); */
+	/* reference_values = gsl_vector_alloc(number_reference_points); */
 
-	// proc the reference data
-	for(i = 0; i < number_reference_points; i++){
-		split_string = strtok(input_data[i],"\t ");
-		for(j=0; j < options.nparams; j++){
-			assert(split_string != NULL);
-			sscanf(split_string, "%lg", &temp_value);
-			gsl_matrix_set(reference_points, i, j, temp_value);
-			split_string = strtok(NULL, "\t ");
-		}
-		assert(split_string != NULL);
-		sscanf(split_string, "%lg", &temp_value);
-		gsl_vector_set(reference_values, i, temp_value);
-	}	
-	free_char_array(input_data, number_lines);
+	/* // proc the reference data */
+	/* for(i = 0; i < number_reference_points; i++){ */
+	/* 	split_string = strtok(input_data[i],"\t "); */
+	/* 	for(j=0; j < options.nparams; j++){ */
+	/* 		assert(split_string != NULL); */
+	/* 		sscanf(split_string, "%lg", &temp_value); */
+	/* 		gsl_matrix_set(reference_points, i, j, temp_value); */
+	/* 		split_string = strtok(NULL, "\t "); */
+	/* 	} */
+	/* 	assert(split_string != NULL); */
+	/* 	sscanf(split_string, "%lg", &temp_value); */
+	/* 	gsl_vector_set(reference_values, i, temp_value); */
+	/* }	 */
+	/* free_char_array(input_data, number_lines); */
 
 
 	input_data = unconstrained_read(input_file, &number_lines);
@@ -185,8 +185,8 @@ int main (int argc, char **argv){
 	// the alpha option for the gaussian
 	//set_emulator_defaults(&the_emulator_options);
 	// use the matern cov fn
-	the_emulator_options.usematern = 1;
-	the_emulator_options.alpha = 1.9;
+	the_emulator_options.usematern = 0;
+	the_emulator_options.alpha = 2.0;
 	// show the default options in the lib
 	print_emulator_options(&the_emulator_options);
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -261,12 +261,12 @@ int main (int argc, char **argv){
 
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
-	gsl_vector_free(emulated_mean);
-	gsl_vector_free(emulated_var);
+	/* gsl_vector_free(emulated_mean); */
+	/* gsl_vector_free(emulated_var); */
 	gsl_matrix_free(xmodel_input);
-	gsl_vector_free(reference_values);
-	gsl_matrix_free(reference_points);
-	gsl_vector_free(reference_errors);
+	/* gsl_vector_free(reference_values); */
+	/* gsl_matrix_free(reference_points); */
+	/* gsl_vector_free(reference_errors); */
 	return(0);
 }
 

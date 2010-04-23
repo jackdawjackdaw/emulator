@@ -22,7 +22,7 @@ env.Program('estimator', main_src, LIBS=libs)
 #rbind_src = Split('rbind.c multi/multifit.c multi/multihelper.c useful.c')
 #env.SharedLibrary('libRbind', rbind_src, LIBS=libs, LIBPATH=['./libEmu'])
 
-coverage_src = Split('emualtor-main.c ioread.c useful.c')
+coverage_src = Split('emulator-main.c ioread.c useful.c')
 env.Program('emulator', coverage_src, LIBS=libs)
 
 likely_src = Split('likelyhoody.c ioread.c useful.c')
