@@ -277,7 +277,7 @@ void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_v
 
 			the_likelyhood = evalLikelyhood(thetas, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams, options->nregression_fns);
 			gsl_matrix_set(local_like_matrix, i, j, the_likelyhood);
-			printf("%g, %g, %g\n", gsl_vector_get(thetas, 0), gsl_vector_get(thetas,2), the_likelyhood);
+			printf("%g  %g  %g\n", gsl_vector_get(thetas, 0), gsl_vector_get(thetas,2), the_likelyhood);
 		}
 		gsl_vector_set(thetas, 2, theta_initial);
 	}

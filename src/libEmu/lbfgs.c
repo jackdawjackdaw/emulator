@@ -104,7 +104,7 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 	double dsave[29]; // don't know what this does yet
 	int iprint = 0; // turn on output
 	double factor = 1E7;
-	double gradtol = 1E-5;
+	double gradtol = 1E-10;
 
 	
 	set_zero(grad, nparams);
@@ -191,6 +191,7 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 			go_flag = 0;
 		}
 		count++;
+		//fprintf(stderr, "%s\n", task);
 		if(count > nsteps){ // also stop if we go too long
 			go_flag = 0;
 			fprintf(stderr, "stopping early in lbfgs\n");

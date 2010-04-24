@@ -573,8 +573,8 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 
 	//print_matrix(covariance_matrix, nmodel_points, nmodel_points);
 	// for checking, calculate the trace of the covariance matrix too
-	for(i = 0; i < nmodel_points; i++)
-		cmatrix_trace += gsl_matrix_get(covariance_matrix, i, i);
+	/* for(i = 0; i < nmodel_points; i++) */
+	/* 	cmatrix_trace += gsl_matrix_get(covariance_matrix, i, i); */
 	 
 	//fprintf(stderr, "cmatrix_trace = %g\n", cmatrix_trace);
 
