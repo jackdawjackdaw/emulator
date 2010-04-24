@@ -174,6 +174,9 @@ int main (int argc, char **argv){
 	//!!!! set the number of regression fns
 	// this is regression model dependant
 	// this is correct for the simple linear fit in each dimension plus a constant intercept
+	// you could change the regression function in libEmu/regression.c, there's an example 
+	// quadratic function, but its not clear that you'll get any better results
+	// watch out, this option is not synced across the other binaries, so you need to be careful
 	options.nregression_fns = options.nparams + 1;
 	//!!!! 
 
