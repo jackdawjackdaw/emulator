@@ -564,7 +564,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 		determinant_c *= gsl_matrix_get(temp_matrix, i, i);
 	determinant_c = determinant_c * determinant_c;
 
-	printf("det CHOL:%g\n", determinant_c);	
+	//printf("det CHOL:%g\n", determinant_c);	
 	gsl_linalg_cholesky_invert(temp_matrix);
 	gsl_matrix_memcpy(cinverse, temp_matrix);
 	//exit(1);
@@ -576,7 +576,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	for(i = 0; i < nmodel_points; i++)
 		cmatrix_trace += gsl_matrix_get(covariance_matrix, i, i);
 	 
-	fprintf(stderr, "cmatrix_trace = %g\n", cmatrix_trace);
+	//fprintf(stderr, "cmatrix_trace = %g\n", cmatrix_trace);
 
 	//debug vector_print(vertex, nthetas);
 	the_likelyhood  = getLogLikelyhood(cinverse, determinant_c, xmodel, trainingvector, vertex, h_matrix, nmodel_points, nthetas, nparams, nregression_fns);
