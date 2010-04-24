@@ -20,4 +20,8 @@ void makeHVector(gsl_vector *h_vector, gsl_vector *x_location, int nparams);
 void makeHMatrix(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, int nparams, int nregresion_fns);
 void estimateBeta(gsl_vector *beta_vector, gsl_matrix *h_matrix, gsl_matrix* cinverse, gsl_vector *trainingvector, int nmodel_points, int nregression_fns);
 
+void makeHVector_linear(	gsl_vector *h_vector, gsl_vector *x_location, int nparams);
+void makeHVector_quadratic( gsl_vector *h_vector, gsl_vector *x_location, int nparams);
+
+
 #endif
