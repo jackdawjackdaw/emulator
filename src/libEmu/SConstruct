@@ -10,8 +10,8 @@ debug = '-O -c -O0 -g -pg'
 fortran = '-O2 -pg -Wall'
 
 
-env_prod = Environment(CCFLAGS = debug )
-env_shared = Environment(CCFLAGS = debug)
+env_prod = Environment(CCFLAGS = debug,)
+env_shared = Environment(CCFLAGS = cflags, CC=cc)
 env_lbfgs = Environment(CCFLAGS = fortran, CC='gfortran')
 
 src_lbfgs = Split('routines.f')
@@ -21,6 +21,9 @@ src_lbfgs = Split('routines.f')
 
 # source files to make the lib
 src_files = Split('estimator.c regression.c emulator.c maximise.c maxbfgs.c bfgs.c maxlbfgs.c lbfgs.c estimate_threaded.c')
+
+# bfgs doesnt play wwell with clang because it uses nested function defs (because im lazy)
+src_files_clang = Split('estimator.c regression.c emulator.c maximise.c maxlbfgs.c lbfgs.c estimate_threaded.c')
 
 libsbfgsBIN=Split('gsl gslcblas m pthread gfortran LBFGS')
 libs=Split('gsl gslcblas m pthread')
@@ -33,6 +36,6 @@ libs=Split('gsl gslcblas m pthread')
 # do the rpath joke again
 # env_shared.Append(LINKFLAGS = Split('-z origin'))
 # env_shared.Append( RPATH = env_shared.Literal(os.path.join('\\$$ORIGIN', 'lbfgs')))
-env_shared.SharedLibrary('libEmu', src_files, LIBS=libs)
+env_shared.SharedLibrary('libEmu', src_files_clang, LIBS=libs)
 env_lbfgs.SharedLibrary('libLBFGS', src_lbfgs)
 #env_prod.Program('lbfgs-test', 'lbfgs.c', LIBS=libsbfgsBIN, CCFLAGS = debug + " -DEXECUTE")
