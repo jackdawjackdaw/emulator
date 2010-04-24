@@ -228,9 +228,9 @@ int main (int argc, char ** argv){
 
 	
 
-	//likelyhood = gsl_matrix_alloc(options.nemulate_points, options.nemulate_points);
+	likelyhood = gsl_matrix_alloc(options.nemulate_points, options.nemulate_points);
 
-	//calculate_likelyhood_gauss(xmodel_input, training_vector, likelyhood, &options);
+	calculate_likelyhood_gauss(xmodel_input, training_vector, likelyhood, &options);
 	
 	
 	/* for(i = 0; i< options.nemulate_points; i++){ */
@@ -242,6 +242,7 @@ int main (int argc, char ** argv){
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
 	gsl_matrix_free(xmodel_input);
+	gsl_matrix_free(likelyhood);
 	free_char_array(input_data, number_lines);
 	//exit(1);
 	return(0);
@@ -260,8 +261,8 @@ void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_v
 
 	theta_initial = 0.001;
 
-	theta_zero_offset = 0.01 / (double)(options->nemulate_points);
-	theta_one_offset = 0.1 / (double)(options->nemulate_points);
+	theta_zero_offset = 4.0 / (double)(options->nemulate_points);
+	theta_one_offset = 4.0 / (double)(options->nemulate_points);
 	
 
 	gsl_vector_set_zero(thetas);
@@ -272,7 +273,7 @@ void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_v
 	for(i = 0; i < options->nemulate_points; i++){
 		gsl_vector_set(thetas, 0, theta_initial+ (double)i*theta_zero_offset);		
 		for(j = 0; j < options->nemulate_points; j++){
-			gsl_vector_set(thetas,2, 0.9 + (double)j*theta_one_offset);
+			gsl_vector_set(thetas,2, theta_initial + (double)j*theta_one_offset);
 
 			the_likelyhood = evalLikelyhood(thetas, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams, options->nregression_fns);
 			gsl_matrix_set(local_like_matrix, i, j, the_likelyhood);
