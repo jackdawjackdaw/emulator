@@ -54,9 +54,12 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cmatrix,  gsl_matrix *x
 	 * estMean[i] = hvector(training[i]).betavector
 	 */
 	estimateBeta(beta_vector, h_matrix, cinverse,  trainingvector, nmodel_points, nregression_fns);
+
+
 	for(i = 0; i < nmodel_points; i++){
 		xmodel_row = gsl_matrix_row(xmodel, i);
 		makeHVector(h_vector, &xmodel_row.vector, nparams);
+		print_vector_quiet(h_vector, nregression_fns);
 		gsl_blas_ddot(beta_vector, h_vector, &estimated_mean_val);
 		gsl_vector_set(estimated_mean, i, estimated_mean_val);
 	}
@@ -65,6 +68,10 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cmatrix,  gsl_matrix *x
 	gsl_vector_memcpy(train_sub_mean, trainingvector);
 	gsl_vector_sub(train_sub_mean, estimated_mean);
 
+	//print_vector_quiet(beta_vector, nregression_fns); <- verified
+	//print_vector_quiet(trainingvector, nmodel_points); <- verified 
+	print_vector_quiet(estimated_mean, nmodel_points); 
+	/* print_vector_quiet(train_sub_mean, nmodel_points); */
 	// DEBUG 
 
 	// the  log likelyhood is a given by
