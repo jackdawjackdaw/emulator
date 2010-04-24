@@ -212,7 +212,7 @@ int main (int argc, char ** argv){
 
 	printf("the likelyhood = %g\n", the_likelyhood);
 
-	makeCovMatrix(c_matrix, xmodel_input, thetas,options.nmodel_points, options.nthetas, options.nparams);
+	makeCovMatrix(c_matrix, xmodel_input, thetas_special,options.nmodel_points, options.nthetas, options.nparams);
 	gsl_matrix_memcpy(temp_matrix, c_matrix);
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse);
