@@ -502,9 +502,8 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	gsl_matrix* h_matrix = gsl_matrix_alloc(nmodel_points, nregression_fns);
 	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(nmodel_points);
 	int lu_signum =0;
-	double determinant_c = 0.0;
+	double cinverse_det = 0.0;
 	double the_likelyhood = 0.0;
-	double cmatrix_trace = 0.0;
 	int cholesky_test = 0;
 	int i;
 	
@@ -528,58 +527,50 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
  
-#define _CHOLDECOMP
 #ifndef _CHOLDECOMP
-	fprintf(stderr, "doing LU decomp\n");
-
-	// find the determinant of the matrix
-	// do an LU decomp
-	// comparing against MM code this doesn't seem to be stable, 
-	// perhaps it's not good for matrix with a large spread of eigenvalues like this
-	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);	
-	determinant_c = gsl_linalg_LU_det(temp_matrix, &lu_signum);	
+	// do the LU decomp instead
+	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
-
-	// NO! we want the determinant of C, not the inverse!
+	
 	// now get the determinant of the inverse			
-	/* gsl_matrix_memcpy(temp_matrix, cinverse); */
-	/* gsl_linalg_LU_decomp(temp_matrix, c_nLU_permutation, &lu_signum); */
-	/* cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum); */
+	gsl_matrix_memcpy(temp_matrix, cinverse);
+	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
+	cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
 	// testing
 	//printf("LU:%g\n", cinverse_det);
 
 	
-#else
-	// do cholesky (should be twice as fast)
+#else // do a cholesky (should be twice as fast)
 	// do the decomp and then run along
+		cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
+	if(cholesky_test == GSL_EDOM){
+		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
+		exit(1);
+	}
+	gsl_linalg_cholesky_invert(temp_matrix);
+	gsl_matrix_memcpy(cinverse, temp_matrix);
+	
+	// now get the determinant of the inverse
+	// for a cholesky decomp matrix L.L^T = A the determinant of A is 
+	// the square of the product of the diagonal elements of L	
 	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
 	if(cholesky_test == GSL_EDOM){
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
 		exit(1);
 	}
-	// find the determinant and then invert 
-	// the determinant is just the trace squared
-	determinant_c = 1.0;
-	for(i = 0; i < nmodel_points; i++)
-		determinant_c *= gsl_matrix_get(temp_matrix, i, i);
-	determinant_c = determinant_c * determinant_c;
-
-	printf("det CHOL:%g\n", determinant_c);	
-	gsl_linalg_cholesky_invert(temp_matrix);
-	gsl_matrix_memcpy(cinverse, temp_matrix);
+	
+	cinverse_det = 1.0;
+	for(i = 0; i < nmodel_points; i++){
+		cinverse_det *= gsl_matrix_get(temp_matrix, i,i);
+	}
+	cinverse_det = cinverse_det * cinverse_det;
+	// testing
+	//printf("CHOL:%g\n", cinverse_det);
 	//exit(1);
  #endif
 	
-
-	//print_matrix(covariance_matrix, nmodel_points, nmodel_points);
-	// for checking, calculate the trace of the covariance matrix too
-	for(i = 0; i < nmodel_points; i++)
-		cmatrix_trace += gsl_matrix_get(covariance_matrix, i, i);
-	 
-	fprintf(stderr, "cmatrix_trace = %g\n", cmatrix_trace);
-
 	//debug vector_print(vertex, nthetas);
-	the_likelyhood  = getLogLikelyhood(cinverse, determinant_c, xmodel, trainingvector, vertex, h_matrix, nmodel_points, nthetas, nparams, nregression_fns);
+	the_likelyhood  = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, vertex, h_matrix, nmodel_points, nthetas, nparams, nregression_fns);
 
 
 	if(isnan(the_likelyhood)){
@@ -588,7 +579,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 
 		// not useful
 		//print_matrix(covariance_matrix, nmodel_points, nmodel_points);
-		fprintf(stderr, "determinant_c = %g\n", determinant_c);
+		fprintf(stderr, "cinverse_det = %g\n", cinverse_det);
 		fprintf(stderr, "the_vertex = ");
 		vector_print(vertex, nthetas);
 		fprintf(stderr, "\n");
