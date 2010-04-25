@@ -44,7 +44,7 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cinverse,  gsl_matrix *
 	double estimated_mean_val = 0.0;
 	double log_det_c = log(det_cinverse);
 
-	log_det_c = fabs(log_det_c);
+	//log_det_c = fabs(log_det_c);
 
 	/* we need to calculate the mean vector for this set of thetas 
 	 * estMean[i] = hvector(training[i]).betavector

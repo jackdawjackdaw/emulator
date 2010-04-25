@@ -142,7 +142,7 @@ int main (int argc, char ** argv){
 	// fills in a structure in libEmu which 
 	// sets gaussian or matern cov fn and 
 	// the alpha option for the gaussian
-	//set_emulator_defaults(&the_emulator_options);
+	set_emulator_defaults(&the_emulator_options);
 	// use the matern cov fn
 	the_emulator_options.usematern = 0;
 	the_emulator_options.alpha = 2.0;
@@ -156,6 +156,7 @@ int main (int argc, char ** argv){
 		options.nthetas = 4;
 	} else {
 		options.nthetas = options.nparams + 2;
+		printf("nthetas = %d\n", options.nthetas);
 	}
 
 	xmodel_input = gsl_matrix_alloc(options.nmodel_points, options.nparams);

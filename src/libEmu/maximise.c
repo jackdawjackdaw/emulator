@@ -527,7 +527,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 
-	#define _CHOLDECOMP
+#define _CHOLDECOMP
 #ifndef _CHOLDECOMP
 	// do the LU decomp instead
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
@@ -540,7 +540,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	
 #else // do a cholesky (should be twice as fast)
 	// do the decomp and then run along
-		cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
+	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
 	if(cholesky_test == GSL_EDOM){
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
 		exit(1);
@@ -555,7 +555,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	//printf("det CHOL:%g\n", determinant_c);	
 	gsl_linalg_cholesky_invert(temp_matrix);
 	gsl_matrix_memcpy(cinverse, temp_matrix);
- #endif
+#endif
 	
 	//print_matrix(covariance_matrix, nmodel_points, nmodel_points);
 	// for checking, calculate the trace of the covariance matrix too

@@ -129,7 +129,7 @@ int main (int argc, char **argv){
 	assert(options.nparams >0);
 
 	// hard coded, bad news here
-	options.nthetas = 3;
+	//options.nthetas = 3;
 
 	// read the reference distribution for the coverage test
 	/* input_data = unconstrained_read(input_file_reference, &number_lines);  */

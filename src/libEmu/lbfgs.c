@@ -85,7 +85,7 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 	// these are set by the fortran routine
 	int nmax = 1024;
 	int mmax = 17;
-	int memsize = 6; // how many corrections to store (5 in driver1 but can be up to mmax)
+	int memsize = 5; // how many corrections to store (5 in driver1 but can be up to mmax)
 	int wasize = 2*mmax*nmax+4*nmax + 12*mmax*mmax + 12*mmax; // see driver1.f
 	int *nbd = malloc(sizeof(int)*nparams);
 	int *iwa = malloc(sizeof(int)*3*nmax);
@@ -104,7 +104,7 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 	double dsave[29]; // don't know what this does yet
 	int iprint = 0; // turn on output
 	double factor = 1E7;
-	double gradtol = 1E-10;
+	double gradtol = 1E-12;
 
 	
 	set_zero(grad, nparams);
