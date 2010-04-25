@@ -502,8 +502,8 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	gsl_matrix* h_matrix = gsl_matrix_alloc(nmodel_points, nregression_fns);
 	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(nmodel_points);
 	int lu_signum =0;
-	double cinverse_det = 0.0;
 	double the_likelyhood = 0.0;
+	double determinant_c = 0.0;
 	int cholesky_test = 0;
 	int i;
 	
@@ -531,14 +531,11 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 #ifndef _CHOLDECOMP
 	// do the LU decomp instead
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
+	determinant_c = gsl_linalg_LU_decomp(temp_matrix, lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
 	
-	// now get the determinant of the inverse			
-	gsl_matrix_memcpy(temp_matrix, cinverse);
-	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
-	cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
 	// testing
-	//printf("LU:%g\n", cinverse_det);
+	//printf("LU:%g\n", determinant_c);
 
 	
 #else // do a cholesky (should be twice as fast)
@@ -577,7 +574,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 
 		// not useful
 		//print_matrix(covariance_matrix, nmodel_points, nmodel_points);
-		fprintf(stderr, "cinverse_det = %g\n", cinverse_det);
+		fprintf(stderr, "determinant_c = %g\n", determinant_c);
 		fprintf(stderr, "the_vertex = ");
 		vector_print(vertex, nthetas);
 		fprintf(stderr, "\n");

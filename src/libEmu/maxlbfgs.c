@@ -54,7 +54,7 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 	set_random_initial_value(rand, xInit, ranges, nthetas);
 	
 	while(tries < max_tries) {
-		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, ranges, xInit, xFinal, nthetas, nsteps, (void*)&eval_fn_args);
+		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, ranges, xInit, xFinal, nthetas, 1000, (void*)&eval_fn_args);
 		
 		copy_gslvec_vec(xFinal, tempVec, nthetas);
 		likelyHood = -1*evalFnLBFGS(tempVec, nthetas, (void*)&eval_fn_args);
@@ -99,8 +99,8 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	gsl_matrix* temp_matrix = gsl_matrix_alloc(params->nmodel_points, params->nmodel_points);
 
 	gsl_vector *xk = gsl_vector_alloc(nthetas);
-	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(params->nmodel_points);
-	double cinverse_det = 0.0;
+	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(params->nmodel_points);	
+	double determinant_c = 0.0;
 	double temp_val = 0.0;
 	int lu_signum = 0, i;
 	int cholesky_test = 0;
@@ -113,45 +113,40 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	makeCovMatrix(covariance_matrix, params->xmodel, xk, params->nmodel_points, nthetas, params->nparams);
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 
-
+#define _CHOLDECOMP
 #ifndef _CHOLDECOMP
+	// this is not stable it seems
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
+	determinant_c = gsl_linalg_LU_decomp(temp_matrix, lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
-		
-	// now we want to calc the logLikelyhood and see how it is
-	gsl_matrix_memcpy(temp_matrix, cinverse);
-	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
-	cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
+
 #else 
+	// do cholesky (should be twice as fast)
+	// do the decomp and then run along
 	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
 	if(cholesky_test == GSL_EDOM){
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
 		exit(1);
 	}
+	// find the determinant and then invert 
+	// the determinant is just the trace squared
+	determinant_c = 1.0;
+	for(i = 0; i < params->nmodel_points; i++)
+		determinant_c *= gsl_matrix_get(temp_matrix, i, i);
+	determinant_c = determinant_c * determinant_c;
+
+	//printf("det CHOL:%g\n", determinant_c);	
 	gsl_linalg_cholesky_invert(temp_matrix);
 	gsl_matrix_memcpy(cinverse, temp_matrix);
-	
-	// now get the determinant of the inverse
-	// for a cholesky decomp matrix L.L^T = A the determinant of A is 
-	// the square of the product of the diagonal elements of L	
-	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
-	if(cholesky_test == GSL_EDOM){
-		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
-		exit(1);
-	}
-	
-	cinverse_det = 1.0;
-	for(i = 0; i < params->nmodel_points; i++){
-		cinverse_det *= gsl_matrix_get(temp_matrix, i,i);
-	}
-	cinverse_det = cinverse_det * cinverse_det;
+
 #endif
 		
 	// temp_val is now the likelyhood for this answer
-	temp_val = getLogLikelyhood(cinverse, cinverse_det, params->xmodel, params->training_vector, xk, params->h_matrix, params->nmodel_points, nthetas, params->nparams, params->nregression_fns);
+	temp_val = getLogLikelyhood(cinverse, determinant_c, params->xmodel, params->training_vector, xk, params->h_matrix, params->nmodel_points, nthetas, params->nparams, params->nregression_fns);
 
 		
-	//fprintf(stderr,"L:%f\n", temp_val);
+	fprintf(stderr,"L:%f\n", temp_val);					
+	print_vector_quiet(xk, nthetas);
 		
 	gsl_matrix_free(covariance_matrix);
 	gsl_matrix_free(cinverse);
