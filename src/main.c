@@ -197,7 +197,8 @@ int main (int argc, char ** argv){
 	write_thetas(theta_file, thetas, &options);
 
 	// calc the new means, new variance and dump to emulator-out.txt
-	emulate_model(xmodel_input, training_vector, thetas, &options);
+	// we'll do this in the emulator code now
+	//emulate_model(xmodel_input, training_vector, thetas, &options);
 
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
