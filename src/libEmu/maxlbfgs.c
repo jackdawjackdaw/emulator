@@ -54,12 +54,12 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 	set_random_initial_value(rand, xInit, ranges, nthetas);
 	
 	while(tries < max_tries) {
-		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, ranges, xInit, xFinal, nthetas, 1000, (void*)&eval_fn_args);
+		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, ranges, xInit, xFinal, nthetas, 50, (void*)&eval_fn_args);
 		
 		copy_gslvec_vec(xFinal, tempVec, nthetas);
 		likelyHood = -1*evalFnLBFGS(tempVec, nthetas, (void*)&eval_fn_args);
 		printf("%lu:L = %g\n", pthread_self(), likelyHood);
-		if(likelyHood > bestLikelyHood){
+		if(likelyHood > bestLikelyHood && (isnan(likelyHood) == 0 && isinf(likelyHood) == 0)){
 			bestLikelyHood = likelyHood;
 			gsl_vector_memcpy(xBest, xFinal);
 

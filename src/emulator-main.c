@@ -75,10 +75,10 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	options->nthetas = theta_val;
 	options->nparams = param_val;
 
-	if(options->nthetas != options->nparams + 3){
+	if(options->nthetas != options->nparams + 2){
 		fprintf(stderr, "you have possbily selected a crazy value of nthetas...\n");
 		// for the moment force them to work
-		options->nthetas = options->nparams +3;
+		options->nthetas = options->nparams +2;
 	}
 		
 

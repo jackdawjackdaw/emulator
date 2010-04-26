@@ -4,6 +4,8 @@
 // this lives in libEmu/emulator.c
 extern emulator_opts the_emulator_options;
 
+#define SCREWUPVALUE -20000
+
 
 //#define NUMBERTHREADS 2
 
@@ -23,7 +25,7 @@ int jobnumber = 0;
 /* global spot for the best thetas to be kept in */
 gsl_vector *best_thetas;
 /* the best likelyhood we find */
-double best_likelyhood_val = -1000;
+double best_likelyhood_val = SCREWUPVALUE;
 
 int get_number_cpus(void){
 	int ncpus = 0;
@@ -85,7 +87,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	
 	// set the jobnumber back to zero otherwise running twice will kill ya
 	jobnumber = 0;
-	best_likelyhood_val = -1000;
+	best_likelyhood_val = SCREWUPVALUE;
 
 	/* regular stuff */
 	const gsl_rng_type *T;
@@ -99,8 +101,8 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	 * might want to adjust these as required etc, but whatever */
 	/* \TODO replace this this set_likelyhood_ranges ? */
 	for(i = 0; i < options->nthetas; i++){
-		gsl_matrix_set(grad_ranges, i, 0, 0.13);
-		gsl_matrix_set(grad_ranges, i, 1, 1.3);
+		gsl_matrix_set(grad_ranges, i, 0, 0.01);
+		gsl_matrix_set(grad_ranges, i, 1, 2.0);
 		gsl_vector_set(best_thetas, i, 0.0);
 	}
 

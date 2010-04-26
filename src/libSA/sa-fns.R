@@ -11,7 +11,7 @@ library("Matrix")
 rpOne <- function(x, p, nq){
   ans <- rep(0, nq)
   ans[1] <- 1
-  ans[p] <- x[p]
+  ans[p+1] <- x[p]
   ans
 }
 
@@ -31,19 +31,13 @@ rZero <- function(nq){
 tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances){
   exponentFirst <- rep(0, nmodelpts)
   exponentSec <- rep(0, nmodelpts)
-  designVecSubP <- rep(0, ndim-1)
-  jVec <- rep(0, ndim-1)
+  designVecSubP <- rep(0, (ndim-1))
+  jVec <- rep(0, (ndim-1))
   gpEmuVariancesSubP <- matrix(0, nrow=ndim-1, ncol=ndim-1) # this is bhat
   paramVariancesSubP <- matrix(0, nrow=ndim-1, ncol=ndim-1) # and this is M
 
-  ## explicit use of diagonal form here!
-  for(i in 1:ndim) {
-    if(i != p){
-      # fill in the 1-{row/column} reduced forms of the matrices
-      gpEmuVariancesSubP[i,i] <- gpEmuVariances[i,i]
-      paramVariancesSubP[i,i] <- paramVariances[i,i]
-    }
-  }
+  gpEmuVariancesSubP <- gpEmuVariances[-p, -p]
+  paramVariancesSubP <- paramVariances[-p, -p]
   
   for(i in 1:nmodelpts){
     # compared to the notes we have
@@ -58,20 +52,17 @@ tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVari
   # calling solve without another arg will default to
   # inverting the matrix a  
   invBM <- solve(gpEmuVariancesSubP + paramVariancesSubP)
-  sqrtVal <- sqrt((2*pi)^(ndes-1)/detBM)
+  sqrtVal <- sqrt((2*pi)^(ndim-1)/detBM)
 
   # now do the J vector part
   # jvec = 2* \tilde{x_i_{-p}} * \hat{B}
   for(i in 1:nmodelpts){
     # create \tilde{x_i_{-p}}
     # need to do this for each 
-    for(j in 1:ndim){
-      if(j != p){
-        designVecSubP[j] <- designMatrix[i,j]
-      }
-    }
+    designVecSubP <- designMatrix[i, -p]
     jVec <- 2*designVecSubP %*% gpEmuVariancesSubP
-    exponentSec[i] <- (-1.0/2.0)*(jVec %*% invBM %*% jVec)
+    # not sure about the transpose
+    exponentSec[i] <- (-1.0/2.0)*(jVec %*% invBM %*% t(jVec))
   }
   # put it all together
   # this will be a vector of length nmodelpts
@@ -85,7 +76,7 @@ tZero <- function(x, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVarianc
   for(i in 1:nmodelpts){
     exponentFirst[i] <- -(1.0/2.0)*(designMatrix[i,] %*% gpEmuVariances %*% designMatrix[i,])
   }
-  sqrtVal<- sqrt((2*pi )^n / (det(paramVariances + gpEmuVariances)))
+  sqrtVal<- sqrt((2*pi )^ndim / (det(paramVariances + gpEmuVariances)))
   invBM <- solve(paramVariances + gpEmuVariances)
   for(i in 1:nmodelpts){
     # not sure on the sign here
@@ -129,7 +120,7 @@ covFn <- function(z1,z2,thetas){
   amp <- thetas[1]
   nugg <- thetas[2]
   beta <- thetas[3:length(thetas)]^2
-  exponent <- rep(0, lengtrianing -th(thetas))
+  exponent <- rep(0, length(beta))
   for(i in 1:length(beta))
     exponent[i] <- (z1[i] - z2[i])^2 / beta[i]
   ## and here's the covariance

@@ -99,6 +99,8 @@ int main (int argc, char ** argv){
 	char** input_data;
 	int number_lines = 0;
 
+	FILE *fptr;
+
 	gsl_matrix *c_matrix;
 	gsl_matrix *cinverse;
 	gsl_vector *h_vector;
@@ -212,7 +214,7 @@ int main (int argc, char ** argv){
 
 	printf("the likelyhood = %g\n", the_likelyhood);
 
-	makeCovMatrix(c_matrix, xmodel_input, thetas,options.nmodel_points, options.nthetas, options.nparams);
+	makeCovMatrix(c_matrix, xmodel_input, thetas_special,options.nmodel_points, options.nthetas, options.nparams);
 	gsl_matrix_memcpy(temp_matrix, c_matrix);
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse);
@@ -232,19 +234,28 @@ int main (int argc, char ** argv){
 
 	calculate_likelyhood_gauss(xmodel_input, training_vector, likelyhood, &options);
 	
+
+	/* r likes to make contour plots of things which come
+	 * as big matrices
+	 * we can deal with this
+	 */
+	fptr = fopen("likeyhood-surf.dat", "w");
+	fprintf(fptr, "#%d\n", options.nemulate_points);
 	
-	/* for(i = 0; i< options.nemulate_points; i++){ */
-	/* 	for(j = 0; j < options.nemulate_points; j++){ */
-	/* 		printf("%d %d %g\n", i, j, gsl_matrix_get(likelyhood, i, j)); */
-	/* 	} */
-	/* } */
-						 
+	for(i = 0; i< options.nemulate_points; i++){
+		for(j = 0; j < options.nemulate_points; j++){
+			fprintf(fptr,"%g ", gsl_matrix_get(likelyhood, i, j));
+		}
+		fprintf(fptr, "\n");
+	}
+
+
+	fclose(fptr);
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
 	gsl_matrix_free(xmodel_input);
 	gsl_matrix_free(likelyhood);
 	free_char_array(input_data, number_lines);
-	//exit(1);
 	return(0);
 
 }
@@ -252,24 +263,23 @@ int main (int argc, char ** argv){
 
 // calculate the likleyhood surface for varying the parameters in the gaussian covariance,
 // C = sigma^2 * exp( - r^2 / (beta^2))
+// do a square region which runs from options (a -> b)  in both directions
 void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_matrix* likelyhood, optstruct* options){
 	int i, j;
 	double the_likelyhood, theta_zero_offset, theta_one_offset, theta_initial;
+	double side_length = fabs(options->emulate_max - options->emulate_min);
 	gsl_vector *thetas = gsl_vector_alloc(options->nthetas);
 	gsl_matrix *local_like_matrix = gsl_matrix_alloc(options->nemulate_points, options->nemulate_points);
 	
 
 	theta_initial = 0.001;
 
-	theta_zero_offset = 4.0 / (double)(options->nemulate_points);
-	theta_one_offset = 4.0 / (double)(options->nemulate_points);
+	theta_zero_offset = side_length / (double)(options->nemulate_points);
+	theta_one_offset = side_length / (double)(options->nemulate_points);
 	
-
 	gsl_vector_set_zero(thetas);
-	gsl_vector_set(thetas, 0, theta_initial);
-	gsl_vector_set(thetas, 1, 0.00383);
-	gsl_vector_set(thetas, 2, 0.9);
-	
+	gsl_vector_set(thetas, 1, 0.003);
+
 	for(i = 0; i < options->nemulate_points; i++){
 		gsl_vector_set(thetas, 0, theta_initial+ (double)i*theta_zero_offset);		
 		for(j = 0; j < options->nemulate_points; j++){
@@ -277,7 +287,7 @@ void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_v
 
 			the_likelyhood = evalLikelyhood(thetas, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams, options->nregression_fns);
 			gsl_matrix_set(local_like_matrix, i, j, the_likelyhood);
-			printf("%g  %g  %g\n", gsl_vector_get(thetas, 0), gsl_vector_get(thetas,2), the_likelyhood);
+			//printf("%g  %g  %g\n", gsl_vector_get(thetas, 0), gsl_vector_get(thetas,2), the_likelyhood);
 		}
 		gsl_vector_set(thetas, 2, theta_initial);
 	}
