@@ -97,6 +97,7 @@ tZero <- function(x, designMatrix, ndes, paramVariances, gpEmuVariances){
   
 
 ## and now some support functions
+## need these to actually evaluate the conditional expectation value etc
 makeHMatrix <- function(designMatrix, ndes, nreg){
   hMatrix <- matrix(0, ncol=nreg, nrow=ndes)
   for(i in 1:ndes)
@@ -132,4 +133,14 @@ covFn <- function(z1,z2,thetas){
     exponent[i] <- (z1[i] - z2[i])^2 / beta[i]
   ## and here's the covariance
   amp*exp(-(0.5)*sum(exponent)) + nugg
+}
+
+makeBetaVector <- function(hmatrix, invCovMatrix, training){
+  denom <- solve(t(hmatrix) %*% invCovMatrix %*% hmatrix)
+  numerator <- t(hmatrix) %*% invCovMatrix %*% training
+  denom %*% numerator
+}
+
+makeEVector <- function(beta, hmatrix, training, invCovMatrix){
+  invCovMatrix  %*% (training - hmatrix %*% beta)
 }
