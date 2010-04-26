@@ -26,7 +26,7 @@ char** unconstrained_read(char* filename, int* line_count_final){
 	int init_number_lines = 20;
 	int actual_number_lines = init_number_lines;
 	int previous_number_lines;
-	int line_width = 256; // assume that lines are not wider than this... (right?)
+	int line_width = 1024; // assume that lines are not wider than this... (right?)
 	char temp_line[line_width];
 	int line_count = 0;
 	char* is_end = 0;
