@@ -1,6 +1,6 @@
 #include "maxlbfgs.h"
 
-#define SCREWUPVALUE -100
+#define SCREWUPVALUE -20000
 
 /**
  * @file 
