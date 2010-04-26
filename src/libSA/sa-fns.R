@@ -28,16 +28,16 @@ rZero <- function(nq){
 # ndes is number of dimensions in the design, length of a design vector
 # paramVariances is the diagonal matrix of variances of our inputs (set apriori)
 # gpEmuVariances, the diagonal matrix of variances from the emulator (thetas)
-tpOne <- function(x, p, designMatrix, ndes, paramVariances, gpEmuVariances){
-  exponentFirst <- rep(0, ndes)
-  exponentSec <- rep(0, ndes)
-  designVecSubP <- rep(0, ndes-1)
-  jVec <- rep(0, ndes-1)
-  gpEmuVariancesSubP <- matrix(0, nrow=ndes-1, ncol=ndes-1) # this is bhat
-  paramVariancesSubP <- matrix(0, nrow=ndes-1, ncol=ndes-1) # and this is M
+tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances){
+  exponentFirst <- rep(0, nmodelpts)
+  exponentSec <- rep(0, nmodelpts)
+  designVecSubP <- rep(0, ndim-1)
+  jVec <- rep(0, ndim-1)
+  gpEmuVariancesSubP <- matrix(0, nrow=ndim-1, ncol=ndim-1) # this is bhat
+  paramVariancesSubP <- matrix(0, nrow=ndim-1, ncol=ndim-1) # and this is M
 
   ## explicit use of diagonal form here!
-  for(i in 1:ndes) {
+  for(i in 1:ndim) {
     if(i != p){
       # fill in the 1-{row/column} reduced forms of the matrices
       gpEmuVariancesSubP[i,i] <- gpEmuVariances[i,i]
@@ -45,13 +45,13 @@ tpOne <- function(x, p, designMatrix, ndes, paramVariances, gpEmuVariances){
     }
   }
   
-  for(i in 1:ndes){
+  for(i in 1:nmodelpts){
     # compared to the notes we have
     # designVec = \tilde{x_i}
     # gpEmuvariances = B
     # gpEmuvariances[p,p] = B_{pp}
     # x[p] = xp
-    exponentFirst[i] = -(1.0/2.0)*(desighMatrix[i,] %*% gpEmuVariances %*% designMatrix[i,]  + x[p]*gpEmuVariances[p,p]*x[p] - 2*designMatrix[i,p]*gpEmuVariances[p,p]*x[p])
+    exponentFirst[i] = -(1.0/2.0)*(designMatrix[i,] %*% gpEmuVariances %*% designMatrix[i,]  + x[p]*gpEmuVariances[p,p]*x[p] - 2*designMatrix[i,p]*gpEmuVariances[p,p]*x[p])
   }
 
   detBM <- det(gpEmuVariancesSubP + paramVariancesSubP)
@@ -62,10 +62,10 @@ tpOne <- function(x, p, designMatrix, ndes, paramVariances, gpEmuVariances){
 
   # now do the J vector part
   # jvec = 2* \tilde{x_i_{-p}} * \hat{B}
-  for(i in 1:ndes){
+  for(i in 1:nmodelpts){
     # create \tilde{x_i_{-p}}
     # need to do this for each 
-    for(j in 1:ndes){
+    for(j in 1:ndim){
       if(j != p){
         designVecSubP[j] <- designMatrix[i,j]
       }
@@ -74,19 +74,20 @@ tpOne <- function(x, p, designMatrix, ndes, paramVariances, gpEmuVariances){
     exponentSec[i] <- (-1.0/2.0)*(jVec %*% invBM %*% jVec)
   }
   # put it all together
+  # this will be a vector of length nmodelpts
   answer <- sqrtVal*exp(exponentFirst)*exp(exponentSec)
 }
 
-tZero <- function(x, designMatrix, ndes, paramVariances, gpEmuVariances){
-  jVec <- rep(0, ndes)
-  exponentFirst <- rep(0, ndes)
-  exponentSec <- rep(0, ndes)
-  for(i in 1:ndes){
+tZero <- function(x, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances){
+  jVec <- rep(0, ndim)
+  exponentFirst <- rep(0, nmodelpts)
+  exponentSec <- rep(0, nmodelpts)
+  for(i in 1:nmodelpts){
     exponentFirst[i] <- -(1.0/2.0)*(designMatrix[i,] %*% gpEmuVariances %*% designMatrix[i,])
   }
   sqrtVal<- sqrt((2*pi )^n / (det(paramVariances + gpEmuVariances)))
   invBM <- solve(paramVariances + gpEmuVariances)
-  for(i in 1:ndes){
+  for(i in 1:nmodelpts){
     # not sure on the sign here
     jVec <- 2*(designMatrix[i,] %*% gpEmuVariances)
     exponentSec[i] <- -(1.0/2.0)*(jVec %*% invBM %*% jVec)
@@ -128,7 +129,7 @@ covFn <- function(z1,z2,thetas){
   amp <- thetas[1]
   nugg <- thetas[2]
   beta <- thetas[3:length(thetas)]^2
-  exponent <- rep(0, length(thetas))
+  exponent <- rep(0, lengtrianing -th(thetas))
   for(i in 1:length(beta))
     exponent[i] <- (z1[i] - z2[i])^2 / beta[i]
   ## and here's the covariance
