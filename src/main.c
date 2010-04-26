@@ -195,6 +195,16 @@ int main (int argc, char ** argv){
 
 	estimate_thetas_threaded(xmodel_input, training_vector, thetas, &options);
 
+	fprintf(stderr, "scaled thetas:");
+	for(i = 0; i < options.nthetas; i++){
+		if(i != 1){
+			fprintf(stderr, " %g", exp(gsl_vector_get(thetas, i)));
+		} else{
+			// we've not log scaled the nugget
+			fprintf(stderr, " %g", gsl_vector_get(thetas, i));
+		}
+	}
+
 	write_thetas(theta_file, thetas, &options);
 
 	// calc the new means, new variance and dump to emulator-out.txt

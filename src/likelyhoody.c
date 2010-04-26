@@ -267,21 +267,23 @@ int main (int argc, char ** argv){
 void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_matrix* likelyhood, optstruct* options){
 	int i, j;
 	double the_likelyhood, theta_zero_offset, theta_one_offset, theta_initial;
+	double theta_initial_one = -5;
 	double side_length = fabs(options->emulate_max - options->emulate_min);
 	gsl_vector *thetas = gsl_vector_alloc(options->nthetas);
 	gsl_matrix *local_like_matrix = gsl_matrix_alloc(options->nemulate_points, options->nemulate_points);
 	
 
-	theta_initial = 0.001;
+	theta_initial = -15;
 
-	theta_zero_offset = side_length / (double)(options->nemulate_points);
-	theta_one_offset = side_length / (double)(options->nemulate_points);
+	theta_zero_offset = 20 / (double)(options->nemulate_points);
+	theta_one_offset = 20 / (double)(options->nemulate_points);
 	
 	gsl_vector_set_zero(thetas);
 	gsl_vector_set(thetas, 1, 0.003);
 
 	for(i = 0; i < options->nemulate_points; i++){
-		gsl_vector_set(thetas, 0, theta_initial+ (double)i*theta_zero_offset);		
+		//		gsl_vector_set(thetas, 0, exp(theta_initial_one + (double)i*theta_zero_offset));		
+		gsl_vector_set(thetas, 0, theta_initial_one + (double)i*theta_zero_offset);		
 		for(j = 0; j < options->nemulate_points; j++){
 			gsl_vector_set(thetas,2, theta_initial + (double)j*theta_one_offset);
 

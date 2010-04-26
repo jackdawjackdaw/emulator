@@ -127,13 +127,13 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 	double xm_temp = 0.0;
 	double xn_temp = 0.0;
 	double r_temp = 0.0;
-	double amp = gsl_vector_get(thetas, 0);
+	double amp = exp(gsl_vector_get(thetas, 0));
 	double nug = gsl_vector_get(thetas, 1);
 	
 	for(i = 0; i < nparams; i++){
 		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
 		xn_temp = gsl_vector_get(xn, i);
-		r_temp = gsl_vector_get(thetas, i+2);
+		r_temp = exp(gsl_vector_get(thetas, i+2));
 		r_temp = pow(r_temp , alpha); 
 		// gaussian term				
 		exponent += (-1.0/2.0)*pow(xm_temp-xn_temp, alpha)/(r_temp);
@@ -142,7 +142,7 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 			truecount++; 		
 		}
 	}
-	covariance = exp(exponent)*gsl_vector_get(thetas, 0);
+	covariance = exp(exponent)*amp;
 
 	/** 
 	 * the nugget is only added to the diagonal covariance terms,

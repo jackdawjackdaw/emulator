@@ -101,8 +101,8 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	 * might want to adjust these as required etc, but whatever */
 	/* \TODO replace this this set_likelyhood_ranges ? */
 	for(i = 0; i < options->nthetas; i++){
-		gsl_matrix_set(grad_ranges, i, 0, 0.01);
-		gsl_matrix_set(grad_ranges, i, 1, 2.0);
+		gsl_matrix_set(grad_ranges, i, 0, -10.0);
+		gsl_matrix_set(grad_ranges, i, 1, 5.0);
 		gsl_vector_set(best_thetas, i, 0.0);
 	}
 
