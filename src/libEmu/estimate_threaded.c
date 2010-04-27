@@ -64,15 +64,15 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	 * we only care about the *best* so it doesn't matter if we just throw 
 	 * the rest out the window... 
 	 */
-	int thread_level_tries = 5; 
+	int thread_level_tries = 20; 
 	if(nthreads > 2) {
 		thread_level_tries = thread_level_tries / nthreads;		
 	}
 	fprintf(stderr, "thread_level_tries %d\n", thread_level_tries);
 
-	#ifdef DEBUGMODE
-	thread_level_tries = 1;
-	#endif
+	/* #ifdef DEBUGMODE */
+	/* thread_level_tries = 1; */
+	/* #endif */
 
 	pthread_t *threads;
 	struct estimate_thetas_params *params;
@@ -109,7 +109,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	if(the_emulator_options.usematern ==0){
 		// hackity hack, force the nugget to be small
 		gsl_matrix_set(grad_ranges, 1, 0, 0.00001);
-		gsl_matrix_set(grad_ranges, 1, 1, 0.5);
+		gsl_matrix_set(grad_ranges, 1, 1, 0.3);
 	} else {
 		// also force the nugget to be small for the matern
 		gsl_matrix_set(grad_ranges, 3, 0, 0.000001);

@@ -171,15 +171,16 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 			//fprintf(stderr,"task is go!\n");
 			/* evaluate the eval-fn at the point xvalue */
 			fnval = fn(xvalue, nparams, args);  // this is just for testing, will be a bit more complicated... 
-			if(isnan(fnval)){			 
-				fprintf(stderr, "nan! in lbfgs, stopping\n");
-				go_flag = 0;
-				break;
-			} else if(isinf(fnval)){
-				fprintf(stderr, "inf in lbfgs, stopping\n");
-				go_flag = 0;
-				break;
-			}
+			/* this is perhaps not the best idea */
+			/* if(isnan(fnval)){			  */
+			/* 	fprintf(stderr, "nan! in lbfgs, stopping\n"); */
+			/* 	go_flag = 0; */
+			/* 	break; */
+			/* } else if(isinf(fnval)){ */
+			/* 	fprintf(stderr, "inf in lbfgs, stopping\n"); */
+			/* 	go_flag = 0; */
+			/* 	break; */
+			/* } */
 			//fprintf(stderr,"fnval = %g\n", fnval);
 			/* evaluate the gradient here */
 			gradientFn(fn, xvalue, grad, nparams, args);

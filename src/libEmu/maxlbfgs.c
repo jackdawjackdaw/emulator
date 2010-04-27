@@ -53,12 +53,14 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 	gsl_vector_set_zero(xFinal);
 	set_random_initial_value(rand, xInit, ranges, nthetas);
 	
+	printf("max_tries = %d\n", max_tries);
 	while(tries < max_tries) {
-		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, ranges, xInit, xFinal, nthetas, 50, (void*)&eval_fn_args);
+		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, ranges, xInit, xFinal, nthetas, 500, (void*)&eval_fn_args);
 		
 		copy_gslvec_vec(xFinal, tempVec, nthetas);
 		likelyHood = -1*evalFnLBFGS(tempVec, nthetas, (void*)&eval_fn_args);
 		printf("%lu:L = %g\n", pthread_self(), likelyHood);
+		printf("try = %d\n", tries);
 		if(likelyHood > bestLikelyHood && (isnan(likelyHood) == 0 && isinf(likelyHood) == 0)){
 			bestLikelyHood = likelyHood;
 			gsl_vector_memcpy(xBest, xFinal);
@@ -145,8 +147,8 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	temp_val = getLogLikelyhood(cinverse, determinant_c, params->xmodel, params->training_vector, xk, params->h_matrix, params->nmodel_points, nthetas, params->nparams, params->nregression_fns);
 
 		
-	fprintf(stderr,"L:%f\n", temp_val);					
-	print_vector_quiet(xk, nthetas);
+	/* fprintf(stderr,"L:%f\n", temp_val);					 */
+	/* print_vector_quiet(xk, nthetas); */
 		
 	gsl_matrix_free(covariance_matrix);
 	gsl_matrix_free(cinverse);
