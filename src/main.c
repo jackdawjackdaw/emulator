@@ -204,6 +204,7 @@ int main (int argc, char ** argv){
 			fprintf(stderr, " %g", gsl_vector_get(thetas, i));
 		}
 	}
+	fprintf(stderr, "\n");
 
 	write_thetas(theta_file, thetas, &options);
 

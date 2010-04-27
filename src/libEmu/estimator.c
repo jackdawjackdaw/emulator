@@ -30,7 +30,7 @@
  * @param h_matrix -> matrix of the regression vector evaluated at all the design points (xmodel)
  * @param nregression_fns the number of regression fns used (length of hvector)
  */
-double getLogLikelyhood(gsl_matrix *cinverse, double det_cinverse,  gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, gsl_matrix *h_matrix, int nmodel_points, int nthetas, int nparams, int nregression_fns){
+double getLogLikelyhood(gsl_matrix *cinverse, double det_cmatrix,  gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, gsl_matrix *h_matrix, int nmodel_points, int nthetas, int nparams, int nregression_fns){
 	int i;
 	double the_likelyhood = 0.0;
 	double vector_matrix_vector_product = 0.0;
@@ -42,7 +42,7 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cinverse,  gsl_matrix *
 	gsl_vector *estimated_mean = gsl_vector_alloc(nmodel_points);
 	gsl_vector *train_sub_mean = gsl_vector_alloc(nmodel_points);
 	double estimated_mean_val = 0.0;
-	double log_det_c = log(det_cinverse);
+	double log_det_c = log(det_cmatrix);
 
 	//log_det_c = fabs(log_det_c);
 
@@ -75,8 +75,7 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cinverse,  gsl_matrix *
 	gsl_blas_dgemv(CblasNoTrans, 1.0, cinverse, train_sub_mean, 0.0, result_holder);
 	gsl_blas_ddot(train_sub_mean, result_holder, &vector_matrix_vector_product);
 	
-	//printf("%g\n", (log_2_pi)*(nmodel_points/2.0));
-	/* printf("det_cmatrix = %g\n", det_cmatrix); */
+	/* printf("%g\n", (log_2_pi)*(nmodel_points/2.0)); */
 	/* printf("parta:(-1/2)*log_det_c = %g\n", (-0.5)*log_det_c); */
 	/* printf("partb:(training-mean).cinverse.(training-mean) = %g\n", (-0.5)*vector_matrix_vector_product); */
 	/* printf("partc:(-nmodel_points/2.0)*log_2_pi = %g\n", -(nmodel_points/2.0)*log_2_pi); */

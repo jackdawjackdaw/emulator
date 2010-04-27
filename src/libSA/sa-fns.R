@@ -11,7 +11,7 @@ library("Matrix")
 rpOne <- function(x, p, nq){
   ans <- rep(0, nq)
   ans[1] <- 1
-  ans[p+1] <- x[p]
+  ans[p+1] <- x
   ans
 }
 
@@ -45,14 +45,15 @@ tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVari
     # gpEmuvariances = B
     # gpEmuvariances[p,p] = B_{pp}
     # x[p] = xp
-    exponentFirst[i] = -(1.0/2.0)*(designMatrix[i,] %*% gpEmuVariances %*% designMatrix[i,]  + x[p]*gpEmuVariances[p,p]*x[p] - 2*designMatrix[i,p]*gpEmuVariances[p,p]*x[p])
+    exponentFirst[i] = -(1.0/2.0)*(designMatrix[i,] %*% gpEmuVariances %*% designMatrix[i,]  + x*gpEmuVariances[p,p]*x - 2*designMatrix[i,p]*gpEmuVariances[p,p]*x)
   }
 
   detBM <- det(gpEmuVariancesSubP + paramVariancesSubP)
+  detB <- det(paramVariancesSubP)
   # calling solve without another arg will default to
   # inverting the matrix a  
   invBM <- solve(gpEmuVariancesSubP + paramVariancesSubP)
-  sqrtVal <- sqrt((2*pi)^(ndim-1)/detBM)
+  sqrtVal <- sqrt(1/(detBM*detB))
 
   # now do the J vector part
   # jvec = 2* \tilde{x_i_{-p}} * \hat{B}
@@ -69,19 +70,19 @@ tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVari
   answer <- sqrtVal*exp(exponentFirst)*exp(exponentSec)
 }
 
-tZero <- function(x, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances){
+tZero <- function(designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances){
   jVec <- rep(0, ndim)
   exponentFirst <- rep(0, nmodelpts)
   exponentSec <- rep(0, nmodelpts)
   for(i in 1:nmodelpts){
     exponentFirst[i] <- -(1.0/2.0)*(designMatrix[i,] %*% gpEmuVariances %*% designMatrix[i,])
   }
-  sqrtVal<- sqrt((2*pi )^ndim / (det(paramVariances + gpEmuVariances)))
+  sqrtVal<- sqrt(1 / (det(paramVariances + gpEmuVariances)*det(gpEmuVariances)))
   invBM <- solve(paramVariances + gpEmuVariances)
   for(i in 1:nmodelpts){
     # not sure on the sign here
     jVec <- 2*(designMatrix[i,] %*% gpEmuVariances)
-    exponentSec[i] <- -(1.0/2.0)*(jVec %*% invBM %*% jVec)
+    exponentSec[i] <- -(1.0/2.0)*(jVec %*% invBM %*% t(jVec))
   }
 
   answer <- sqrtVal*exp(exponentFirst)*exp(exponentSec)

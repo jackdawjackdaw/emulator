@@ -36,7 +36,7 @@ int get_number_cpus(void){
 }
 
 // hack
-//#define DEBUGMODE
+#define DEBUGMODE
 
 //! threaded estimate thetas 
 /** 
@@ -109,7 +109,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	if(the_emulator_options.usematern ==0){
 		// hackity hack, force the nugget to be small
 		gsl_matrix_set(grad_ranges, 1, 0, 0.00001);
-		gsl_matrix_set(grad_ranges, 1, 1, 0.01);
+		gsl_matrix_set(grad_ranges, 1, 1, 0.5);
 	} else {
 		// also force the nugget to be small for the matern
 		gsl_matrix_set(grad_ranges, 3, 0, 0.000001);

@@ -174,9 +174,11 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 			if(isnan(fnval)){			 
 				fprintf(stderr, "nan! in lbfgs, stopping\n");
 				go_flag = 0;
+				break;
 			} else if(isinf(fnval)){
 				fprintf(stderr, "inf in lbfgs, stopping\n");
 				go_flag = 0;
+				break;
 			}
 			//fprintf(stderr,"fnval = %g\n", fnval);
 			/* evaluate the gradient here */

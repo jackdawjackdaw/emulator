@@ -545,6 +545,8 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
 		exit(1);
 	}
+
+
 	// find the determinant and then invert 
 	// the determinant is just the trace squared
 	determinant_c = 1.0;
@@ -552,7 +554,10 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 		determinant_c *= gsl_matrix_get(temp_matrix, i, i);
 	determinant_c = determinant_c * determinant_c;
 
-	//printf("det CHOL:%g\n", determinant_c);	
+	//print_matrix(temp_matrix, nmodel_points,nmodel_points);
+
+	printf("det CHOL:%g\n", determinant_c);	
+	printf("%g\n", pow(gsl_matrix_get(temp_matrix, 1,1), nmodel_points));
 	gsl_linalg_cholesky_invert(temp_matrix);
 	gsl_matrix_memcpy(cinverse, temp_matrix);
 #endif
