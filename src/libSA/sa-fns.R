@@ -13,6 +13,7 @@ rpOne <- function(x, p, nq){
   ans[1] <- 1
   ans[p+1] <- x
   ans
+
 }
 
 # the trivial case of no set
@@ -61,7 +62,8 @@ tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVari
     # create \tilde{x_i_{-p}}
     # need to do this for each 
     designVecSubP <- designMatrix[i, -p]
-    jVec <- 2*designVecSubP %*% gpEmuVariancesSubP
+    # jVec = \tilde{x_i_{-p}} * Beta
+    jVec <- designVecSubP %*% gpEmuVariancesSubP
     # not sure about the transpose
     exponentSec[i] <- (-1.0/2.0)*(jVec %*% invBM %*% t(jVec))
   }
@@ -81,7 +83,7 @@ tZero <- function(designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances)
   invBM <- solve(paramVariances + gpEmuVariances)
   for(i in 1:nmodelpts){
     # not sure on the sign here
-    jVec <- 2*(designMatrix[i,] %*% gpEmuVariances)
+    jVec <- (designMatrix[i,] %*% gpEmuVariances)
     exponentSec[i] <- -(1.0/2.0)*(jVec %*% invBM %*% t(jVec))
   }
 

@@ -6,6 +6,7 @@ doSA <- function(nDimensions, nModelPts, nRegresionFns, designMatrix, trainingVe
   paramVariances <- diag(nDimensions)
   gpEmuVariances <- diag(nDimensions)
   diag(gpEmuVariances) <- thetas[3:(nDimensions+2)]
+  
 
   x <- seq(-2.5, 2.5, length=inputSampleLength)
   posteriorMean <- rep(0, 100)
@@ -24,6 +25,7 @@ doSA <- function(nDimensions, nModelPts, nRegresionFns, designMatrix, trainingVe
   resultsMeans <- matrix(0, ncol=inputSampleLength, nrow=nDimensions)
   resultsEffects <- matrix(0, ncol=inputSampleLength, nrow=nDimensions)
 
+  
   for(j in 1:nDimensions){
     for(i in 1:inputSampleLength){
       r1 <- rpOne(x[i], j, nreg)
@@ -64,7 +66,23 @@ for(i in 1:nThetas){
     thetas[i] <- thetaTemp[i]
   }
 }
+
+## cheat
+## thetas[1] <- 1
+## thetas[2] <- 0.001
+## thetas[4] <- thetas[3] <- 3
+## thetas[5] <- thetas[6] <- 1
+## thetas[7] <- thetas[8] <- 0.1
+
+
 x <- seq(-2.5, 2.5, length=100)
+
+plotData <- function(designMatrix, training){
+  par(mfrow=c(2,3))
+  plot(designMatrix[,1], training, type="p")
+  for(i in 2:6)
+    plot(designMatrix[,i], training, type="p")
+}
 
 
 plotEffects <- function(x, resultsEffects, ymax=10, ymin=-10){
@@ -100,8 +118,8 @@ plotEffectsRed <- function(x, resultsEffects, ymax=10, ymin=-10){
   plot(x, resultsEffects[1,], type="l", lty=1, ylim=c(ymin,ymax))
   lines(x, resultsEffects[2,], lty=1)
   lines(x, resultsEffects[3,], lty=2, col="blue")
-  lines(x, resultsEffects[4,], lty=3, col="red")
-  lines(x, resultsEffects[5,], lty=2, col="blue")
+  lines(x, resultsEffects[4,], lty=2, col="blue")
+  lines(x, resultsEffects[5,], lty=3, col="red")
   lines(x, resultsEffects[6,], lty=3, col="red")
   
 }
