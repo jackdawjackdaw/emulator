@@ -5,6 +5,7 @@
 extern emulator_opts the_emulator_options;
 
 void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_matrix* likelyhood, optstruct* options);
+void do_sanity_check( gsl_matrix* xmodel_input, gsl_vector * training_vector, optstruct *options);
 
 //! print the short-option switches
 void print_usage(void){
@@ -93,21 +94,11 @@ int main (int argc, char ** argv){
 	gsl_matrix* likelyhood;
 	gsl_vector* training_vector;
 	gsl_vector* thetas;	
-	gsl_vector* thetas_special;
-	double the_likelyhood;
 	char input_file[128];
 	char** input_data;
 	int number_lines = 0;
 
 	FILE *fptr;
-
-	gsl_matrix *c_matrix;
-	gsl_matrix *cinverse;
-	gsl_vector *h_vector;
-	gsl_vector *beta_vector;
-	gsl_matrix *h_matrix;
-	gsl_matrix *temp_matrix;
-
 
 	parse_arguments(argc, argv, &options);	
 	
@@ -192,42 +183,8 @@ int main (int argc, char ** argv){
 	fprintf(stderr, "nthetas = %d\n", options.nthetas);
 	fprintf(stderr, "nparams = %d\n", options.nparams);
 
-	/* sanity check things  */
-	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(options.nmodel_points);
-	int lu_signum = 0;
-	c_matrix = gsl_matrix_alloc(options.nmodel_points, options.nmodel_points);
-	cinverse = gsl_matrix_alloc(options.nmodel_points, options.nmodel_points);
-	h_vector = gsl_vector_alloc(options.nregression_fns);
-	beta_vector = gsl_vector_alloc(options.nregression_fns);
-	h_matrix = gsl_matrix_alloc(options.nmodel_points, options.nregression_fns);
-	temp_matrix = gsl_matrix_alloc(options.nmodel_points, options.nmodel_points);
-
-
-	thetas_special = gsl_vector_alloc(3);
-	gsl_vector_set(thetas_special, 0, 0.007);
-	gsl_vector_set(thetas_special, 1, 0.00383);
- gsl_vector_set(thetas_special, 2, 0.929);
-	
-
-	// sanity check
-	the_likelyhood = evalLikelyhood(thetas_special, xmodel_input, training_vector, options.nmodel_points, options.nthetas, options.nparams, options.nregression_fns);
-
-	printf("the likelyhood = %g\n", the_likelyhood);
-
-	makeCovMatrix(c_matrix, xmodel_input, thetas_special,options.nmodel_points, options.nthetas, options.nparams);
-	gsl_matrix_memcpy(temp_matrix, c_matrix);
-	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
-	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse);
-
-	// regression cpts
-	makeHMatrix(h_matrix, xmodel_input, options.nmodel_points, options.nparams, options.nregression_fns);
-	estimateBeta(beta_vector, h_matrix, cinverse, training_vector, options.nmodel_points, options.nregression_fns);
-
-	fprintf(stderr, "regression cpts: ");
-	for(i = 0; i < options.nregression_fns; i++)
-		fprintf(stderr, "%g ", gsl_vector_get(beta_vector, i));
-	fprintf(stderr, "\n");
-
+	// sanity check, this is to compare against mm output
+	do_sanity_check( xmodel_input, training_vector, &options);
 	
 
 	likelyhood = gsl_matrix_alloc(options.nemulate_points, options.nemulate_points);
@@ -260,6 +217,92 @@ int main (int argc, char ** argv){
 
 }
 
+/**
+ * compare against some specific output from mm, only works if the xmodel_input and training_vector
+ * are pulled from mathematica_model.dat
+ *
+ * there's a design, to all of this
+ */
+void do_sanity_check( gsl_matrix* xmodel_input, gsl_vector * training_vector, optstruct *options){
+	gsl_vector *thetas_special;
+	gsl_vector *h_vector;
+	gsl_vector *beta_vector;
+	gsl_matrix *c_matrix;
+	gsl_matrix *cinverse;
+	gsl_matrix *h_matrix;
+	gsl_matrix *temp_matrix;
+		
+	double the_likelyhood;
+
+	/* sanity check things  */
+	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(options->nmodel_points);
+	int lu_signum = 0, i;
+	c_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	cinverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	h_vector = gsl_vector_alloc(options->nregression_fns);
+	beta_vector = gsl_vector_alloc(options->nregression_fns);
+	h_matrix = gsl_matrix_alloc(options->nmodel_points, options->nregression_fns);
+	temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+
+
+	thetas_special = gsl_vector_alloc(3);
+	gsl_vector_set(thetas_special, 0, 0.007);
+	gsl_vector_set(thetas_special, 1, 0.00383);
+	gsl_vector_set(thetas_special, 2, 0.929);
+	
+
+	// sanity check
+	the_likelyhood = evalLikelyhood(thetas_special, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams, options->nregression_fns);
+
+	printf("the likelyhood = %g\n", the_likelyhood);
+
+	makeCovMatrix(c_matrix, xmodel_input, thetas_special,options->nmodel_points, options->nthetas, options->nparams);
+	gsl_matrix_memcpy(temp_matrix, c_matrix);
+	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
+	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse);
+
+	// regression cpts
+	makeHMatrix(h_matrix, xmodel_input, options->nmodel_points, options->nparams, options->nregression_fns);
+	estimateBeta(beta_vector, h_matrix, cinverse, training_vector, options->nmodel_points, options->nregression_fns);
+
+	fprintf(stderr, "regression cpts: ");
+	for(i = 0; i < options->nregression_fns; i++)
+		fprintf(stderr, "%g ", gsl_vector_get(beta_vector, i));
+	fprintf(stderr, "\n");
+	
+	gsl_matrix_free(c_matrix);
+	gsl_matrix_free(cinverse);
+	gsl_vector_free(h_vector);
+	gsl_vector_free(beta_vector);
+	gsl_vector_free(thetas_special);
+	gsl_matrix_free(h_matrix);
+	gsl_matrix_free(temp_matrix);
+}
+
+/* void calculate_lhood_general(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_matrix* likelyhood, int varyparam1, int varyparam2, optstruct* options){ */
+/* 	int i,j; */
+/* 	double the_likelyhood, offset_one, offset_two; */
+/* 	double initial_one, initial_two; */
+/* 	gsl_vectors *thetas = gsl_vector_alloc(options->nthetas); */
+/* 	gsl_matrix *local_like_matrix = gsl_matrix_alloc(options->nemulate_points, options->nemulate_points); */
+
+/* 	if(varyparam1 != 1){ */
+/* 		theta_initial_one = -15; */
+/* 		theta_one_offset = 20 / (double)(options->nemulate_points); */
+/* 	} else { */
+/* 		theta_initial_one = 0.001; */
+/* 		theta_one_offset = 2 / (double)(options->nemulate_points); */
+/* 	} */
+/* 	if(varyparam2 != 1){ */
+/* 		theta_initial_two = -15; */
+/* 		theta_two_offset = 20 / (double)(options->nemulate_points); */
+/* 	} else { */
+/* 		theta_initial_two = 0.001; */
+/* 		theta_two_offset = 2 / (double)(options->nemulate_points); */
+/* 	} */
+	
+
+/* } */
 
 // calculate the likleyhood surface for varying the parameters in the gaussian covariance,
 // C = sigma^2 * exp( - r^2 / (beta^2))
@@ -267,31 +310,34 @@ int main (int argc, char ** argv){
 void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_matrix* likelyhood, optstruct* options){
 	int i, j;
 	double the_likelyhood, theta_zero_offset, theta_one_offset, theta_initial;
-	double theta_initial_one = -5;
-	double side_length = fabs(options->emulate_max - options->emulate_min);
+	double theta_initial_one = -15;
+	//double side_length = fabs(options->emulate_max - options->emulate_min);
 	gsl_vector *thetas = gsl_vector_alloc(options->nthetas);
 	gsl_matrix *local_like_matrix = gsl_matrix_alloc(options->nemulate_points, options->nemulate_points);
 	
 
-	theta_initial = -15;
+	// need to start down here for the log'd thetas, better shaped landscape
+	theta_initial_one = -15;
+	theta_initial = 0.001;
 
 	theta_zero_offset = 20 / (double)(options->nemulate_points);
-	theta_one_offset = 20 / (double)(options->nemulate_points);
+	theta_one_offset = 2 / (double)(options->nemulate_points);
 	
 	gsl_vector_set_zero(thetas);
 	gsl_vector_set(thetas, 1, 0.003);
 
 	for(i = 0; i < options->nemulate_points; i++){
 		//		gsl_vector_set(thetas, 0, exp(theta_initial_one + (double)i*theta_zero_offset));		
-		gsl_vector_set(thetas, 0, theta_initial_one + (double)i*theta_zero_offset);		
+		gsl_vector_set(thetas, 2, theta_initial_one + (double)i*theta_zero_offset);		
 		for(j = 0; j < options->nemulate_points; j++){
-			gsl_vector_set(thetas,2, theta_initial + (double)j*theta_one_offset);
+			// varying the nugget over a huge range
+			gsl_vector_set(thetas,1, theta_initial + (double)j*theta_one_offset);
 
 			the_likelyhood = evalLikelyhood(thetas, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams, options->nregression_fns);
 			gsl_matrix_set(local_like_matrix, i, j, the_likelyhood);
 			//printf("%g  %g  %g\n", gsl_vector_get(thetas, 0), gsl_vector_get(thetas,2), the_likelyhood);
 		}
-		gsl_vector_set(thetas, 2, theta_initial);
+		gsl_vector_set(thetas, 1, theta_initial);
 	}
 	gsl_matrix_memcpy(likelyhood, local_like_matrix);
 }

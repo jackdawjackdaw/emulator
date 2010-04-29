@@ -36,7 +36,7 @@ int get_number_cpus(void){
 }
 
 // hack
-#define DEBUGMODE
+//#define DEBUGMODE
 
 //! threaded estimate thetas 
 /** 
@@ -65,10 +65,10 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	 * the rest out the window... 
 	 */
 	int thread_level_tries = 20; 
-	if(nthreads > 2) {
-		thread_level_tries = thread_level_tries / nthreads;		
-	}
-	fprintf(stderr, "thread_level_tries %d\n", thread_level_tries);
+	/* if(nthreads > 2) { */
+	/* 	thread_level_tries = thread_level_tries / nthreads;		 */
+	/* } */
+	/* fprintf(stderr, "thread_level_tries %d\n", thread_level_tries); */
 
 	/* #ifdef DEBUGMODE */
 	/* thread_level_tries = 1; */
@@ -100,16 +100,27 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	/* set the ranges for the initial values of the NM lookup, 
 	 * might want to adjust these as required etc, but whatever */
 	/* \TODO replace this this set_likelyhood_ranges ? */
+
 	for(i = 0; i < options->nthetas; i++){
-		gsl_matrix_set(grad_ranges, i, 0, -10.0);
-		gsl_matrix_set(grad_ranges, i, 1, 5.0);
+		if(the_emulator_options.usematern == 0){
+			gsl_matrix_set(grad_ranges, i, 0, -10.0);
+			gsl_matrix_set(grad_ranges, i, 1, 5.0);
+		} else {
+			gsl_matrix_set(grad_ranges, i, 0, 0.0001);
+			gsl_matrix_set(grad_ranges, i, 1, 1.0);
+		}
+
 		gsl_vector_set(best_thetas, i, 0.0);
 	}
+
+	// fix the amp to be around 1
+	gsl_matrix_set(grad_ranges, 0, 0, 2.73);
+	gsl_matrix_set(grad_ranges, 0, 1, 3.00);
 
 	if(the_emulator_options.usematern ==0){
 		// hackity hack, force the nugget to be small
 		gsl_matrix_set(grad_ranges, 1, 0, 0.00001);
-		gsl_matrix_set(grad_ranges, 1, 1, 0.3);
+		gsl_matrix_set(grad_ranges, 1, 1, 0.003);
 	} else {
 		// also force the nugget to be small for the matern
 		gsl_matrix_set(grad_ranges, 3, 0, 0.000001);

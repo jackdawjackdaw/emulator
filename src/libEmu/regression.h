@@ -22,6 +22,6 @@ void estimateBeta(gsl_vector *beta_vector, gsl_matrix *h_matrix, gsl_matrix* cin
 
 void makeHVector_linear(	gsl_vector *h_vector, gsl_vector *x_location, int nparams);
 void makeHVector_quadratic( gsl_vector *h_vector, gsl_vector *x_location, int nparams);
-
+void makeHVector_trivial(gsl_vector *h_vector, gsl_vector *x_location, int nparams);
 
 #endif

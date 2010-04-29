@@ -134,7 +134,7 @@ int main (int argc, char ** argv){
 	//!!!! set the number of regression fns
 	// this is regression model dependant
 	// this is correct for the simple linear fit in each dimension plus a constant intercept
-	options.nregression_fns = options.nparams + 1;
+	options.nregression_fns = 1;//options.nparams + 1;
 	//!!!! 
 
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -154,6 +154,7 @@ int main (int argc, char ** argv){
 	// we only need 4, so maximisation is a little nicer
 	if(the_emulator_options.usematern == 1 || the_emulator_options.usematern_three == 1 || the_emulator_options.usematern_five == 1){
 		options.nthetas = 4;
+		sprintf(theta_file, "thetas-matern.txt");
 	} else {
 		options.nthetas = options.nparams + 2;
 		printf("nthetas = %d\n", options.nthetas);
@@ -195,7 +196,7 @@ int main (int argc, char ** argv){
 
 	estimate_thetas_threaded(xmodel_input, training_vector, thetas, &options);
 
-	fprintf(stderr, "scaled thetas:");
+	fprintf(stderr, "rescaled thetas:");
 	for(i = 0; i < options.nthetas; i++){
 		if(i != 1){
 			fprintf(stderr, " %g", exp(gsl_vector_get(thetas, i)));

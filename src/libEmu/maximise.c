@@ -556,8 +556,8 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 
 	//print_matrix(temp_matrix, nmodel_points,nmodel_points);
 
-	printf("det CHOL:%g\n", determinant_c);	
-	printf("%g\n", pow(gsl_matrix_get(temp_matrix, 1,1), nmodel_points));
+	//printf("det CHOL:%g\n", determinant_c);	
+	//printf("%g\n", pow(gsl_matrix_get(temp_matrix, 1,1), nmodel_points));
 	gsl_linalg_cholesky_invert(temp_matrix);
 	gsl_matrix_memcpy(cinverse, temp_matrix);
 #endif

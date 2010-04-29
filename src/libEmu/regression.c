@@ -10,7 +10,12 @@
  * 
  */
 void makeHVector(gsl_vector *h_vector, gsl_vector *x_location, int nparams){
-	makeHVector_linear(h_vector, x_location, nparams);
+	makeHVector_trivial(h_vector, x_location, nparams);
+}
+
+void makeHVector_trivial(gsl_vector *h_vector, gsl_vector *x_location, int nparams){
+	gsl_vector_set_zero(h_vector);
+	gsl_vector_set(h_vector, 0, 1);
 }
 
 void makeHVector_linear(	gsl_vector *h_vector, gsl_vector *x_location, int nparams){
