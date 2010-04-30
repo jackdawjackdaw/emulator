@@ -50,11 +50,10 @@ tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVari
   }
 
   detBM <- det(gpEmuVariancesSubP + paramVariancesSubP)
-  detB <- det(paramVariancesSubP)
   # calling solve without another arg will default to
   # inverting the matrix a  
   invBM <- solve(gpEmuVariancesSubP + paramVariancesSubP)
-  sqrtVal <- sqrt(1/(detBM*detB))
+  sqrtVal <- sqrt(det(paramVariancesSubP)/(detBM))
 
   # now do the J vector part
   # jvec = 2* \tilde{x_i_{-p}} * \hat{B}
@@ -79,7 +78,7 @@ tZero <- function(designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances)
   for(i in 1:nmodelpts){
     exponentFirst[i] <- -(1.0/2.0)*(designMatrix[i,] %*% gpEmuVariances %*% designMatrix[i,])
   }
-  sqrtVal<- sqrt(1 / (det(paramVariances + gpEmuVariances)*det(gpEmuVariances)))
+  sqrtVal<- sqrt(det(gpEmuVariances) / (det(paramVariances + gpEmuVariances)))
   invBM <- solve(paramVariances + gpEmuVariances)
   for(i in 1:nmodelpts){
     # not sure on the sign here

@@ -36,15 +36,15 @@ doSA <- function(nDimensions, nModelPts, nRegresionFns, designMatrix, trainingVe
     resultsMeans[j,] <- posteriorMean
     resultsEffects[j,] <- effect
   }
-  #resultsMeans
-  resultsEffects
+  resultsMeans
+  #resultsEffects
 }
 
   
 
 
 ## setup the constants for our particular run
-nDimensions <- 6
+nDimensions <- 15
 nModelPts <- 250
 nreg <- nDimensions + 1
 nThetas <- nDimensions + 2
@@ -52,12 +52,12 @@ nThetas <- nDimensions + 2
 
 # now create arrays etc
 thetas <- rep(0, nThetas)
-designMatrix <- as.matrix(read.table('6d-oak-ohagan-data-sample.txt')[,1:(nDimensions)])
-training <- read.table('6d-oak-ohagan-data-sample.txt')[,(nDimensions+1)]
+designMatrix <- as.matrix(read.table('15d-oak-ohagan-data-sample.txt')[,1:(nDimensions)])
+training <- read.table('15d-oak-ohagan-data-sample.txt')[,(nDimensions+1)]
 # the parameters are taken to be all N(0,1) 
 paramVariances <- diag(nDimensions)
 # load the thetas
-thetaTemp <- t(read.table('thetas-6.txt'))
+thetaTemp <- t(read.table('thetas.txt'))
 for(i in 1:nThetas){
   if(i != 2){
     thetas[i] <- exp(thetaTemp[i])
@@ -68,14 +68,20 @@ for(i in 1:nThetas){
 }
 
 ## cheat
-## thetas[1] <- 1
+## thetas[1] <- 1plotMeans(x, 
 ## thetas[2] <- 0.001
-## thetas[4] <- thetas[3] <- 3
-## thetas[5] <- thetas[6] <- 1
-## thetas[7] <- thetas[8] <- 0.1
+## thetas[3] <- thetas[4] <- thetas[5] <- thetas[6] <- thetas[7] <- 100
+## thetas[8] <- thetas[9] <- thetas[10] <- thetas[11] <- thetas[12] <- 1
+## thetas[13] <- thetas[14] <- thetas[15] <- thetas[16] <- thetas[17] <- 0.1
 
 
 x <- seq(-2.5, 2.5, length=100)
+
+means <- doSA(nDimensions, nModelPts, nreg, designMatrix, training, thetas)
+
+par(mfrow=c(1,2))
+plotMeans(x, means)
+source("analytic-sa.R")
 
 plotData <- function(designMatrix, training){
   par(mfrow=c(2,3))
@@ -95,7 +101,7 @@ plotEffects <- function(x, resultsEffects, ymax=10, ymin=-10){
     lines(x, resultsEffects[i,], lty=3, col="red")
 }
 
-plotMeans <- function(x, resultsMeans, ymax=10, ymin=-10){
+plotMeans <- function(x, resultsMeans, ymax=10, ymin=-5){
   plot(x, resultsMeans[1,], type="l", lty=1, ylim=c(ymin,ymax))
   for(i in 2:5)
     lines(x, resultsMeans[i,], lty=1)
