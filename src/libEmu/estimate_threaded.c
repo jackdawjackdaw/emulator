@@ -4,6 +4,8 @@
 // this lives in libEmu/emulator.c
 extern emulator_opts the_emulator_options;
 
+#define SCREWUPVALUE -20000
+
 
 //#define NUMBERTHREADS 2
 
@@ -23,7 +25,7 @@ int jobnumber = 0;
 /* global spot for the best thetas to be kept in */
 gsl_vector *best_thetas;
 /* the best likelyhood we find */
-double best_likelyhood_val = -1000;
+double best_likelyhood_val = SCREWUPVALUE;
 
 int get_number_cpus(void){
 	int ncpus = 0;
@@ -62,15 +64,15 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	 * we only care about the *best* so it doesn't matter if we just throw 
 	 * the rest out the window... 
 	 */
-	int thread_level_tries = 5; 
-	if(nthreads > 2) {
-		thread_level_tries = thread_level_tries / nthreads;		
-	}
-	fprintf(stderr, "thread_level_tries %d\n", thread_level_tries);
+	int thread_level_tries = 20; 
+	/* if(nthreads > 2) { */
+	/* 	thread_level_tries = thread_level_tries / nthreads;		 */
+	/* } */
+	/* fprintf(stderr, "thread_level_tries %d\n", thread_level_tries); */
 
-	#ifdef DEBUGMODE
-	thread_level_tries = 1;
-	#endif
+	/* #ifdef DEBUGMODE */
+	/* thread_level_tries = 1; */
+	/* #endif */
 
 	pthread_t *threads;
 	struct estimate_thetas_params *params;
@@ -85,7 +87,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	
 	// set the jobnumber back to zero otherwise running twice will kill ya
 	jobnumber = 0;
-	best_likelyhood_val = -1000;
+	best_likelyhood_val = SCREWUPVALUE;
 
 	/* regular stuff */
 	const gsl_rng_type *T;
@@ -98,22 +100,35 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	/* set the ranges for the initial values of the NM lookup, 
 	 * might want to adjust these as required etc, but whatever */
 	/* \TODO replace this this set_likelyhood_ranges ? */
+
 	for(i = 0; i < options->nthetas; i++){
-		gsl_matrix_set(grad_ranges, i, 0, 0.001);
-		gsl_matrix_set(grad_ranges, i, 1, 2.0);
+		if(the_emulator_options.usematern == 0){
+			gsl_matrix_set(grad_ranges, i, 0, -10.0);
+			gsl_matrix_set(grad_ranges, i, 1, 5.0);
+		} else {
+			gsl_matrix_set(grad_ranges, i, 0, 0.0001);
+			gsl_matrix_set(grad_ranges, i, 1, 1.0);
+		}
+
 		gsl_vector_set(best_thetas, i, 0.0);
 	}
 
+	// fix the amp to be around 1
+	gsl_matrix_set(grad_ranges, 0, 0, 2.73);
+	gsl_matrix_set(grad_ranges, 0, 1, 3.00);
+
 	if(the_emulator_options.usematern ==0){
 		// hackity hack, force the nugget to be small
-		gsl_matrix_set(grad_ranges, 2, 0, 0.000001);
-		gsl_matrix_set(grad_ranges, 2, 1, 0.00001);
+		gsl_matrix_set(grad_ranges, 1, 0, 0.00001);
+		gsl_matrix_set(grad_ranges, 1, 1, 0.003);
 	} else {
 		// also force the nugget to be small for the matern
 		gsl_matrix_set(grad_ranges, 3, 0, 0.000001);
 		gsl_matrix_set(grad_ranges, 3, 1, 0.001);
 	}
 		
+	for(i = 0; i < options->nthetas;i++)
+		fprintf(stderr, "%d %g %g\n", i, gsl_matrix_get(grad_ranges, i, 0), gsl_matrix_get(grad_ranges, i, 1));
 	
 
 
@@ -131,8 +146,9 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 		params[i].training_vector = gsl_vector_alloc(options->nmodel_points);
 		params[i].nmodel_points = options->nmodel_points;
 		params[i].nthetas = options->nthetas;
-		params[i].nparams = options->nparams;
+		params[i].nparams = options->nparams;		
 		params[i].number_steps = number_steps;
+		params[i].nregression_fns = options->nregression_fns;
 		// now actually copy the stuff into the vectors / matrices
 		gsl_vector_memcpy(params[i].thetas, thetas);
 		gsl_matrix_memcpy(params[i].grad_ranges, grad_ranges);
@@ -227,17 +243,18 @@ void* estimate_thread_function(void* args){
 		
 		#ifdef NELDER
 		/* else we do the nelder mead stuff */
-		nelderMead(p->random_number, p->max_tries, p->number_steps, p->thetas, p->grad_ranges, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams);
+		nelderMead(p->random_number, p->max_tries, p->number_steps, p->thetas, p->grad_ranges, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
 		#elif BFGS
 		maxWithBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas,	\
-								p->nmodel_points, p->nthetas, p->nparams);
+								p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
 		#else 
-		maxWithLBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas, p->nmodel_points, p->nthetas, p->nparams);
+		maxWithLBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
 		#endif
 
 
 		// kind of sneakily calling into the maximise.c api (aah well...)
-		my_theta_val = evalLikelyhood(p->thetas, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams);
+		// won't work without some more fiddling
+		my_theta_val = evalLikelyhood(p->thetas, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
 
 		#ifdef USEMUTEX
 		pthread_mutex_lock(&results_mutex);

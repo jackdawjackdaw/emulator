@@ -10,7 +10,7 @@ debug = '-O -c -O0 -g -pg'
 fortran = '-O2 -pg -Wall'
 
 
-env_prod = Environment(CCFLAGS = cflags )
+env_prod = Environment(CCFLAGS = cflags)
 env_shared = Environment(CCFLAGS = cflags)
 env_lbfgs = Environment(CCFLAGS = fortran, CC='gfortran')
 
@@ -20,7 +20,7 @@ src_lbfgs = Split('routines.f')
 
 
 # source files to make the lib
-src_files = Split('estimator.c emulator.c maximise.c maxbfgs.c bfgs.c maxlbfgs.c lbfgs.c estimate_threaded.c')
+src_files = Split('estimator.c regression.c emulator.c maximise.c maxbfgs.c bfgs.c maxlbfgs.c lbfgs.c estimate_threaded.c')
 
 libsbfgsBIN=Split('gsl gslcblas m pthread gfortran LBFGS')
 libs=Split('gsl gslcblas m pthread')

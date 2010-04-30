@@ -85,7 +85,7 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 	// these are set by the fortran routine
 	int nmax = 1024;
 	int mmax = 17;
-	int memsize = 6; // how many corrections to store (5 in driver1 but can be up to mmax)
+	int memsize = 5; // how many corrections to store (5 in driver1 but can be up to mmax)
 	int wasize = 2*mmax*nmax+4*nmax + 12*mmax*mmax + 12*mmax; // see driver1.f
 	int *nbd = malloc(sizeof(int)*nparams);
 	int *iwa = malloc(sizeof(int)*3*nmax);
@@ -102,9 +102,9 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 	double *xvalue = malloc(sizeof(double)*nparams); // holds the current x value
 
 	double dsave[29]; // don't know what this does yet
-	int iprint = 0; // turn on output
+	int iprint = -1; // turn off output
 	double factor = 1E7;
-	double gradtol = 1E-5;
+	double gradtol = 1E-12;
 
 	
 	set_zero(grad, nparams);
@@ -171,6 +171,16 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 			//fprintf(stderr,"task is go!\n");
 			/* evaluate the eval-fn at the point xvalue */
 			fnval = fn(xvalue, nparams, args);  // this is just for testing, will be a bit more complicated... 
+			/* this is perhaps not the best idea */
+			/* if(isnan(fnval)){			  */
+			/* 	fprintf(stderr, "nan! in lbfgs, stopping\n"); */
+			/* 	go_flag = 0; */
+			/* 	break; */
+			/* } else if(isinf(fnval)){ */
+			/* 	fprintf(stderr, "inf in lbfgs, stopping\n"); */
+			/* 	go_flag = 0; */
+			/* 	break; */
+			/* } */
 			//fprintf(stderr,"fnval = %g\n", fnval);
 			/* evaluate the gradient here */
 			gradientFn(fn, xvalue, grad, nparams, args);
@@ -191,6 +201,7 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 			go_flag = 0;
 		}
 		count++;
+		//fprintf(stderr, "%s\n", task);
 		if(count > nsteps){ // also stop if we go too long
 			go_flag = 0;
 			fprintf(stderr, "stopping early in lbfgs\n");

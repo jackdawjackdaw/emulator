@@ -9,6 +9,7 @@
 #include "libEmu/maximise.h"
 #include "libEmu/maxbfgs.h"
 #include "libEmu/estimate_threaded.h"
+#include "libEmu/regression.h"
 #include "ioread.h"
 #include "sys/time.h"
 #include "useful.h"

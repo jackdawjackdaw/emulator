@@ -6,13 +6,14 @@
 #include "../useful.h"
 #include "maximise.h"
 
-
 // for passing to the evaluate function
 struct evalFnLBFGSArgs{
 	int nparams;
 	int nmodel_points;
+	int nregression_fns;
 	gsl_matrix* xmodel;
 	gsl_vector* training_vector;
+	gsl_matrix* h_matrix;
 } evalFnLBFGSArgs;
 
 
@@ -21,7 +22,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args);
 
 
 void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, gsl_matrix *xmodel,
-									gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nethas, int nparams);
+									gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nethas, int nparams, int nregression_fns);
 
 
 #endif

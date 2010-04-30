@@ -7,6 +7,8 @@
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
 
+#include "maxlbfgs.h"
+
 #include "../main.h"
 
 /* common data block for most options to be passed around */
@@ -32,6 +34,7 @@ struct estimate_thetas_params{
 	int nmodel_points;
 	int nthetas;
 	int nparams;
+	int nregression_fns;
 } estimate_thetas_params;
 // why do you need this ^ ident?
 

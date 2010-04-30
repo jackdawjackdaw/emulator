@@ -7,120 +7,13 @@ void print_nasty_error(char* error);
 /** 
  * @file 
  * @author Chris Coleman-Smith cec24@phy.duke.edu
- * @version 0.1
+ * @version 1.0
  * @section DESCRIPTION
  * 
  * contains the routines to attempt the maximum likleyhood estimation
+ * adapted to work with linear regression
  */
 
-//! attempts a *stupid* gradient descent (ascent) maximisation
-/**
- * does gradeint descent on the system
- * 
- * @param ranges -> a matrix (nthetas * 2) where each row is the max and min allowable range to search for hyperparams in, use this to seed the 
- * initial search etc.
- */
-void gradDesc(gsl_rng *rand, int max_tries, int nsteps, double gamma, gsl_matrix* ranges,  gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nthetas, int nparams){
-	int i,j;
-	int tries = 0;
-	double best_value = -50.0;
-	double temp_val = 0.0;
-
-	// vectors for the grad desc
-	gsl_vector *gradient_vec = gsl_vector_alloc(nthetas);
-	gsl_vector *xNew = gsl_vector_alloc(nthetas);
-	gsl_vector *xOld = gsl_vector_alloc(nthetas);
-	gsl_vector *best_vector = gsl_vector_alloc(nthetas);
-	
-	// matricies etc for the actual estimation
-	gsl_matrix *covariance_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points);
-	gsl_matrix *cinverse = gsl_matrix_alloc(nmodel_points, nmodel_points);
-	gsl_matrix *temp_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points);
-	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(nmodel_points);
-	double cinverse_det = 0.0;
-	double the_gradient = 0.0;
-	int lu_signum = 0;
-	
-	while(tries < max_tries){
-		set_random_initial_value(rand, xOld, ranges, nthetas);
-
-		for(i = 0; i < nsteps; i++){
-			
-			// make the covariance matrix 
-			// using the random initial conditions! (xold not thetas)
-			makeCovMatrix(covariance_matrix, xmodel, xOld, nmodel_points, nthetas, nparams);
-			gsl_matrix_memcpy(temp_matrix, covariance_matrix);
-			gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
-			gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
-			
-			// now get the determinant of the inverse
-			// actually don't need that here, need it when we're seeing to keep the estimate
-			//gsl_matrix_memcpy(temp_matrix, cinverse);
-			//gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
-			//cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
-
-			for(j = 0; j < nthetas; j++){ /* calc the gradient vector*/
-				the_gradient =  getGradient(cinverse, xmodel, trainingvector, xOld, j, nmodel_points, nthetas, nparams);
-				gsl_vector_set(gradient_vec, j, the_gradient);
-			}
-
-			
-			// xNew = xOld + gamma*the_gradient(xold)
-			// there's probably a neat function for this but i can't be bothered
-			for(j = 0; j < nthetas; j++){
-				temp_val = gsl_vector_get(xOld, j) + gamma*gsl_vector_get(gradient_vec, j);
-				gsl_vector_set(xNew, j, temp_val);
-			}
-			
-			if( range_check(xNew, ranges, nthetas) == 1){
-				gsl_vector_memcpy(xOld, xNew); // set the next xOld value
-			} else {
-				for(j = 0; j < nthetas; j++){
-					gsl_vector_set(xNew, j, FAILVALUE);					
-				}
-				fprintf(stderr, "gradDesc fell out of range\n");
-				break; // get out of this loop, it didn't work
-			}
-		}
-		tries++;
-		if ( vector_components_equal(xNew, FAILVALUE, nthetas) != 1){
-			// the thing didn't get set to the failval
-			// now we want to calc the logLikelyhood and see how it is
-			gsl_matrix_memcpy(temp_matrix, cinverse);
-			gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
-			cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
-			// temp_val is now the likelyhood for this answer
-			temp_val = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, xNew, nmodel_points, nthetas, nparams);
-			printf("log likelyhood = %g\n", temp_val);
-
-			if(temp_val > best_value){
-				//debug
-				best_value = temp_val;
-				printf("best: %g\n", best_value);
-				gsl_vector_memcpy(best_vector, xNew);
-			}			
-		} else {
-			fprintf(stderr, "caught a failed run, ignoring\n");
-		}
-	}
-	
-	printf("final-best = %g\n", best_value);
-
-	// now we copy the best value into thetas
-	gsl_vector_memcpy(thetas, best_vector);
-	
-	// clean up extra junk
-	gsl_vector_free(best_vector);
-	gsl_vector_free(xOld);
-	gsl_vector_free(xNew);
-	gsl_vector_free(gradient_vec);
-	
-	gsl_matrix_free(covariance_matrix);
-	gsl_matrix_free(cinverse);
-	gsl_matrix_free(temp_matrix);
-	gsl_permutation_free(c_LU_permutation);
-	
-}
 
 //! see if a given vector has it's components in the correct range
 /**
@@ -223,7 +116,7 @@ int compare_evals(const evalunit *a, const evalunit *b){
  * @param xmodel -> the model parameters, used in evaluating the likelyhood
  * @param trainingvector -> the model's output, used in evaluating the likleyhood
  */
-void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer,  gsl_matrix* ranges, gsl_matrix* xmodel, gsl_vector *trainingvector, int nmodel_points, int nthetas, int nparams){
+void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer,  gsl_matrix* ranges, gsl_matrix* xmodel, gsl_vector *trainingvector, int nmodel_points, int nthetas, int nparams, int nregression_fns){
 	
 	assert(max_tries > 0);
 	assert(nsteps >0);
@@ -288,7 +181,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 			// fill the evalList
 			for(i = 0; i < nverticies; i++){
 				vertex = gsl_matrix_row(verticies, i);
-				the_likelyhood = evalLikelyhood(&vertex.vector, xmodel, trainingvector, nmodel_points, nthetas, nparams);
+				the_likelyhood = evalLikelyhood(&vertex.vector, xmodel, trainingvector, nmodel_points, nthetas, nparams, nregression_fns);
 				//printf("%g\n", the_likelyhood);				
 				evalList[i].index = i;
 				evalList[i].value = the_likelyhood;
@@ -356,7 +249,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 
 
 			// now we have to evaluate the likelyhood of xreflected
-			evalReflected = evalLikelyhood(xreflected, xmodel, trainingvector, nmodel_points, nthetas, nparams);
+			evalReflected = evalLikelyhood(xreflected, xmodel, trainingvector, nmodel_points, nthetas, nparams, nregression_fns);
 			//printf("evalReflected:%g\n", evalReflected);
 
 			if(isnan(evalReflected)){
@@ -387,7 +280,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 				//printf("xextended:\t");
 				//vector_print(xextended, nthetas);
 
-				evalExtended = evalLikelyhood(xextended, xmodel, trainingvector, nmodel_points, nthetas, nparams);
+				evalExtended = evalLikelyhood(xextended, xmodel, trainingvector, nmodel_points, nthetas, nparams, nregression_fns);
 
 				if(isnan(evalExtended)){
 					fprintf(stderr, "evalExtended -> NAN!\n");
@@ -419,7 +312,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 				
 				vector_rectify(xcontracted, nthetas);
 
-				evalContracted = evalLikelyhood(xcontracted, xmodel, trainingvector, nmodel_points, nthetas, nparams);
+				evalContracted = evalLikelyhood(xcontracted, xmodel, trainingvector, nmodel_points, nthetas, nparams, nregression_fns);
 				//printf("evalContracted %g\n", evalContracted);
 				//printf("xcontracted:\t");
 				//vector_print(xcontracted, nthetas);
@@ -469,7 +362,7 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 		// now it's done, calc the com one more time and then run with it
 		if(nanflag == 0 && brokenflag == 0){
 			calc_com(verticies, com, nverticies, nthetas);
-			answer_likelyhood = evalLikelyhood(com, xmodel, trainingvector, nmodel_points, nthetas, nparams);
+			answer_likelyhood = evalLikelyhood(com, xmodel, trainingvector, nmodel_points, nthetas, nparams, nregression_fns);
 			if(answer_likelyhood > best_value){
 				best_value = answer_likelyhood;
 				fprintf(stderr,"best_value = %g\n", answer_likelyhood);
@@ -597,21 +490,27 @@ void vector_rectify(gsl_vector *x, int n){
 /**
  * returns the loglikelyhood for a given vertex
  * each time you do this you have to invert the matrix, so this method becomes expensive in high nthetas
- * i *think* this is the bottleneck but i don't know yet
+ * 
+ * april '10, have updated this to include linear regression model
  * 
  */
-double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *trainingvector, int nmodel_points, int nthetas, int nparams){
+double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *trainingvector, int nmodel_points, int nthetas, int nparams, int nregression_fns){
 	// evaluate the likelyhood at a given point
 	gsl_matrix* covariance_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points);
 	gsl_matrix* cinverse = gsl_matrix_alloc(nmodel_points, nmodel_points);
 	gsl_matrix* temp_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points);
+	gsl_matrix* h_matrix = gsl_matrix_alloc(nmodel_points, nregression_fns);
 	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(nmodel_points);
 	int lu_signum =0;
-	double cinverse_det = 0.0;
 	double the_likelyhood = 0.0;
+	double determinant_c = 0.0;
 	int cholesky_test = 0;
 	int i;
 	
+
+	// we need to make the h_matrix for this set of design points (xmodel)
+	// call regression.c:makeHMatrix
+	makeHMatrix(h_matrix, xmodel, nmodel_points, nparams, nregression_fns);
 
 	// make the covariance matrix 
 	// using the random initial conditions! (xold not thetas)
@@ -627,51 +526,51 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	
 
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
- 
+
+#define _CHOLDECOMP
 #ifndef _CHOLDECOMP
 	// do the LU decomp instead
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
+	determinant_c = gsl_linalg_LU_decomp(temp_matrix, lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
 	
-	// now get the determinant of the inverse			
-	gsl_matrix_memcpy(temp_matrix, cinverse);
-	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
-	cinverse_det = gsl_linalg_LU_det(temp_matrix, lu_signum);
 	// testing
-	//printf("LU:%g\n", cinverse_det);
+	//printf("LU:%g\n", determinant_c);
 
 	
 #else // do a cholesky (should be twice as fast)
 	// do the decomp and then run along
-		cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
-	if(cholesky_test == GSL_EDOM){
-		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
-		exit(1);
-	}
-	gsl_linalg_cholesky_invert(temp_matrix);
-	gsl_matrix_memcpy(cinverse, temp_matrix);
-	
-	// now get the determinant of the inverse
-	// for a cholesky decomp matrix L.L^T = A the determinant of A is 
-	// the square of the product of the diagonal elements of L	
 	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
 	if(cholesky_test == GSL_EDOM){
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
 		exit(1);
 	}
+
+
+	// find the determinant and then invert 
+	// the determinant is just the trace squared
+	determinant_c = 1.0;
+	for(i = 0; i < nmodel_points; i++)
+		determinant_c *= gsl_matrix_get(temp_matrix, i, i);
+	determinant_c = determinant_c * determinant_c;
+
+	//print_matrix(temp_matrix, nmodel_points,nmodel_points);
+
+	//printf("det CHOL:%g\n", determinant_c);	
+	//printf("%g\n", pow(gsl_matrix_get(temp_matrix, 1,1), nmodel_points));
+	gsl_linalg_cholesky_invert(temp_matrix);
+	gsl_matrix_memcpy(cinverse, temp_matrix);
+#endif
 	
-	cinverse_det = 1.0;
-	for(i = 0; i < nmodel_points; i++){
-		cinverse_det *= gsl_matrix_get(temp_matrix, i,i);
-	}
-	cinverse_det = cinverse_det * cinverse_det;
-	// testing
-	//printf("CHOL:%g\n", cinverse_det);
-	//exit(1);
- #endif
-	
+	//print_matrix(covariance_matrix, nmodel_points, nmodel_points);
+	// for checking, calculate the trace of the covariance matrix too
+	/* for(i = 0; i < nmodel_points; i++) */
+	/* 	cmatrix_trace += gsl_matrix_get(covariance_matrix, i, i); */
+	 
+	//fprintf(stderr, "cmatrix_trace = %g\n", cmatrix_trace);
+
 	//debug vector_print(vertex, nthetas);
-	the_likelyhood  = getLogLikelyhood(cinverse, cinverse_det, xmodel, trainingvector, vertex, nmodel_points, nthetas, nparams);
+	the_likelyhood  = getLogLikelyhood(cinverse, determinant_c, xmodel, trainingvector, vertex, h_matrix, nmodel_points, nthetas, nparams, nregression_fns);
 
 
 	if(isnan(the_likelyhood)){
@@ -680,7 +579,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 
 		// not useful
 		//print_matrix(covariance_matrix, nmodel_points, nmodel_points);
-		fprintf(stderr, "cinverse_det = %g\n", cinverse_det);
+		fprintf(stderr, "determinant_c = %g\n", determinant_c);
 		fprintf(stderr, "the_vertex = ");
 		vector_print(vertex, nthetas);
 		fprintf(stderr, "\n");
@@ -698,6 +597,7 @@ double evalLikelyhood(gsl_vector *vertex, gsl_matrix *xmodel, gsl_vector *traini
 	gsl_matrix_free(covariance_matrix);
 	gsl_matrix_free(cinverse);
 	gsl_matrix_free(temp_matrix);
+	gsl_matrix_free(h_matrix);
 	gsl_permutation_free(c_LU_permutation);
 
 
