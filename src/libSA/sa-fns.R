@@ -39,7 +39,7 @@ tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVari
 
   gpEmuVariancesSubP <- gpEmuVariances[-p, -p]
   paramVariancesSubP <- paramVariances[-p, -p]
-  
+
   for(i in 1:nmodelpts){
     # compared to the notes we have
     # designVec = \tilde{x_i}
@@ -55,6 +55,7 @@ tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVari
   invBM <- solve(gpEmuVariancesSubP + paramVariancesSubP)
   sqrtVal <- sqrt(det(paramVariancesSubP)/(detBM))
 
+
   # now do the J vector part
   # jvec = 2* \tilde{x_i_{-p}} * \hat{B}
   for(i in 1:nmodelpts){
@@ -64,11 +65,12 @@ tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVari
     # jVec = \tilde{x_i_{-p}} * Beta
     jVec <- designVecSubP %*% gpEmuVariancesSubP
     # not sure about the transpose
-    exponentSec[i] <- (-1.0/2.0)*(jVec %*% invBM %*% t(jVec))
+    exponentSec[i] <- (1.0/2.0)*(jVec %*% invBM %*% t(jVec))
   }
   # put it all together
   # this will be a vector of length nmodelpts
-  answer <- sqrtVal*exp(exponentFirst)*exp(exponentSec)
+  #browser()
+  answer <- exp(exponentFirst + exponentSec)
 }
 
 tZero <- function(designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances){
@@ -83,7 +85,7 @@ tZero <- function(designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances)
   for(i in 1:nmodelpts){
     # not sure on the sign here
     jVec <- (designMatrix[i,] %*% gpEmuVariances)
-    exponentSec[i] <- -(1.0/2.0)*(jVec %*% invBM %*% t(jVec))
+    exponentSec[i] <- (1.0/2.0)*(jVec %*% invBM %*% t(jVec))
   }
 
   answer <- sqrtVal*exp(exponentFirst)*exp(exponentSec)
@@ -111,9 +113,14 @@ makeHVector <- function(xvalues, nreg){
 
 makeCovMatrix <- function(designMatrix, thetas, ndes){
   covM <- diag(ndes)
-  for(j in 1:(ndes-1)) 
-    for(i in (1+j):ndes) 
-      covM[i,j] <- covM[j,i] <- covFn(designMatrix[i,], designMatrix[j,], thetas)
+  ## for(j in 1:(ndes-1)) 
+  ##   for(i in (1+j):ndes) 
+  ##     covM[i,j] <- covM[j,i] <- covFn(designMatrix[i,], designMatrix[j,], thetas)
+  for(i in 1:ndes){
+    for(j in 1:ndes){
+      covM[i, j] <- covFn(designMatrix[i,], designMatrix[j,], thetas)
+    }
+  }
   covM
 }
   
@@ -121,12 +128,18 @@ makeCovMatrix <- function(designMatrix, thetas, ndes){
 covFn <- function(z1,z2,thetas){
   amp <- thetas[1]
   nugg <- thetas[2]
+  #nugg <- 0
   beta <- thetas[3:length(thetas)]^2
   exponent <- rep(0, length(beta))
   for(i in 1:length(beta))
     exponent[i] <- (z1[i] - z2[i])^2 / beta[i]
   ## and here's the covariance
-  amp*exp(-(0.5)*sum(exponent)) + nugg
+  ans <- amp*exp(-(0.5)*sum(exponent))
+  if( sum(abs(z1 == z2)) ==1){
+    ans + nugg
+  } else {
+    ans
+  }
 }
 
 makeBetaVector <- function(hmatrix, invCovMatrix, training){
