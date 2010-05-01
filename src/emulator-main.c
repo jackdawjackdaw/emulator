@@ -174,7 +174,7 @@ int main (int argc, char **argv){
 	//!!!! set the number of regression fns
 	// this is regression model dependant
 	// this is correct for the simple linear fit in each dimension plus a constant intercept
-	options.nregression_fns = options.nparams + 1;
+	options.nregression_fns =  1;
 	//!!!! 
 
 

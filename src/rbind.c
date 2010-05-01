@@ -1,6 +1,7 @@
 #include "libEmu/emulator.h"
 #include "libEmu/estimator.h"
 #include "libEmu/maximise.h"
+#include "libEmu/regression.h"
 #include "estimate_threaded.h"
 #include "multifit.h"
 #include "useful.h"
@@ -153,6 +154,7 @@ void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int 
 	// fill in the options
 	theOptions.nmodel_points = nmodel_points;
 	theOptions.nemu_points = nemupts;
+	theOptions.nregression_fns = nparams + 1
 	theOptions.nparams = nparams;
 	theOptions.range_min = *range_min_in;
 	theOptions.range_max = *range_max_in;

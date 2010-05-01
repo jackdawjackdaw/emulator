@@ -7,6 +7,8 @@
 
 void process_input_data(char** input_data, eopts* the_options);
 
+extern void setEmulatorOptions(int* emuSelect_in, double* alpha_in);
+
 extern void callEmulator(double* xmodel_in, int* nparams_in,  double* training_in, int *nmodelpts, int* nthetas_in,\
  double* final_emulated_x, int *nemupts_in, double* final_emulated_y, double* final_emulated_variance , double* range_min_in,\
  double* range_max_in );
@@ -26,17 +28,19 @@ int main (void){
 	double* final_emulated_variance;
 	double range_min = 0.0;
 	double range_max = 1.0;	
-	int nparams = 2;	
+	int nparams = 1;	
 	int nmodelpts;
 	int nthetas = nparams+3;
 	int nemupts= 100;
-
+	int test_cov_fn = 2;
+	double test_alpha = 1.9;
 
 	// have to set this by hand
 	the_options.nparams= nparams;
 	the_options.nthetas = nthetas;
 
-	sprintf(filename, "../../gauss.txt");
+	//sprintf(filename, "../../gauss.txt");
+	sprintf(filename, "../../model-cut.dat");
 	
 	if((fptr = fopen(filename, "r")) == NULL){
 		fprintf(stderr, "couldn't open file: %s\n", filename);
@@ -76,6 +80,9 @@ int main (void){
 		}
 	}
 
+	// we have to set the emulator options
+	setEmulatorOptions(&test_cov_fn, &test_alpha);
+
 	for(i = 0; i < nmodelpts; i++)
 		training_flat[i] = gsl_vector_get(the_options.training, i);
 
@@ -85,14 +92,6 @@ int main (void){
 	for(i = 0; i < nemupts; i++)
 		printf("%g\t%g\t%g\n", final_emulated_x[i], final_emulated_y[i], final_emulated_variance[i]);
 
-	// now call it again, why? because ooh it doesn't work! 
-	
-	callEmulator(xmodel_flat, &nparams, training_flat, &nmodelpts, &nthetas, final_emulated_x, &nemupts, final_emulated_y,\
-							 final_emulated_variance, &range_min, &range_max);
-	
-
-	for(i = 0; i < nemupts; i++)
-		printf("%g\t%g\t%g\n", final_emulated_x[i], final_emulated_y[i], final_emulated_variance[i]);
 
 
 	free(xmodel_flat);

@@ -11,7 +11,9 @@ library("Matrix")
 rpOne <- function(x, p, nq){
   ans <- rep(0, nq)
   ans[1] <- 1
-  ans[p+1] <- x
+  if(nq > 1){
+    ans[p+1] <- x
+  }
   ans
 
 }
@@ -49,12 +51,18 @@ tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVari
     exponentFirst[i] = -(1.0/2.0)*(designMatrix[i,] %*% gpEmuVariances %*% designMatrix[i,]  + x*gpEmuVariances[p,p]*x - 2*designMatrix[i,p]*gpEmuVariances[p,p]*x)
   }
 
-  detBM <- det(gpEmuVariancesSubP + paramVariancesSubP)
-  # calling solve without another arg will default to
-  # inverting the matrix a  
-  invBM <- solve(gpEmuVariancesSubP + paramVariancesSubP)
-  sqrtVal <- sqrt(det(paramVariancesSubP)/(detBM))
 
+  if(ndim > 2){
+    detBM <- det(gpEmuVariancesSubP + paramVariancesSubP)
+                                        # calling solve without another arg will default to
+                                        # inverting the matrix a  
+    invBM <- solve(gpEmuVariancesSubP + paramVariancesSubP)
+    sqrtVal <- sqrt(det(paramVariancesSubP)/(detBM))
+  } else {
+    detBM <- (gpEmuVariancesSubP + paramVariancesSubP)
+    invBM <- 1/(detBM)
+    sqrtVal <- sqrt(1/detBM)
+  }
 
   # now do the J vector part
   # jvec = 2* \tilde{x_i_{-p}} * \hat{B}
@@ -64,13 +72,13 @@ tpOne <- function(x, p, designMatrix, nmodelpts, ndim, paramVariances, gpEmuVari
     designVecSubP <- designMatrix[i, -p]
     # jVec = \tilde{x_i_{-p}} * Beta
     jVec <- designVecSubP %*% gpEmuVariancesSubP
-    # not sure about the transpose
+    # not sure about the transpose (this is ok, jvec is constructedf a little screwy but it works)
     exponentSec[i] <- (1.0/2.0)*(jVec %*% invBM %*% t(jVec))
   }
   # put it all together
   # this will be a vector of length nmodelpts
   #browser()
-  answer <- exp(exponentFirst + exponentSec)
+  answer <- sqrtVal*exp(exponentFirst + exponentSec)
 }
 
 tZero <- function(designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances){
@@ -105,8 +113,10 @@ makeHMatrix <- function(designMatrix, ndes, nreg){
 makeHVector <- function(xvalues, nreg){
   result <- rep(0, nreg)
   result[1] <- 1
-  for(i in 1:(nreg-1)){
-    result[i+1] <- xvalues[i]
+  if(nreg > 1){
+    for(i in 1:(nreg-1)){
+      result[i+1] <- xvalues[i]
+    }
   }
   result
 }

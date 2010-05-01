@@ -52,3 +52,10 @@ lines(ans$emulatedx, ans$emulatedy, lwd=2, col=color)
 
  lines(ans$emulatedx, ans$emulatedy + confidence, col=color, lty=2)
  lines(ans$emulatedx, ans$emulatedy - confidence, col=color, lty=2)
+
+legend(x="bottomright", legend=c('model', 'emulator', 'confidence intervals'),
+         col=c('black', 'red', 'red'),
+         lwd=2,
+         #pch=c(12, "+", -1, -1),
+         lty=c(1,1,2),
+         bg='white')
