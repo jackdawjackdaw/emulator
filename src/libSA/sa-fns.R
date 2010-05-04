@@ -98,7 +98,46 @@ tZero <- function(designMatrix, nmodelpts, ndim, paramVariances, gpEmuVariances)
 
   answer <- sqrtVal*exp(exponentFirst)*exp(exponentSec)
 }
+
+## u(xp, xq)
+## u is a scalar
+## nb solve is to get inverse matrices, clever clever
+upq <- function(x, xprime, p,q, ndim, paramVariances, gpEmuVariances){
+
+  gpEmuVariancesSubP <- matrix(0, nrow=ndim-1, ncol=ndim-1) # this is b_-p
+  paramVariancesSubP <- matrix(0, nrow=ndim-1, ncol=ndim-1) # and this is M
+  gpEmuVariancesSubQ <- matrix(0, nrow=ndim-1, ncol=ndim-1) # this is b_-q
+  paramVariancesSubQ <- matrix(0, nrow=ndim-1, ncol=ndim-1) # and this is M-q
+
+  kmatrixSubP <- matrix(0, nrow=ndim-1, ncol=ndim-1)
+
+
   
+  
+  gpEmuVariancesSubP <- gpEmuVariances[-p, -p]
+  paramVariancesSubP <- paramVariances[-p, -p]
+  gpEmuVariancesSubQ <- gpEmuVariances[-q, -q]
+  paramVariancesSubQ <- paramVariances[-q, -q]
+
+
+  kmatrixSubP <- gpEmuVariancesSubP %*% solve(gpEmuVariancesSubQ + paramVariancesSubQ) %*% gpEmuVariancesSubP
+  if( p != q) {
+    kpp <- gpEmuVariances[p,p]*(solve(gpEmuVariancesSubQ + paramVariancesSubQ)[p,p])*gpEmuVariances[p,p]
+  } else {
+    kpp <- 0
+  }
+
+  
+  prefactor <- sqrt(det(paramVariancesSubP)*det(paramVariancesSubQ) / (det(gpEmuVariancesSubQ + paramVariancesSubQ)*det(gpEmuVariancesSubP + paramVariancesSubP + kmatrixSubP)))
+
+  if(p != q){
+    exponent <- (-1/2)*(xprime*gpEmuVariances[q,q]*xprime + x*(gpEmuVariances[p,p] - kpp)*x)
+  } else {
+    exponent <- (-1/2)*(xprime*gpEmuVariances[q,q]*xprime - 2*xprime*gpEmuVariances[q,q]*x + x*(gpEmuVariances[p,p] - kpp)*x)
+  }
+  answer <- prefactor*exp(exponent)
+}
+
 
 ## and now some support functions
 ## need these to actually evaluate the conditional expectation value etc
