@@ -105,28 +105,28 @@ doSA <- function(nDimensions, nModelPts, nRegresionFns, designMatrix, trainingVe
 
  # now create arrays etc
 thetas <- rep(0, nThetas)
-temp <- read.table('15d-oak-ohagan-data-sample')
+temp <- read.table('15d-oak-ohagan-data-sample.txt')
 designMatrix <- as.matrix(temp[,1:(nDimensions)])
 training <- temp[,(nDimensions+1)]
  # the parameters are taken to be all N(0,1) 
 paramVariances <- diag(nDimensions)
  # load the thetas
- ## thetaTemp <- t(read.table('thetas.txt'))
- ## for(i in 1:nThetas){
- ##   if(i != 2){
- ##     thetas[i] <- exp(thetaTemp[i])
- ##   } else {
- ##     # nugget is not rescaled, annooooying
- ##     thetas[i] <- thetaTemp[i]
- ##   }
- ## }
+ thetaTemp <- t(read.table('thetas.txt'))
+ for(i in 1:nThetas){
+   if(i != 2){
+     thetas[i] <- exp(thetaTemp[i])
+   } else {
+     # nugget is not rescaled, annooooying
+     thetas[i] <- thetaTemp[i]
+   }
+ }
 
  ## cheat
-thetas[1] <- 0.25
-thetas[2] <- 0
-thetas[3] <- thetas[4] <- thetas[5] <- thetas[6] <- thetas[7] <- 1
-thetas[8] <- thetas[9] <- thetas[10] <- thetas[11] <- thetas[12] <- 1
-thetas[13] <- thetas[14] <- thetas[15] <- thetas[16] <- thetas[17] <- 1
+## thetas[1] <- 0.25
+## thetas[2] <- 0
+## thetas[3] <- thetas[4] <- thetas[5] <- thetas[6] <- thetas[7] <- 1
+## thetas[8] <- thetas[9] <- thetas[10] <- thetas[11] <- thetas[12] <- 1
+## thetas[13] <- thetas[14] <- thetas[15] <- thetas[16] <- thetas[17] <- 1
 
 
 x <- seq(-2.5, 2.5, length=100)

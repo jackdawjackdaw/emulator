@@ -10,7 +10,7 @@ temp <- read.table('trivial-model.txt')
 designMatrix <- as.matrix(temp[,1:nDimensions])
 training <- as.matrix(temp[,(nDimensions+1)])
 
-thetas <- exp(t(read.table('thetas-trivial.dat')))
+thetas <- exp(t(read.table('thetas-trivial.txt')))
 
 x <- seq(-2.5,2.5, length=nSamples)
 
