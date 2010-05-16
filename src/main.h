@@ -14,6 +14,7 @@
 #include "sys/time.h"
 #include "useful.h"
 #include "optstruct.h"
+#include "getopt.h"
 
 //#define NELDER
 
@@ -50,7 +51,7 @@
 #define NPARAMSDEFAULT 1
 #define NEMULATEDEFAULT 4096
 #define EMULATEMINDEFAULT 0.0
-#define EMULATEMAXDEFAULT 1.0
+#define EMULATEMAXDEFAULT 3.0
 
 
 

@@ -47,15 +47,15 @@ plotRealsLength <- function(){
 }  
 
 plotReals <- function(){
-  a <- makeReal(1.99, 100)
-  b <- makeReal(1.7, 100)
-  c <- makeReal(1.0, 100)
-  plot(a, col="black", ylim=range(-2.0,2.0), type="l", lwd=2)
-  lines(b, col="blue", lwd=2)
-  lines(c, col="green", lwd=2)
+  a <- makeReal(1.0, 100)
+  b <- makeReal(1.5, 100)
+  c <- makeReal(1.99, 100)
+  plot(a, col="blue", ylim=range(-2.0,2.0), type="l", lwd=2, lty=1)
+  lines(b, col="red", lwd=2, lty=1)
+  lines(c, col="black", lwd=2, lty=1)
   title(main="Realisations of a Gaussian Process")
-  legend(x=0.7, y=2, bg="white", legend=c('alpha=1.99', 'alpha=1.7', 'alpha=1.0'),
-       col=c('black', 'blue', 'green'),
+  legend(x=0.7, y=2, bg="white", legend=c('alpha=1.0', 'alpha=1.5', 'alpha=2.0'),
+       col=c('blue', 'red', 'black'),
        lwd=2)
   grid()
 
@@ -67,7 +67,7 @@ testPlotCov <- function(){
   bigpts <- 100
   model <- demoModel(m, lhs=0, rangeMin=0.0, rangeMax=1.5)
   setDefaultOps()
-  bigRes <- callEmulate(model, thetas, m, nemupts=bigpts, rangemin=0.0, rangemax=1.5)
+  #bigRes <- callEmulate(model, thetas, m, nemupts=bigpts, rangemin=0.0, rangemax=1.5)
   bigC <- makeAdjustedC(bigpts, m, thetas, model$xmodel, bigRes$emulatedx)
   
 }

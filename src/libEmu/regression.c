@@ -10,7 +10,7 @@
  * 
  */
 void makeHVector(gsl_vector *h_vector, gsl_vector *x_location, int nparams){
-	makeHVector_trivial(h_vector, x_location, nparams);
+	makeHVector_linear(h_vector, x_location, nparams);
 }
 
 void makeHVector_trivial(gsl_vector *h_vector, gsl_vector *x_location, int nparams){
@@ -50,6 +50,27 @@ void makeHVector_quadratic( gsl_vector *h_vector, gsl_vector *x_location, int np
 		temp_val = gsl_vector_get(x_location, i);
 		temp_val = temp_val * temp_val;
 		gsl_vector_set(h_vector, nparams+i+1, temp_val);
+	}
+}	
+
+void makeHVector_cubic( gsl_vector *h_vector, gsl_vector *x_location, int nparams){
+	int i;
+	int offset = nparams + 1;
+	double temp_val;
+	gsl_vector_set(h_vector, 0, 1); // the first element is always a constant
+	for(i = 0; i < nparams; i++) {
+		temp_val = gsl_vector_get(x_location, i);
+		gsl_vector_set(h_vector, i+1, temp_val);
+	}
+	for(i = 0; i < nparams; i++){
+		temp_val = gsl_vector_get(x_location, i);
+		temp_val = temp_val * temp_val;
+		gsl_vector_set(h_vector, nparams+i+1, temp_val);
+	}
+	for(i = 0; i < nparams; i++){
+		temp_val = gsl_vector_get(x_location, i);
+		temp_val = temp_val*temp_val * temp_val;
+		gsl_vector_set(h_vector, 2*nparams+i+1, temp_val);
 	}
 }	
 

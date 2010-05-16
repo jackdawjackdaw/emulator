@@ -5,6 +5,9 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
+get_filename_component(default_prefix ".." ABSOLUTE)
+set(CMAKE_INSTALL_PREFIX $(default_prefix))
+
 ADD_SUBDIRECTORY(libEmu)
 
 ADD_DEFINITIONS("-std=c99 -pg -O2 -Wextra -pedantic")
@@ -31,3 +34,6 @@ add_dependencies(emulator Emu LBFGS)
 add_executable(lhood ${lhood_SOURCES})
 target_link_libraries(lhood Emu LBFGS ${libs})
 add_dependencies(lhood Emu LBFGS)
+
+install(TARGETS emulator estimator RUNTIME DESTINATION bin LIBRARY DESTINATION LIB)
+								

@@ -142,7 +142,7 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 		r_temp = exp(gsl_vector_get(thetas, i+2));
 		r_temp = pow(r_temp , alpha); 
 		// gaussian term				
-		exponent += (-1.0/2.0)*pow(xm_temp-xn_temp, alpha)/(r_temp);
+		exponent += (-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp);
 		//DEBUGprintf("%g\n", covariance);
 		if (fabs(xm_temp - xn_temp) < 0.0000000000000001){
 			truecount++; 		

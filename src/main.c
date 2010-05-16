@@ -133,8 +133,8 @@ int main (int argc, char ** argv){
 
 	//!!!! set the number of regression fns
 	// this is regression model dependant
-	// this is correct for the simple linear fit in each dimension plus a constant intercept
-	options.nregression_fns = 1;//options.nparams + 1;
+	// this is correct for a cubic  fit in each dimension plus a constant intercept
+	options.nregression_fns = 1 + options.nparams;
 	//!!!! 
 
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -145,7 +145,7 @@ int main (int argc, char ** argv){
 	set_emulator_defaults(&the_emulator_options);
 	// use the matern cov fn
 	the_emulator_options.usematern = 0;
-	the_emulator_options.alpha = 2.0;
+	the_emulator_options.alpha = 1.8;
 	// show the default options in the lib
 	print_emulator_options(&the_emulator_options);
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -196,16 +196,19 @@ int main (int argc, char ** argv){
 
 	estimate_thetas_threaded(xmodel_input, training_vector, thetas, &options);
 
-	fprintf(stderr, "rescaled thetas:");
-	for(i = 0; i < options.nthetas; i++){
-		if(i != 1){
-			fprintf(stderr, " %g", exp(gsl_vector_get(thetas, i)));
-		} else{
-			// we've not log scaled the nugget
-			fprintf(stderr, " %g", gsl_vector_get(thetas, i));
+
+	if(the_emulator_options.usematern == 0){
+		fprintf(stderr, "rescaled thetas:");
+		for(i = 0; i < options.nthetas; i++){
+			if(i != 1){
+				fprintf(stderr, " %g", exp(gsl_vector_get(thetas, i)));
+			} else{
+				// we've not log scaled the nugget
+				fprintf(stderr, " %g", gsl_vector_get(thetas, i));
+			}
 		}
+		fprintf(stderr, "\n");
 	}
-	fprintf(stderr, "\n");
 
 	write_thetas(theta_file, thetas, &options);
 

@@ -2,6 +2,7 @@
 
 int do_coverage_test(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* reference_values, gsl_matrix* reference_points, gsl_vector* emulated_mean, gsl_vector* emulated_var, int  number_reference_points, optstruct *options);
 void emulate_model_at_point(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* point, optstruct* options, double* emulated_mean, double* emulated_var);
+
 void calculate_errors(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* reference_values, gsl_matrix* reference_points, gsl_vector* calculated_errors, gsl_vector* emulated_mean, gsl_vector* emulated_var, int number_reference_points, optstruct *options);
 
 void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, optstruct* options);
@@ -75,11 +76,11 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	options->nthetas = theta_val;
 	options->nparams = param_val;
 
-	if(options->nthetas != options->nparams + 2){
-		fprintf(stderr, "you have possbily selected a crazy value of nthetas...\n");
-		// for the moment force them to work
-		options->nthetas = options->nparams +2;
-	}
+	/* if(options->nthetas != options->nparams + 2){ */
+	/* 	fprintf(stderr, "you have possbily selected a crazy value of nthetas...\n"); */
+	/* 	// for the moment force them to work */
+	/* 	options->nthetas = options->nparams +2; */
+	/* } */
 		
 
 	options->nmodel_points = nmodel_points;
@@ -95,7 +96,7 @@ int main (int argc, char **argv){
 	optstruct options;
 	char* split_string;
 	int i,j;
-	double temp_value;
+	double temp_value, temp_mean, temp_var;
 
 	gsl_matrix* reference_points;
 	gsl_vector* reference_values;
@@ -105,6 +106,8 @@ int main (int argc, char **argv){
 	gsl_vector* training_vector;
 	gsl_vector* thetas;	
 	gsl_vector* reference_errors;
+	gsl_vector* point;
+	
 	char input_file[128];
 	char input_file_reference[128];
 	char input_file_thetas[128];
@@ -174,7 +177,7 @@ int main (int argc, char **argv){
 	//!!!! set the number of regression fns
 	// this is regression model dependant
 	// this is correct for the simple linear fit in each dimension plus a constant intercept
-	options.nregression_fns =  1;
+	options.nregression_fns =  1 + options.nparams;
 	//!!!! 
 
 
@@ -183,14 +186,18 @@ int main (int argc, char **argv){
 	// fills in a structure in libEmu which 
 	// sets gaussian or matern cov fn and 
 	// the alpha option for the gaussian
-	//set_emulator_defaults(&the_emulator_options);
+	set_emulator_defaults(&the_emulator_options);
 	// use the matern cov fn
 	the_emulator_options.usematern = 0;
-	the_emulator_options.alpha = 2.0;
+	the_emulator_options.alpha = 1.8;
 	// show the default options in the lib
 	print_emulator_options(&the_emulator_options);
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
+	if(the_emulator_options.usematern == 1){
+		sprintf(input_file_thetas, "thetas-matern.txt");
+	}
 
 
 	xmodel_input = gsl_matrix_alloc(options.nmodel_points, options.nparams);
@@ -235,29 +242,15 @@ int main (int argc, char **argv){
 	printf("\n");
 					 
 	emulate_model(xmodel_input, training_vector, thetas, &options);
-	/**
-	 * left the coverage test in here,but its really bad because it doesn't take into account
-	 * how large the actual variance is at each point. the errors test is a bit more sensible
-	 */
+	
+	point = gsl_vector_alloc(options.nparams);
+	gsl_vector_set_zero(point);
+	/* gsl_vector_set(point, 0, 1.7875); */
+	/* gsl_vector_set(point, 1, 0.9767);	 */
 
-	/* fprintf(stderr, "starting coverage test\n"); */
-	/* number_covered_points = do_coverage_test(xmodel_input, training_vector, thetas, reference_values, reference_points, number_reference_points, &options); */
-	/* fprintf(stderr, "coverage test\n"); */
-	/* printf("%d / %d\n", number_covered_points, number_reference_points); */
-	/* printf("%g\n", (double)number_covered_points / (double)number_reference_points); */
-	/* fptr = fopen("coverage-results.txt", "a"); */
-	/* fprintf(fptr, "%d\t%g\n", options.nmodel_points, (double)number_covered_points / (double)number_reference_points); */
-	/* fclose(fptr); */
-
-	/* fprintf(stderr, "calculating errors\n"); */
-	/* reference_errors = gsl_vector_alloc(number_reference_points); */
-	/* emulated_mean = gsl_vector_alloc(number_reference_points); */
-	/* emulated_var = gsl_vector_alloc(number_reference_points); */
-
-	/* calculate_errors(xmodel_input, training_vector, thetas, reference_values, reference_points, reference_errors, emulated_mean, emulated_var, number_reference_points, &options); */
-	/* fptr = fopen("cov-errors.txt", "w"); */
-	/* dump_errors(fptr, reference_values, reference_points, reference_errors, emulated_mean, emulated_var, number_reference_points, &options); */
-	/* fclose(fptr); */
+	//emulate_model_at_point(xmodel_input, training_vector, thetas, point, &options, &temp_mean, &temp_var);
+	
+	//printf("%g\t%g\t%g\t%g\n",gsl_vector_get(point,0), gsl_vector_get(point,1), temp_mean, temp_var);
 
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
@@ -370,44 +363,48 @@ void dump_errors(FILE* fptr, gsl_vector* reference_values, gsl_matrix* reference
  *
  * this doesn't work right now
  */
-/* void emulate_model_at_point(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* point, optstruct* options, double* emulated_mean, double* emulated_var){ */
-/* 	double temp_mean, temp_var; */
-/* 	double kappa = 0; // for now */
-/* 	gsl_matrix *c_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points); */
-/* 	gsl_matrix *cinverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points); */
-/* 	gsl_vector *kplus = gsl_vector_alloc(options->nmodel_points); */
+void emulate_model_at_point(gsl_matrix* xmodel, gsl_vector* training, gsl_vector* thetas, gsl_vector* point, optstruct* options, double* emulated_mean, double* emulated_var){
+	double temp_mean, temp_var;
+	double kappa = 0; // for now
+	gsl_matrix *c_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	gsl_matrix *cinverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	gsl_vector *kplus = gsl_vector_alloc(options->nmodel_points);
+	gsl_matrix *temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(options->nmodel_points);
+	int lu_signum = 0;
+	gsl_vector *h_vector = gsl_vector_alloc(options->nregression_fns);
+	gsl_vector *beta_vector = gsl_vector_alloc(options->nregression_fns);
+	gsl_matrix *h_matrix = gsl_matrix_alloc(options->nmodel_points, options->nregression_fns);
 
 
-/* 	gsl_matrix *temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points); */
-/* 	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(options->nmodel_points); */
-/* 	int lu_signum = 0; */
+	makeCovMatrix(c_matrix, xmodel, thetas, options->nmodel_points, options->nthetas, options->nparams);
+	gsl_matrix_memcpy(temp_matrix, c_matrix);
+	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
+	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse);
 
-/* 	makeCovMatrix(c_matrix, xmodel, thetas, options->nmodel_points, options->nthetas, options->nparams); */
-/* 	gsl_matrix_memcpy(temp_matrix, c_matrix); */
-/* 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum); */
-/* 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); */
+	// regression cpts
+	makeHMatrix(h_matrix, xmodel, options->nmodel_points, options->nparams, options->nregression_fns);
+	estimateBeta(beta_vector, h_matrix, cinverse, training, options->nmodel_points, options->nregression_fns);
 
-/* 	makeKVector(kplus, xmodel, point, thetas, options->nmodel_points, options->nthetas, options->nparams); */
-/* 	temp_mean = makeEmulatedMean(cinverse, training, kplus, options->nmodel_points); */
-/* 	kappa = covariance_fn(point, point, thetas, options->nthetas, options->nparams); */
-/* 	temp_var = makeEmulatedVariance(cinverse, kplus, kappa, options->nmodel_points); */
-
-
+	makeKVector(kplus, xmodel, point, thetas, options->nmodel_points, options->nthetas, options->nparams);
+	temp_mean = makeEmulatedMean(cinverse, training, kplus, h_vector, h_matrix, beta_vector, options->nmodel_points);
+	kappa = covariance_fn(point, point, thetas, options->nthetas, options->nparams);
+	temp_var = makeEmulatedVariance(cinverse, kplus, h_vector, h_matrix, kappa, options->nmodel_points, options->nregression_fns);
 
 
-/* 	// set the final values */
-/* 	*emulated_mean = temp_mean; */
-/* 	*emulated_var = temp_var; */
-
-
+	// set the final values
+	*emulated_mean = temp_mean;
+	*emulated_var = temp_var;
 	
-
-/* 	gsl_matrix_free(c_matrix); */
-/* 	gsl_matrix_free(cinverse); */
-/* 	gsl_vector_free(kplus); */
-/* 	gsl_matrix_free(temp_matrix); */
-/* 	gsl_permutation_free(c_LU_permutation); */
-/* } */
+	gsl_vector_free(h_vector);
+	gsl_vector_free(beta_vector);
+	gsl_matrix_free(h_matrix);
+	gsl_matrix_free(c_matrix);
+	gsl_matrix_free(cinverse);
+	gsl_vector_free(kplus);
+	gsl_matrix_free(temp_matrix);
+	gsl_permutation_free(c_LU_permutation);
+}
 
 /**
  * take the estimated parameters and turn them into an emulated set of model points 
@@ -449,6 +446,7 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	// regression cpts
 	makeHMatrix(h_matrix, xmodel, options->nmodel_points, options->nparams, options->nregression_fns);
 	estimateBeta(beta_vector, h_matrix, cinverse, training, options->nmodel_points, options->nregression_fns);
+
 	
 	fprintf(stderr, "regression cpts: ");
 	for(i = 0; i < options->nregression_fns; i++)

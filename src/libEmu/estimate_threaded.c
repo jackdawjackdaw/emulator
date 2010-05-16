@@ -107,7 +107,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 			gsl_matrix_set(grad_ranges, i, 1, 5.0);
 		} else {
 			gsl_matrix_set(grad_ranges, i, 0, 0.0001);
-			gsl_matrix_set(grad_ranges, i, 1, 1.0);
+			gsl_matrix_set(grad_ranges, i, 1, 10.0);
 		}
 
 		gsl_vector_set(best_thetas, i, 0.0);
@@ -124,7 +124,7 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	} else {
 		// also force the nugget to be small for the matern
 		gsl_matrix_set(grad_ranges, 3, 0, 0.000001);
-		gsl_matrix_set(grad_ranges, 3, 1, 0.001);
+		gsl_matrix_set(grad_ranges, 3, 1, 0.01);
 	}
 		
 	for(i = 0; i < options->nthetas;i++)
