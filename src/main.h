@@ -4,6 +4,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "unistd.h"
+#include "getopt.h"
 #include "libEmu/estimator.h"
 #include "libEmu/emulator.h"
 #include "libEmu/maximise.h"

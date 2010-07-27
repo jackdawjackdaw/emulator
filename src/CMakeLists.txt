@@ -14,7 +14,7 @@ set(emulator_SOURCES emulator-main ioread useful)
 set(estimator_SOURCES main ioread useful)
 #set(lhood_SOURCES likelyhoody ioread useful)
 
-link_directories(${PROJECT_BINARY_DIR}/libEmu)
+link_directories(${PROJECT_SOURCE_DIR}/src/libEmu)
 link_libraries(${LIBS} pthread)
 
 add_executable(estimator ${estimator_SOURCES})
