@@ -1,5 +1,11 @@
 #include "main.h" 
 
+/**
+ * ccs, Mon Jul 26 21:36:08 EDT 2010
+ * this file is nolonger supported
+ * 
+ */
+
 
 // this lives in libEmu/emulator.c it's important!
 extern emulator_opts the_emulator_options;

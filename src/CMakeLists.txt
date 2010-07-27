@@ -1,9 +1,7 @@
 # cmake lists
 # created by ccs: 15-may 2010
-# doesn't work well on os-x laptop
-# there's a problem with the gsl includes
-cmake_minimum_required(VERSION 2.8)
 
+cmake_minimum_required(VERSION 2.6)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
@@ -11,8 +9,6 @@ get_filename_component(default_prefix ".." ABSOLUTE)
 set(CMAKE_INSTALL_PREFIX $(default_prefix))
 
 ADD_SUBDIRECTORY(libEmu)
-
-
 
 find_package(GSL REQUIRED)
 
