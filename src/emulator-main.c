@@ -113,7 +113,6 @@ int main (int argc, char **argv){
 	int number_reference_points = 0;
 	int number_covered_points = 0;
 
-	FILE *fptr;
 
 	parse_arguments(argc, argv, &options);	
 	
@@ -258,6 +257,8 @@ int main (int argc, char **argv){
 	/* fptr = fopen("cov-errors.txt", "w"); */
 	/* dump_errors(fptr, reference_values, reference_points, reference_errors, emulated_mean, emulated_var, number_reference_points, &options); */
 	/* fclose(fptr); */
+
+
 
 	gsl_vector_free(thetas);
 	gsl_vector_free(training_vector);
@@ -416,6 +417,7 @@ void dump_errors(FILE* fptr, gsl_vector* reference_values, gsl_matrix* reference
 void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, optstruct* options){
 	int i = 0;
 	int j = 0; 
+	int sidelength;
 	int n_emu_points = options->nemulate_points;
 	
 	double temp_mean, temp_var;
@@ -478,6 +480,21 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 		fprintf(fptr, "%g\t", gsl_vector_get(new_mean, i));
 		fprintf(fptr,"%g\n", gsl_vector_get(new_variance, i));
 	}
+
+	fclose(fptr);
+
+	if(options->nparams == 2){
+		sidelength = (int)(sqrt(options->nemulate_points));
+		fptr = fopen("emulator-matrix.txt", "w");
+		for(i = 0; i < sidelength; i++){
+			for(j = 0; j < sidelength; j++){
+				fprintf(fptr, "%g ", gsl_vector_get(new_mean, i+(sidelength)*j));
+			}
+			fprintf(fptr,"\n");
+		}
+	}
+	
+
 		
 	gsl_matrix_free(new_x);
 	gsl_vector_free(new_mean);

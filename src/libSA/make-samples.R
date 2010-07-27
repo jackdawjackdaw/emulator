@@ -7,32 +7,32 @@ library("lhs")
 ## and a1, a2, a3 are in a1-vector.dat etc
 
 ## # the data frame selection forces these to come in as doubles
-## a1 <- read.table('a1-vector.dat')$V1
-## a2 <- read.table('a2-vector.dat')$V1
-## a3 <- read.table('a3-vector.dat')$V1
-## m  <- as.matrix(read.table('m-matrix.dat'))
+a1 <- read.table('a1-vector.dat')$V1
+a2 <- read.table('a2-vector.dat')$V1
+a3 <- read.table('a3-vector.dat')$V1
+m  <- as.matrix(read.table('m-matrix.dat'))
 
-## # set the dimension
-## ndim <- 15
+# set the dimension
+ndim <- 15
 
-## # they use 250 points in the paper
-## sampleSize <- 250 
+# they use 250 points in the paper
+sampleSize <- 1024
 
-## params  <- maximinLHS(sampleSize, ndim)*5 - 2.5
-## designVal <- rep(0, sampleSize)
+params  <- maximinLHS(sampleSize, ndim)*5 - 2.5
+designVal <- rep(0, sampleSize)
 
-## yvalue <- function(x){
-##   a1 %*% x + a2 %*% (sin(x)) + a3 %*% (cos(x)) + x %*% m %*% x
-## }
+yvalue <- function(x){
+  a1 %*% x + a2 %*% (sin(x)) + a3 %*% (cos(x)) + x %*% m %*% x
+}
 
 
-## for(i in 1:sampleSize) {
-##   designVal[i] <- yvalue(params[i,])
-## }
+for(i in 1:sampleSize) {
+  designVal[i] <- yvalue(params[i,])
+}
 
-## designFrame <- data.frame(x=params, y=designVal)
+designFrame <- data.frame(x=params, y=designVal)
 
-## write.table(designFrame,"15d-oak-ohagan-data-sample.txt", row.names=FALSE, col.names=FALSE)
+write.table(designFrame,"15d-oak-ohagan-data-sample-1024.txt", row.names=FALSE, col.names=FALSE)
 
 
 ## ## now make the reduced data set
@@ -60,23 +60,23 @@ library("lhs")
 
 ## write.table(designFrameRed,"6d-oak-ohagan-data-sample.txt", row.names=FALSE, col.names=FALSE)
 
-## now make a super simple model
-ndim <- 4
-sampleSize <- 15*ndim
+## ## now make a super simple model
+## ndim <- 4
+## sampleSize <- 15*ndim
 
-yTrivial <- function(x){
-  y <- 0.1*cos(x[1]) + 0.4*x[2]^2
-}
-yTrivial2 <- function(x){
-  y <- exp(-0.1*x[1])*cos(5*x[2]) + 3*sin(x[3]) + 3*x[3] + 0.2*x[4]^2
-}
+## yTrivial <- function(x){
+##   y <- 0.1*cos(x[1]) + 0.4*x[2]^2
+## }
+## yTrivial2 <- function(x){
+##   y <- exp(-0.1*x[1])*cos(5*x[2]) + 3*sin(x[3]) + 3*x[3] + 0.2*x[4]^2
+## }
 
-paramsT <- maximinLHS(sampleSize, ndim)*5 - 2.5
-ytriv <- rep(0, sampleSize)
+## paramsT <- maximinLHS(sampleSize, ndim)*5 - 2.5
+## ytriv <- rep(0, sampleSize)
 
-for(i in 1:sampleSize)
-  ytriv[i] <- yTrivial2(paramsT[i,])
+## for(i in 1:sampleSize)
+##   ytriv[i] <- yTrivial2(paramsT[i,])
 
-designFrameTriv <- data.frame(x=paramsT, y=ytriv)
-write.table(designFrameTriv, "trivial-model-2.txt", row.names=FALSE, col.names=FALSE)
+## designFrameTriv <- data.frame(x=paramsT, y=ytriv)
+## write.table(designFrameTriv, "trivial-model-2.txt", row.names=FALSE, col.names=FALSE)
 
