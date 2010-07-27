@@ -194,7 +194,8 @@ void nelderMead(gsl_rng *rand, int max_tries, int nsteps, gsl_vector* the_answer
 
 
 			// now we have to sort the evallist by value
-			qsort(evalList, nverticies, sizeof(evalunit), (__compar_fn_t)compare_evals);
+			// ccs: don't need the compare_fn_t cast on bsd (should be fine anyway)
+			qsort(evalList, nverticies, sizeof(evalunit), compare_evals);
 		
 			/*printf("EVALS:\t");
 			for(i = 0; i < nverticies; i++){ printf("%g\t", evalList[i].value);} 
