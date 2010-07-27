@@ -1,5 +1,7 @@
 # cmake lists
 # created by ccs: 15-may 2010
+# doesn't work well on os-x laptop
+# there's a problem with the gsl includes
 cmake_minimum_required(VERSION 2.8)
 
 
@@ -10,10 +12,16 @@ set(CMAKE_INSTALL_PREFIX $(default_prefix))
 
 ADD_SUBDIRECTORY(libEmu)
 
-ADD_DEFINITIONS("-std=c99 -pg -O2 -Wextra -pedantic")
+
 
 find_package(GSL REQUIRED)
-include_directories(${GSL_INCLUDE_DIRS} ${GSLCBLAS_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/libEmu)
+
+message(GSL_INCLUDE_DIR="${GSL_INCLUDE_DIR}")
+message(GSL_CXX_FLAGS="${GSL_CXX_FLAGS}")
+
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}-std=c99 -pg -O2 -Wextra -pedantic ${GSL_CXX_FLAGS}")
+
+INCLUDE_DIRECTORIES(${GSL_INCLUDE_DIR})
 set(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 
 set(emulator_SOURCES emulator-main ioread useful)
@@ -36,4 +44,3 @@ target_link_libraries(lhood Emu LBFGS ${libs})
 add_dependencies(lhood Emu LBFGS)
 
 install(TARGETS emulator estimator RUNTIME DESTINATION bin LIBRARY DESTINATION LIB)
-								
