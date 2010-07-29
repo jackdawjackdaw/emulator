@@ -28,6 +28,16 @@ void error(char *msg){
 	exit(0);
 }
 
+//! print a vector to stderr
+void print_vector_quiet(gsl_vector *x, int n){
+int i;
+	for(i =0; i < n; i++){
+		fprintf(stderr, "%g\t", gsl_vector_get(x, i));
+	}
+	fprintf(stderr,"\n");
+}
+
+
 // memory management
 
 /** allocates a 2d array of ints

@@ -35,8 +35,8 @@ int get_number_cpus(void){
 	return(ncpus);
 }
 
-// hack
-//#define DEBUGMODE
+
+#define DEBUGMODE
 
 //! threaded estimate thetas 
 /** 
@@ -83,8 +83,6 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	best_thetas = gsl_vector_alloc(options->nthetas);
 
 
-
-	
 	// set the jobnumber back to zero otherwise running twice will kill ya
 	jobnumber = 0;
 	best_likelyhood_val = SCREWUPVALUE;
@@ -154,7 +152,6 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 		gsl_matrix_memcpy(params[i].grad_ranges, grad_ranges);
 		gsl_matrix_memcpy(params[i].model_input, xmodel_input);
 		gsl_vector_memcpy(params[i].training_vector, training_vector);
-		
 	}
 	
 	#ifdef USEMUTEX
@@ -214,7 +211,7 @@ void* estimate_thread_function(void* args){
 	// cast the args back
 	struct estimate_thetas_params *p = (struct estimate_thetas_params*) args;
 	int next_job;
-	unsigned long my_id = pthread_self();
+	unsigned long my_id = (unsigned long)pthread_self();
 	double my_theta_val = 0.0;
 	while(1){
 		/* see if we've done enough */
@@ -240,21 +237,17 @@ void* estimate_thread_function(void* args){
 		/* we're done so stop */
 		if(next_job == -1)
 			break;
-		
-		#ifdef NELDER
-		/* else we do the nelder mead stuff */
-		nelderMead(p->random_number, p->max_tries, p->number_steps, p->thetas, p->grad_ranges, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
-		#elif BFGS
-		maxWithBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas,	\
-								p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
-		#else 
-		maxWithLBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
-		#endif
 
+		/* just support LBFGS maximisation now */
+		maxWithLBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
+
+
+		/* this returns the likelihood of the final set of thetas from maxWithLBFGS */
+		my_theta_val = evalLikelyhoodLBFGS_struct(p);
 
 		// kind of sneakily calling into the maximise.c api (aah well...)
 		// won't work without some more fiddling
-		my_theta_val = evalLikelyhood(p->thetas, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
+		//my_theta_val = evalLikelyhood(p->thetas, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
 
 		#ifdef USEMUTEX
 		pthread_mutex_lock(&results_mutex);

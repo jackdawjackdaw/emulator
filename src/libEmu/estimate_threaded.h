@@ -7,7 +7,7 @@
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
 
-#include "maxlbfgs.h"
+
 
 #include "../main.h"
 
@@ -37,6 +37,8 @@ struct estimate_thetas_params{
 	int nregression_fns;
 } estimate_thetas_params;
 // why do you need this ^ ident?
+
+#include "maxlbfgs.h"
 
 // see the source for defs of the number of threads etc etc
 #endif

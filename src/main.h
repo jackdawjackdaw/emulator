@@ -7,8 +7,6 @@
 #include "getopt.h"
 #include "libEmu/estimator.h"
 #include "libEmu/emulator.h"
-#include "libEmu/maximise.h"
-#include "libEmu/maxbfgs.h"
 #include "libEmu/estimate_threaded.h"
 #include "libEmu/regression.h"
 #include "ioread.h"

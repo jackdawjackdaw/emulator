@@ -33,7 +33,7 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 	gsl_vector *xBest = gsl_vector_alloc(nthetas);
 	gsl_matrix *h_matrix = gsl_matrix_alloc(nmodel_points, nregression_fns);
 	double *tempVec = malloc(sizeof(double)*nthetas);
-	
+
 	makeHMatrix(h_matrix, xmodel,nmodel_points, nparams, nregression_fns);
 
 	/* setup the arguments which will be used in the eval and gradient functions */
@@ -59,13 +59,13 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 		
 		copy_gslvec_vec(xFinal, tempVec, nthetas);
 		likelyHood = -1*evalFnLBFGS(tempVec, nthetas, (void*)&eval_fn_args);
-		printf("%lu:L = %g\n", pthread_self(), likelyHood);
+		printf("%lu:L = %g\n", (unsigned long)pthread_self(), likelyHood);
 		printf("try = %d\n", tries);
 		if(likelyHood > bestLikelyHood && (isnan(likelyHood) == 0 && isinf(likelyHood) == 0)){
 			bestLikelyHood = likelyHood;
 			gsl_vector_memcpy(xBest, xFinal);
 
-			printf("%lu:best = %g\n", pthread_self(), bestLikelyHood);
+			printf("%lu:best = %g\n", (unsigned long)pthread_self(), bestLikelyHood);
 		}
 		tries++;
 		set_random_initial_value(rand, xInit, ranges, nthetas);
@@ -90,9 +90,78 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 }
 
 
+/**
+ * returns the loglikleyhood for the final step of estimate_thread_function
+ *
+ * used in estimate_thread_function to set "my_theta_val"
+ * this is a wrapper for evalFnLBFGS
+ * 
+ * see estimate_threaded.h for a spec of estimate_thetas_params
+ */
+double evalLikelyhoodLBFGS_struct(struct estimate_thetas_params *params){
+	int i;
+	double *xinput = MallocChecked(sizeof(double)*params->nthetas);
+	double likelihood = 0.0;
+	struct evalFnLBFGSArgs arguments;
+
+	for(i = 0; i < params->nthetas; i++) 	/* setup xinput*/
+		xinput[i] = gsl_vector_get(params->thetas, i);
+	
+	/* setup arguments */
+	setup_evalFnLBFGSArgs(&arguments, params);
+
+	likelihood = evalFnLBFGS(xinput, params->nthetas, &arguments);
+
+	gsl_matrix_free(arguments.xmodel);
+	gsl_matrix_free(arguments.h_matrix);
+	gsl_vector_free(arguments.training_vector);
+	free(xinput);
+	return(likelihood);
+}
 	
 
- 
+/**
+ * inits a evalFnLBFGSArgs structure from an estimate_thetas_params structure
+ * 
+ * struct evalFnLBFGSArgs{
+ * 	int nparams;
+ *	int nmodel_points;
+ * 	int nregression_fns;
+ *	gsl_matrix* xmodel;
+ * 	gsl_vector* training_vector;
+ *	gsl_matrix* h_matrix;
+ * } evalFnLBFGSArgs;
+ *
+ */
+void setup_evalFnLBFGSArgs(struct evalFnLBFGSArgs *arguments, struct estimate_thetas_params *params){
+	/* setup the gsl vecs/matrices  */
+	arguments->xmodel = gsl_matrix_alloc(params->nmodel_points, params->nparams);
+	arguments->training_vector = gsl_vector_alloc(params->nmodel_points);
+	arguments->h_matrix = gsl_matrix_alloc(params->nmodel_points, params->nregression_fns);
+
+	arguments->nparams = params->nparams;
+	arguments->nmodel_points = params->nmodel_points;
+	arguments->nregression_fns = params->nregression_fns;
+	
+	gsl_matrix_memcpy(arguments->xmodel, params->model_input);
+	gsl_vector_memcpy(arguments->training_vector, params->training_vector);
+
+	/* and finally setup the hmatrix (for the regression)*/
+	makeHMatrix(arguments->h_matrix, arguments->xmodel, arguments->nmodel_points, arguments->nparams, arguments->nregression_fns);
+		 
+
+	
+}
+
+	
+/**
+ * Calculates the loglikelihood for a given set of thetas
+ * 
+ * @params xinput -> a flat double vector of the position in parameter space to be evaluated
+ * @params nthetas -> length of xinuput, the number of hyperparams in the statistical model
+ * @params args -> a voided (struct evalFnLBFGSArgs)
+ * @return the loglikleyhood of xinput
+ */
 double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	struct evalFnLBFGSArgs *params = (struct evalFnLBFGSArgs*) args;
 	
@@ -156,4 +225,26 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	gsl_permutation_free(c_LU_permutation);
 	gsl_vector_free(xk);
 	return(-1*temp_val);
+}
+
+/**
+ * init the vector x to a set of random values which are sampled from a 
+ * uniform dist (from rand) generated on the ranges given by the 
+ * matrix ranges
+ */
+void set_random_initial_value(gsl_rng* rand, gsl_vector* x, gsl_matrix* ranges,int  nthetas){
+	int i;
+	double range_min; 
+	double range_max;
+	double the_value;
+	
+	for(i = 0; i < nthetas; i++){
+		range_min = gsl_matrix_get(ranges, i, 0);
+		range_max = gsl_matrix_get(ranges, i, 1);
+		// set the input vector to a random value in the range
+		the_value = gsl_rng_uniform(rand) * (range_max - range_min) + range_min;
+		//printf("theta %d set to %g\n", i, the_value);
+		//gsl_vector_set(x, gsl_rng_uniform(rand)*(range_max-range_min)+range_min, i);
+		gsl_vector_set(x, i, the_value);
+	}
 }
