@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 2.8)
 enable_language (Fortran)
 
 include_directories(${CMAKE_SOURCE_DIR})
-set(emudeps emulator.c estimate_threaded.c estimator.c lbfgs.c maxlbfgs.c regression.c emulator.h estimate_threaded.h estimator.h lbfgs.h  maxlbfgs.h regression.h ../useful.c)
+set(emudeps emulator.c estimate_threaded.c estimator.c lbfgs.c maxlbfgs.c regression.c emulator.h estimate_threaded.h estimator.h lbfgs.h  maxlbfgs.h regression.h ../useful.c ../optstruct.c ../modelstruct.c)
 
 # FFLAGS depend on the compiler
 get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)

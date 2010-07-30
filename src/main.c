@@ -72,129 +72,132 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 		// for the moment force them to work
 		options->nthetas = options->nparams +2;
 	}
-		
 
 	options->nmodel_points = nmodel_points;
 	options->nemulate_points = nemulate_val;
 	options->emulate_min = min_val;
 	options->emulate_max = max_val;
 	sprintf(options->filename, "%s", file);
-}
- 
+	sprintf(options->outputfile, "emulator-out.txt");
 
+	assert(options->nthetas >0);
+	assert(options->nparams >0);
+
+	/**!!!! set the number of regression fns
+	 * 
+	 *  this is regression model dependant
+	 * this is correct for the simple linear fit in each dimension plus a constant intercept
+	 * this shou be set by some kind of or through the cli
+	 */
+	options->nregression_fns = options.nparams + 1;
+
+
+}
+
+
+void setup_cov_fn(optstruct *options){
+	/*
+	 * we'll use the gaussian covariance fn by default
+	 */
+	message("using gaussian cov fn\n", 1);
+	options->covariance_fn = covariance_fn_gaussian;
+	options->nthetas = options->nparams+2;
+}
+
+void setup_optimization_ranges(optstruct* options){
+	int i;
+	char buffer[128];
+	/** 
+	 * alloc the grad_ranges matrix in the options and 
+	 * put in some sensible defaults 
+	 */
+	options->grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
+
+	for(i = 0; i < options->nthetas; i++){
+		if(options->covariance_fn == covariance_fn_gaussian){
+			gsl_matrix_set(options->grad_ranges, i, 0, -10.0);
+			gsl_matrix_set(grad_ranges, i, 1, 5.0);	
+		} else {
+			gsl_matrix_set(grad_ranges, i, 0, 0.0001);
+			gsl_matrix_set(grad_ranges, i, 1, 1.0);
+		}
+	}
+
+	// and force the nugget to be small
+	gsl_matrix_set(grad_ranges, 1, 0, 0.00001);
+	gsl_matrix_set(grad_ranges, 1, 1, 0.003);
+
+	for(i = 0; i < options->nthetas;i++){
+		fprintf(buffer, "%d %g %g\n", i, gsl_matrix_get(grad_ranges, i, 0), gsl_matrix_get(grad_ranges, i, 1));
+		message(buffer, 1);
+	}
+
+}
+	 
 
 int main (int argc, char ** argv){
 	optstruct options;
+	modelstruct the_model;
+	char buffer[128];
+
 	char* split_string;
+	
 	int i,j;
 	double temp_value;
-	gsl_matrix* xmodel_input;
+
+	/*gsl_matrix* xmodel_input;
 	gsl_vector* training_vector;
-	gsl_vector* thetas;	
+	gsl_vector* thetas;	*/
 	char input_file[128];
 	char theta_file[128];
 	char** input_data;
 	int number_lines = 0;
 
+	/* after this the optstruct should be totally filled out */
 	parse_arguments(argc, argv, &options);	
+	setup_cov_fn(&options);
+	setup_optimization_ranges(&options);
 	
+	/* now we can allocate the modelstruct */
+	alloc_modelstruct(&the_model, &options);
 
-	#ifdef NELDER
-	fprintf(stderr, "using nelder-mead\n");
-	#elif BFGS
-	fprintf(stderr, "using bfgs\n");
-	#else 
-	fprintf(stderr, "using lbfgs\n");
-	#endif
+	message("using lbfgs", 1);
 
-
+	/** 
+	 * \todo: the model structure should be serialised so that
+	 * it can be re-read in the estimator code
+	 */
 	sprintf(theta_file, "thetas.txt");
 	
-	// testing
-	//sprintf(input_file, "%s",  "../short.dat");	
+	// we're going to read the input from the stdin
 	sprintf(input_file, "%s",  "stdin");
-
-	sprintf(options.outputfile, "emulator-out.txt");
-
-	assert(options.nthetas >0);
-	assert(options.nparams >0);
-
+	
+	/** 
+	 * we're going to read from the stdin and push it all into the 
+	 * input_data buffer, unformatted and unprocessed.
+	 */
 	input_data = unconstrained_read(input_file, &number_lines); 
-	fprintf(stderr, "read in %d lines\n", number_lines);
+	sprintf(buffer, "read in %d lines\n", number_lines);
+	message(buffer,2);
 
 	assert(number_lines >0);
 
 	if(options.nmodel_points != number_lines){
-		fprintf(stderr, "options.nmodel_points = %d but read in %d\n", options.nmodel_points, number_lines);
-		fprintf(stderr, "redfining options.nmodel_points to reflect read in value\n");
+		sprintf(buffer, "options.nmodel_points = %d but read in %d\n", options.nmodel_points, number_lines);
+		message(buffer, 2);
+		sprintf(buffer, "redfining options.nmodel_points to reflect read in value\n");
+		message(buffer, 2);
 		// change the value to match what we actually read
 		options.nmodel_points = number_lines;
 	}
 
-	//!!!! set the number of regression fns
-	// this is regression model dependant
-	// this is correct for the simple linear fit in each dimension plus a constant intercept
-	options.nregression_fns = 1;//options.nparams + 1;
-	//!!!! 
-
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// this is key
-	// fills in a structure in libEmu which 
-	// sets gaussian or matern cov fn and 
-	// the alpha option for the gaussian
-	set_emulator_defaults(&the_emulator_options);
-	// use the matern cov fn
-	the_emulator_options.usematern = 0;
-	the_emulator_options.alpha = 2.0;
-	// show the default options in the lib
-	print_emulator_options(&the_emulator_options);
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-	// we only need 4, so maximisation is a little nicer
-	if(the_emulator_options.usematern == 1 || the_emulator_options.usematern_three == 1 || the_emulator_options.usematern_five == 1){
-		options.nthetas = 4;
-		sprintf(theta_file, "thetas-matern.txt");
-	} else {
-		options.nthetas = options.nparams + 2;
-		printf("nthetas = %d\n", options.nthetas);
-	}
-
-	xmodel_input = gsl_matrix_alloc(options.nmodel_points, options.nparams);
-	training_vector = gsl_vector_alloc(options.nmodel_points);
-	thetas = gsl_vector_alloc(options.nthetas);
-	
 	// proc the input_data
-	// there's a bug, this can't handle empty lines at the end of the input!
-	for(i = 0; i < options.nmodel_points; i++){
-		split_string = strtok(input_data[i], "\t ");		
-		for(j=0; j < options.nparams; j++){
-			printf("%s\n", split_string);
-			// split string into tab or space tokens
-			// each time you do it split_string is pointed to the next block
-			// it will come up null when you're done
-			assert(split_string != NULL);
-			sscanf(split_string, "%lg", &temp_value);
-			//fprintf(stderr,"param: %s\n", split_string);
-			gsl_matrix_set(xmodel_input, i, j, temp_value);
-			split_string = strtok(NULL, "\t ");
-		}
-		assert(split_string != NULL);
-		sscanf(split_string,"%lg", &temp_value);
-		//fprintf(stderr,"train: %s\n", split_string);
-		gsl_vector_set(training_vector, i, temp_value);
-	}
-
-	fprintf(stderr, "read the following input matrix: %d x %d\n", options.nmodel_points, options.nparams);
-	//print_matrix(xmodel_input, options.nmodel_points, options.nparams);
-	fprintf(stderr, "the training data is:\n");
-	//print_vector_quiet(training_vector, options.nmodel_points);
+	fill_modelstruct(&the_model, &options, input_data, number_lines);
 	
 	fprintf(stderr, "nthetas = %d\n", options.nthetas);
 	fprintf(stderr, "nparams = %d\n", options.nparams);
 	
-
-	estimate_thetas_threaded(xmodel_input, training_vector, thetas, &options);
+	estimate_thetas_threaded(&the_model, &options);
 
 	fprintf(stderr, "rescaled thetas:");
 	for(i = 0; i < options.nthetas; i++){
@@ -207,15 +210,13 @@ int main (int argc, char ** argv){
 	}
 	fprintf(stderr, "\n");
 
-	write_thetas(theta_file, thetas, &options);
+	write_thetas(theta_file, the_model.thetas, &options);
 
 	// calc the new means, new variance and dump to emulator-out.txt
 	// we'll do this in the emulator code now
 	//emulate_model(xmodel_input, training_vector, thetas, &options);
-
-	gsl_vector_free(thetas);
-	gsl_vector_free(training_vector);
-	gsl_matrix_free(xmodel_input);
+	
+	free_modelstruct(&the_model);
 	free_char_array(input_data, number_lines);
 	//exit(1);
 	return(0);
@@ -263,10 +264,7 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 	FILE *fptr;
 	fptr = fopen(options->outputfile, "w");
 
-
-
-
-	makeCovMatrix(c_matrix, xmodel, thetas,options->nmodel_points, options->nthetas, options->nparams);
+	makeCovMatrix(c_matrix, xmodel, thetas,options->nmodel_points, options->nthetas, options->nparams, options);
 	gsl_matrix_memcpy(temp_matrix, c_matrix);
 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse);
@@ -285,7 +283,7 @@ void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, 
 
 	for(i = 0; i < n_emu_points; i++){
 		new_x_row = gsl_matrix_row(new_x, i);
-		makeKVector(kplus, xmodel, &new_x_row.vector, thetas, options->nmodel_points, options->nthetas, options->nparams);
+		makeKVector(kplus, xmodel, &new_x_row.vector, thetas, options->nmodel_points, options->nthetas, options->nparams, options);
 		makeHVector(h_vector, &new_x_row.vector, options->nparams);
 
 		temp_mean = makeEmulatedMean(cinverse, training, kplus, h_vector, h_matrix, beta_vector, options->nmodel_points);

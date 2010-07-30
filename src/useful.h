@@ -11,6 +11,11 @@
 #include "math.h"
 #include "sys/time.h"
 
+//*****************
+// puts a message in the log (or in the stderr)
+//*****************
+void message(char* the_message, int level);
+
 //*******************
 // memory management
 //*******************

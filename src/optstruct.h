@@ -2,9 +2,11 @@
 #define __INC_OPTSTRUCT__
 
 #include <gsl/gsl_matrix.h>
+#include <strings.h>
 
 //! holds command line options
-/** 
+
+/**
  * designed to hold basic command line 
  * options
  */
@@ -20,6 +22,13 @@ typedef struct optstruct{
 	char outputfile[128];
 	// this holds the ranges for the optimisation routine
 	gsl_matrix* grad_ranges;
+	// the covariance function
+	double cov_fn_alpha;
+	double (*covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double);
 } optstruct;
+
+void free_optsruct(optstruct *opts);
+	void copy_optstruct(optstruct *dst, optstruct* src);
+
 
 #endif

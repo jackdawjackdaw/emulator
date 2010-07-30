@@ -2,6 +2,19 @@
 #include "useful.h"
 
 
+//! takes a print statement and either prints it out, or logs it 
+/**
+ * \note should finish implementing this, or find a nice logging lib to do it
+ */
+void message(char* the_message, int level){
+	// for now it just prints
+	char buffer[128];
+	sprintf("LOG: %s\n", the_message);
+	fprintf(stderr, the_message);
+}
+
+
+
 //! checks for null
 void *MallocChecked(size_t size){
 	void *r = malloc(size);

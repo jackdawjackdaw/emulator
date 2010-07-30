@@ -10,8 +10,8 @@ ADD_SUBDIRECTORY(libEmu)
 MESSAGE("link libs: ${libs}")
 
 
-set(emulator_SOURCES emulator-main ioread useful)
-set(estimator_SOURCES main ioread useful)
+set(emulator_SOURCES emulator-main ioread useful optstruct modelstruct)
+set(estimator_SOURCES main ioread useful optstruct modelstruct)
 #set(lhood_SOURCES likelyhoody ioread useful)
 
 link_directories(${PROJECT_SOURCE_DIR}/src/libEmu)

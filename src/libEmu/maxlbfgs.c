@@ -19,8 +19,8 @@
  * April '10 updated with support for linear regression model
  */
 
-void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, gsl_matrix *xmodel,
-									gsl_vector *trainingvector, gsl_vector *thetas, int nmodel_points, int nthetas, int nparams, int nregression_fns){
+void maxWithLBFGS(struct estimate_thetas_params *params){
+									
 	/* 
 	 * this is the main routine for driving the lbfgs method
 	 */
@@ -28,37 +28,37 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 	int tries = 0;
 	double likelyHood = 0.0;
 	double bestLikelyHood = SCREWUPVALUE;
-	gsl_vector *xInit = gsl_vector_alloc(nthetas);
-	gsl_vector *xFinal = gsl_vector_alloc(nthetas);
-	gsl_vector *xBest = gsl_vector_alloc(nthetas);
-	gsl_matrix *h_matrix = gsl_matrix_alloc(nmodel_points, nregression_fns);
-	double *tempVec = malloc(sizeof(double)*nthetas);
+	gsl_vector *xInit = gsl_vector_alloc(params->options->nthetas);
+	gsl_vector *xFinal = gsl_vector_alloc(params->options->nthetas);
+	gsl_vector *xBest = gsl_vector_alloc(params->options->nthetas);
+	double *tempVec = malloc(sizeof(double)*params->options->nthetas);
 
-	makeHMatrix(h_matrix, xmodel,nmodel_points, nparams, nregression_fns);
+	params->h_matrix = gsl_matrix_alloc(params->options->nmodel_points, params->options->nregression_fns);
 
-	/* setup the arguments which will be used in the eval and gradient functions */
-	struct evalFnLBFGSArgs eval_fn_args;
-	eval_fn_args.nparams = nparams;
-	eval_fn_args.nmodel_points = nmodel_points;
-	eval_fn_args.xmodel = gsl_matrix_alloc(nmodel_points, nparams);
-	eval_fn_args.training_vector = gsl_vector_alloc(nmodel_points);
-	eval_fn_args.h_matrix = gsl_matrix_alloc(nmodel_points, nregression_fns);
-	eval_fn_args.nregression_fns = nregression_fns;
-	gsl_matrix_memcpy(eval_fn_args.xmodel, xmodel);
-	gsl_matrix_memcpy(eval_fn_args.h_matrix, h_matrix);
-	gsl_vector_memcpy(eval_fn_args.training_vector, trainingvector);
+	makeHMatrix(params->h_matrix, params->the_model->xmodel,params->options->nmodel_points, params->options->nparams, params->options->nregression_fns);
 
+	/* /\* setup the arguments which will be used in the eval and gradient functions *\/ */
+	/* struct evalFnLBFGSArgs eval_fn_args; */
+	/* eval_fn_args.nparams = params->options->nparams; */
+	/* eval_fn_args.nmodel_points = params->options->nmodel_points; */
+	/* eval_fn_args.xmodel = gsl_matrix_alloc(params->options->nmodel_points, params->options->nparams); */
+	/* eval_fn_args.training_vector = gsl_vector_alloc(params->options->nmodel_points); */
+	/* eval_fn_args.h_matrix = gsl_matrix_alloc(params->options->nmodel_points, params->options->nregression_fns); */
+	/* eval_fn_args.nregression_fns = params->options->nregression_fns; */
+	/* gsl_matrix_memcpy(eval_fn_args.xmodel, params->the_model->xmodel); */
+	/* gsl_matrix_memcpy(eval_fn_args.h_matrix, h_matrix); */
+	/* gsl_vector_memcpy(eval_fn_args.training_vector, params->the_model->training_vector); */
 
 	gsl_vector_set_zero(xBest);
 	gsl_vector_set_zero(xFinal);
-	set_random_initial_value(rand, xInit, ranges, nthetas);
+	set_random_initial_value(params->random_number, xInit, params->options->grad_ranges, params->options->nthetas);
 	
-	printf("max_tries = %d\n", max_tries);
-	while(tries < max_tries) {
-		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, ranges, xInit, xFinal, nthetas, 500, (void*)&eval_fn_args);
+	printf("max_tries = %d\n", params->max_tries);
+	while(tries < params->max_tries) {
+		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, params->options->grad_ranges, xInit, xFinal, params->options->nthetas, 500, (void*)&params);
 		
-		copy_gslvec_vec(xFinal, tempVec, nthetas);
-		likelyHood = -1*evalFnLBFGS(tempVec, nthetas, (void*)&eval_fn_args);
+		copy_gslvec_vec(xFinal, tempVec, params->options->nthetas);
+		likelyHood = -1*evalFnLBFGS(tempVec, params->options->nthetas, (void*)&params);
 		printf("%lu:L = %g\n", (unsigned long)pthread_self(), likelyHood);
 		printf("try = %d\n", tries);
 		if(likelyHood > bestLikelyHood && (isnan(likelyHood) == 0 && isinf(likelyHood) == 0)){
@@ -68,7 +68,7 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 			printf("%lu:best = %g\n", (unsigned long)pthread_self(), bestLikelyHood);
 		}
 		tries++;
-		set_random_initial_value(rand, xInit, ranges, nthetas);
+		set_random_initial_value(params->random_number, xInit, params->options->grad_ranges, params->options->nthetas);
 		gsl_vector_set_zero(xFinal);
 	}
 	
@@ -77,12 +77,8 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
 		fprintf(stderr, "maximisation didn't work at all, relax your ranges\n");
 	}
 
-	gsl_vector_memcpy(thetas, xBest);
+	gsl_vector_memcpy(params->the_model->thetas, xBest);
 	
-	gsl_matrix_free(eval_fn_args.xmodel);
-	gsl_matrix_free(eval_fn_args.h_matrix);
-	gsl_vector_free(eval_fn_args.training_vector);
-	gsl_matrix_free(h_matrix);
 	gsl_vector_free(xInit);
 	gsl_vector_free(xFinal);
 	gsl_vector_free(xBest);
@@ -100,58 +96,19 @@ void maxWithLBFGS(gsl_rng *rand, int max_tries, int nsteps, gsl_matrix *ranges, 
  */
 double evalLikelyhoodLBFGS_struct(struct estimate_thetas_params *params){
 	int i;
-	double *xinput = MallocChecked(sizeof(double)*params->nthetas);
+	double *xinput = MallocChecked(sizeof(double)*params->options->nthetas);
 	double likelihood = 0.0;
-	struct evalFnLBFGSArgs arguments;
 
-	for(i = 0; i < params->nthetas; i++) 	/* setup xinput*/
-		xinput[i] = gsl_vector_get(params->thetas, i);
+	for(i = 0; i < params->options->nthetas; i++) 	/* setup xinput*/
+		xinput[i] = gsl_vector_get(params->the_model->thetas, i);
 	
-	/* setup arguments */
-	setup_evalFnLBFGSArgs(&arguments, params);
 
-	likelihood = evalFnLBFGS(xinput, params->nthetas, &arguments);
+	likelihood = evalFnLBFGS(xinput, params->options->nthetas, params);;
 
-	gsl_matrix_free(arguments.xmodel);
-	gsl_matrix_free(arguments.h_matrix);
-	gsl_vector_free(arguments.training_vector);
 	free(xinput);
 	return(likelihood);
 }
-	
 
-/**
- * inits a evalFnLBFGSArgs structure from an estimate_thetas_params structure
- * 
- * struct evalFnLBFGSArgs{
- * 	int nparams;
- *	int nmodel_points;
- * 	int nregression_fns;
- *	gsl_matrix* xmodel;
- * 	gsl_vector* training_vector;
- *	gsl_matrix* h_matrix;
- * } evalFnLBFGSArgs;
- *
- */
-void setup_evalFnLBFGSArgs(struct evalFnLBFGSArgs *arguments, struct estimate_thetas_params *params){
-	/* setup the gsl vecs/matrices  */
-	arguments->xmodel = gsl_matrix_alloc(params->nmodel_points, params->nparams);
-	arguments->training_vector = gsl_vector_alloc(params->nmodel_points);
-	arguments->h_matrix = gsl_matrix_alloc(params->nmodel_points, params->nregression_fns);
-
-	arguments->nparams = params->nparams;
-	arguments->nmodel_points = params->nmodel_points;
-	arguments->nregression_fns = params->nregression_fns;
-	
-	gsl_matrix_memcpy(arguments->xmodel, params->model_input);
-	gsl_vector_memcpy(arguments->training_vector, params->training_vector);
-
-	/* and finally setup the hmatrix (for the regression)*/
-	makeHMatrix(arguments->h_matrix, arguments->xmodel, arguments->nmodel_points, arguments->nparams, arguments->nregression_fns);
-		 
-
-	
-}
 
 	
 /**
@@ -163,25 +120,25 @@ void setup_evalFnLBFGSArgs(struct evalFnLBFGSArgs *arguments, struct estimate_th
  * @return the loglikleyhood of xinput
  */
 double evalFnLBFGS(double *xinput, int nthetas, void* args){
-	struct evalFnLBFGSArgs *params = (struct evalFnLBFGSArgs*) args;
+	struct estimate_thetas_params *params = (struct estimate_thetas_params*) args;
 	
-	gsl_matrix* covariance_matrix = gsl_matrix_alloc(params->nmodel_points, params->nmodel_points);
-	gsl_matrix* cinverse = gsl_matrix_alloc(params->nmodel_points, params->nmodel_points);
-	gsl_matrix* temp_matrix = gsl_matrix_alloc(params->nmodel_points, params->nmodel_points);
+	gsl_matrix* covariance_matrix = gsl_matrix_alloc(params->options->nmodel_points, params->options->nmodel_points);
+	gsl_matrix* cinverse = gsl_matrix_alloc(params->options->nmodel_points, params->options->nmodel_points);
+	gsl_matrix* temp_matrix = gsl_matrix_alloc(params->options->nmodel_points, params->options->nmodel_points);
 
 	gsl_vector *xk = gsl_vector_alloc(nthetas);
-	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(params->nmodel_points);	
+	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(params->options->nmodel_points);	
 	double determinant_c = 0.0;
 	double temp_val = 0.0;
 	int lu_signum = 0, i;
 	int cholesky_test = 0;
 		
 	// copy the given double vector into the gsl vector
-	copy_vec_gslvec(xinput, xk, nthetas );
+	copy_vec_gslvec(xinput, xk, params->options->nthetas );
 
 	// make the covariance matrix 
 	// using the random initial conditions! (xold not thetas)
-	makeCovMatrix(covariance_matrix, params->xmodel, xk, params->nmodel_points, nthetas, params->nparams);
+	makeCovMatrix(covariance_matrix, params->the_model->xmodel, xk, params->options->nmodel_points, nthetas, params->options->nparams, params->options->covariance_fn);
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 
 #define _CHOLDECOMP
@@ -202,7 +159,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	// find the determinant and then invert 
 	// the determinant is just the trace squared
 	determinant_c = 1.0;
-	for(i = 0; i < params->nmodel_points; i++)
+	for(i = 0; i < params->options->nmodel_points; i++)
 		determinant_c *= gsl_matrix_get(temp_matrix, i, i);
 	determinant_c = determinant_c * determinant_c;
 
@@ -213,8 +170,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 #endif
 		
 	// temp_val is now the likelyhood for this answer
-	temp_val = getLogLikelyhood(cinverse, determinant_c, params->xmodel, params->training_vector, xk, params->h_matrix, params->nmodel_points, nthetas, params->nparams, params->nregression_fns);
-
+	temp_val = getLogLikelyhood(cinverse, determinant_c, params->the_model->xmodel, params->the_model->training_vector, xk, params->h_matrix, params->options->nmodel_points, params->options->nthetas, params->options->nparams, params->options->nregression_fns);
 		
 	/* fprintf(stderr,"L:%f\n", temp_val);					 */
 	/* print_vector_quiet(xk, nthetas); */

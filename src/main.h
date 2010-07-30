@@ -13,8 +13,8 @@
 #include "sys/time.h"
 #include "useful.h"
 #include "optstruct.h"
+#include "modelstruct.h"
 
-//#define NELDER
 
 /**
  * @file
@@ -50,8 +50,6 @@
 #define NEMULATEDEFAULT 4096
 #define EMULATEMINDEFAULT 0.0
 #define EMULATEMAXDEFAULT 1.0
-
-
 
 
 void print_usage(void);
