@@ -9,8 +9,8 @@
 void message(char* the_message, int level){
 	// for now it just prints
 	char buffer[128];
-	sprintf("LOG: %s\n", the_message);
-	fprintf(stderr, the_message);
+	sprintf(buffer, "LOG: %s\n", the_message);
+	fprintf(stderr, "%s\n", the_message);
 }
 
 
@@ -18,7 +18,7 @@ void message(char* the_message, int level){
 //! checks for null
 void *MallocChecked(size_t size){
 	void *r = malloc(size);
-	
+
 	if( r == NULL)
 		unix_error("memory wasn't allocated");
 	

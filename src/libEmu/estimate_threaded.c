@@ -2,7 +2,6 @@
 
 #define SCREWUPVALUE -20000
 
-
 //#define NUMBERTHREADS 2
 
 #ifdef USEMUTEX
@@ -34,16 +33,16 @@ int get_number_cpus(void){
 
 #define DEBUGMODE
 
-void setup_params(struct estimate_thetas_params *params, modelstruct* the_model, optstruct* options, int nthreads, int max_tries){
+void setup_params(struct estimate_thetas_params **params, modelstruct* the_model, optstruct* options, int nthreads, int max_tries){
 	int i;
 	for(i = 0; i < nthreads; i++){
-		params[i].the_model = MallocChecked(sizeof(modelstruct));
-		params[i].options = MallocChecked(sizeof(optstruct));
-		copy_modelstruct(params[i].the_model, the_model);
-		copy_optstruct(params[i].options, options);
-		params[i].max_tries = max_tries;
+		copy_optstruct(params[i]->options, options);
+		// have to allocate the memory inside each model for each parameter
+		alloc_modelstruct(params[i]->the_model, options);
+		copy_modelstruct(params[i]->the_model, the_model);
+		params[i]->max_tries = max_tries;		
 	}
-		
+	
 }
 
 //! threaded estimate thetas 
@@ -55,7 +54,7 @@ void setup_params(struct estimate_thetas_params *params, modelstruct* the_model,
  * Spinlocks are slightly faster but they are probably not universally supported...
  */
 void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
-	
+	int i;
 	/* thread data */
 	int nthreads = get_number_cpus();
 
@@ -85,14 +84,20 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	pthread_t *threads;
 	struct estimate_thetas_params *params;
 
+
 	threads = MallocChecked(sizeof(pthread_t)*nthreads);
 	params = MallocChecked(sizeof(struct estimate_thetas_params)*nthreads);
+
+	for(i=0; i < nthreads; i++){
+		params[i].the_model = MallocChecked(sizeof(modelstruct));
+		params[i].options = MallocChecked(sizeof(optstruct));
+	}
 
 	/*
 	 * setup the bulk of the parameter structures, but we need to 
 	 * setup the random_number afterwards
 	 */
-	setup_params(params, the_model, options, nthreads, thread_level_tries);
+	setup_params(&params, the_model, options, nthreads, thread_level_tries);
 
 	best_thetas = gsl_vector_alloc(options->nthetas);
 
@@ -103,7 +108,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	/* regular stuff */
 	const gsl_rng_type *T;
 	
-	int i; 
+
 	int number_steps = 20;
 	T = gsl_rng_default;
 

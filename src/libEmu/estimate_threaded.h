@@ -38,7 +38,7 @@ void* estimate_thread_function(void* args);
 int get_number_cpus(void);
 
 
-void setup_params(struct estimate_thetas_params *params, modelstruct* the_model, optstruct* options, int nthreads, int max_tries);
+void setup_params(struct estimate_thetas_params **params, modelstruct* the_model, optstruct* options, int nthreads, int max_tries);
 
 
 

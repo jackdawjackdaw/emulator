@@ -4,6 +4,7 @@
 #include "optstruct.h"
 #include "assert.h"
 #include "stdlib.h"
+#include "useful.h"
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 

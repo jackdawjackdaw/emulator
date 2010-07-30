@@ -143,7 +143,7 @@ double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*
 	double small_no = 1E-10;
 	int i, j, diagcount = 0; 
 
-	assert(thetas->size == (nparams*nparams) + 2);
+	assert((int)thetas->size == (nparams*nparams) + 2);
 
 	for(i = 0; i < nparams; i++){
 		for(j = 0; j < nparams; j++){

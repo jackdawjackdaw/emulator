@@ -27,8 +27,8 @@ typedef struct optstruct{
 	double (*covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double);
 } optstruct;
 
-void free_optsruct(optstruct *opts);
-	void copy_optstruct(optstruct *dst, optstruct* src);
+void free_optstruct(optstruct *opts);
+void copy_optstruct(optstruct *dst, optstruct* src);
 
 
 #endif

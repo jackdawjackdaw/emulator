@@ -18,7 +18,6 @@
  *  
  * April '10 updated with support for linear regression model
  */
-
 void maxWithLBFGS(struct estimate_thetas_params *params){
 									
 	/* 
@@ -55,10 +54,10 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 	
 	printf("max_tries = %d\n", params->max_tries);
 	while(tries < params->max_tries) {
-		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, params->options->grad_ranges, xInit, xFinal, params->options->nthetas, 500, (void*)&params);
+		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, params->options->grad_ranges, xInit, xFinal, params->options->nthetas, 500, (void*)params);
 		
 		copy_gslvec_vec(xFinal, tempVec, params->options->nthetas);
-		likelyHood = -1*evalFnLBFGS(tempVec, params->options->nthetas, (void*)&params);
+		likelyHood = -1*evalFnLBFGS(tempVec, params->options->nthetas, (void*)params);
 		printf("%lu:L = %g\n", (unsigned long)pthread_self(), likelyHood);
 		printf("try = %d\n", tries);
 		if(likelyHood > bestLikelyHood && (isnan(likelyHood) == 0 && isinf(likelyHood) == 0)){

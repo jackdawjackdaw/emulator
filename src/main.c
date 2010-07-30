@@ -1,9 +1,5 @@
 #include "main.h"
 
-// this lives in libEmu/emulator.c it's important!
-extern emulator_opts the_emulator_options;
-
-
 //! print the short-option switches
 void print_usage(void){
 	printf("emulator\n");
@@ -89,9 +85,7 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	 * this is correct for the simple linear fit in each dimension plus a constant intercept
 	 * this shou be set by some kind of or through the cli
 	 */
-	options->nregression_fns = options.nparams + 1;
-
-
+	options->nregression_fns = options->nparams + 1;
 }
 
 
@@ -116,19 +110,19 @@ void setup_optimization_ranges(optstruct* options){
 	for(i = 0; i < options->nthetas; i++){
 		if(options->covariance_fn == covariance_fn_gaussian){
 			gsl_matrix_set(options->grad_ranges, i, 0, -10.0);
-			gsl_matrix_set(grad_ranges, i, 1, 5.0);	
+			gsl_matrix_set(options->grad_ranges, i, 1, 5.0);	
 		} else {
-			gsl_matrix_set(grad_ranges, i, 0, 0.0001);
-			gsl_matrix_set(grad_ranges, i, 1, 1.0);
+			gsl_matrix_set(options->grad_ranges, i, 0, 0.0001);
+			gsl_matrix_set(options->grad_ranges, i, 1, 1.0);
 		}
 	}
 
 	// and force the nugget to be small
-	gsl_matrix_set(grad_ranges, 1, 0, 0.00001);
-	gsl_matrix_set(grad_ranges, 1, 1, 0.003);
+	gsl_matrix_set(options->grad_ranges, 1, 0, 0.00001);
+	gsl_matrix_set(options->grad_ranges, 1, 1, 0.003);
 
 	for(i = 0; i < options->nthetas;i++){
-		fprintf(buffer, "%d %g %g\n", i, gsl_matrix_get(grad_ranges, i, 0), gsl_matrix_get(grad_ranges, i, 1));
+		sprintf(buffer, "%d %g %g\n", i, gsl_matrix_get(options->grad_ranges, i, 0), gsl_matrix_get(options->grad_ranges, i, 1));
 		message(buffer, 1);
 	}
 
@@ -159,7 +153,7 @@ int main (int argc, char ** argv){
 	setup_optimization_ranges(&options);
 	
 	/* now we can allocate the modelstruct */
-	alloc_modelstruct(&the_model, &options);
+
 
 	message("using lbfgs", 1);
 
@@ -191,6 +185,8 @@ int main (int argc, char ** argv){
 		options.nmodel_points = number_lines;
 	}
 
+	alloc_modelstruct(&the_model, &options);
+
 	// proc the input_data
 	fill_modelstruct(&the_model, &options, input_data, number_lines);
 	
@@ -202,10 +198,10 @@ int main (int argc, char ** argv){
 	fprintf(stderr, "rescaled thetas:");
 	for(i = 0; i < options.nthetas; i++){
 		if(i != 1){
-			fprintf(stderr, " %g", exp(gsl_vector_get(thetas, i)));
+			fprintf(stderr, " %g", exp(gsl_vector_get(the_model.thetas, i)));
 		} else{
 			// we've not log scaled the nugget
-			fprintf(stderr, " %g", gsl_vector_get(thetas, i));
+			fprintf(stderr, " %g", gsl_vector_get(the_model.thetas, i));
 		}
 	}
 	fprintf(stderr, "\n");
@@ -217,6 +213,7 @@ int main (int argc, char ** argv){
 	//emulate_model(xmodel_input, training_vector, thetas, &options);
 	
 	free_modelstruct(&the_model);
+	free_optstruct(&options);
 	free_char_array(input_data, number_lines);
 	//exit(1);
 	return(0);
@@ -239,82 +236,82 @@ void write_thetas(char* theta_file, gsl_vector* thetas, optstruct *options){
  * take the estimated parameters and turn them into an emulated set of model points 
  * which can then be output to stdio or whatever 
  */
-void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, optstruct* options){
-	int i = 0;
-	int j = 0; 
-	int n_emu_points = options->nemulate_points;
+/* void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, optstruct* options){ */
+/* 	int i = 0; */
+/* 	int j = 0;  */
+/* 	int n_emu_points = options->nemulate_points; */
 	
-	double temp_mean, temp_var;
-	double kappa = 0; // for now
-	gsl_matrix *new_x = gsl_matrix_alloc(n_emu_points, options->nparams);
-	gsl_vector *new_mean = gsl_vector_alloc(n_emu_points);
-	gsl_vector *new_variance = gsl_vector_alloc(n_emu_points);
-	gsl_matrix *c_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
-	gsl_matrix *cinverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
-	gsl_vector *kplus = gsl_vector_alloc(options->nmodel_points);
-	gsl_vector *h_vector = gsl_vector_alloc(options->nregression_fns);
-	gsl_vector *beta_vector = gsl_vector_alloc(options->nregression_fns);
-	gsl_matrix *h_matrix = gsl_matrix_alloc(options->nmodel_points, options->nregression_fns);
-	gsl_vector_view new_x_row;
+/* 	double temp_mean, temp_var; */
+/* 	double kappa = 0; // for now */
+/* 	gsl_matrix *new_x = gsl_matrix_alloc(n_emu_points, options->nparams); */
+/* 	gsl_vector *new_mean = gsl_vector_alloc(n_emu_points); */
+/* 	gsl_vector *new_variance = gsl_vector_alloc(n_emu_points); */
+/* 	gsl_matrix *c_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points); */
+/* 	gsl_matrix *cinverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points); */
+/* 	gsl_vector *kplus = gsl_vector_alloc(options->nmodel_points); */
+/* 	gsl_vector *h_vector = gsl_vector_alloc(options->nregression_fns); */
+/* 	gsl_vector *beta_vector = gsl_vector_alloc(options->nregression_fns); */
+/* 	gsl_matrix *h_matrix = gsl_matrix_alloc(options->nmodel_points, options->nregression_fns); */
+/* 	gsl_vector_view new_x_row; */
 
-	gsl_matrix *temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
-	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(options->nmodel_points);
-	int lu_signum = 0;
+/* 	gsl_matrix *temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points); */
+/* 	gsl_permutation *c_LU_permutation = gsl_permutation_alloc(options->nmodel_points); */
+/* 	int lu_signum = 0; */
 	
-	FILE *fptr;
-	fptr = fopen(options->outputfile, "w");
+/* 	FILE *fptr; */
+/* 	fptr = fopen(options->outputfile, "w"); */
 
-	makeCovMatrix(c_matrix, xmodel, thetas,options->nmodel_points, options->nthetas, options->nparams, options);
-	gsl_matrix_memcpy(temp_matrix, c_matrix);
-	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
-	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse);
+/* 	makeCovMatrix(c_matrix, xmodel, thetas,options->nmodel_points, options->nthetas, options->nparams, options); */
+/* 	gsl_matrix_memcpy(temp_matrix, c_matrix); */
+/* 	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum); */
+/* 	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); */
 
-	// regression cpts
-	makeHMatrix(h_matrix, xmodel, options->nmodel_points, options->nparams, options->nregression_fns);
-	estimateBeta(beta_vector, h_matrix, cinverse, training, options->nmodel_points, options->nregression_fns);
+/* 	// regression cpts */
+/* 	makeHMatrix(h_matrix, xmodel, options->nmodel_points, options->nparams, options->nregression_fns); */
+/* 	estimateBeta(beta_vector, h_matrix, cinverse, training, options->nmodel_points, options->nregression_fns); */
 	
-	fprintf(stderr, "regression cpts: ");
-	for(i = 0; i < options->nregression_fns; i++)
-		fprintf(stderr, "%g ", gsl_vector_get(beta_vector, i));
-	fprintf(stderr, "\n");
+/* 	fprintf(stderr, "regression cpts: "); */
+/* 	for(i = 0; i < options->nregression_fns; i++) */
+/* 		fprintf(stderr, "%g ", gsl_vector_get(beta_vector, i)); */
+/* 	fprintf(stderr, "\n"); */
 	
-	// set the new_x values
-	initialise_new_x(new_x, options->nparams, options->nemulate_points, options->emulate_min, options->emulate_max);
+/* 	// set the new_x values */
+/* 	initialise_new_x(new_x, options->nparams, options->nemulate_points, options->emulate_min, options->emulate_max); */
 
-	for(i = 0; i < n_emu_points; i++){
-		new_x_row = gsl_matrix_row(new_x, i);
-		makeKVector(kplus, xmodel, &new_x_row.vector, thetas, options->nmodel_points, options->nthetas, options->nparams, options);
-		makeHVector(h_vector, &new_x_row.vector, options->nparams);
+/* 	for(i = 0; i < n_emu_points; i++){ */
+/* 		new_x_row = gsl_matrix_row(new_x, i); */
+/* 		makeKVector(kplus, xmodel, &new_x_row.vector, thetas, options->nmodel_points, options->nthetas, options->nparams, options); */
+/* 		makeHVector(h_vector, &new_x_row.vector, options->nparams); */
 
-		temp_mean = makeEmulatedMean(cinverse, training, kplus, h_vector, h_matrix, beta_vector, options->nmodel_points);
+/* 		temp_mean = makeEmulatedMean(cinverse, training, kplus, h_vector, h_matrix, beta_vector, options->nmodel_points); */
 
-		kappa = covariance_fn(&new_x_row.vector, &new_x_row.vector, thetas, options->nthetas, options->nparams);
-		temp_var = makeEmulatedVariance(cinverse, kplus, h_vector, h_matrix, kappa, options->nmodel_points, options->nregression_fns);
-		gsl_vector_set(new_mean, i, temp_mean);
-		gsl_vector_set(new_variance, i, temp_var);
-	}
+/* 		kappa = covariance_fn(&new_x_row.vector, &new_x_row.vector, thetas, options->nthetas, options->nparams); */
+/* 		temp_var = makeEmulatedVariance(cinverse, kplus, h_vector, h_matrix, kappa, options->nmodel_points, options->nregression_fns); */
+/* 		gsl_vector_set(new_mean, i, temp_mean); */
+/* 		gsl_vector_set(new_variance, i, temp_var); */
+/* 	} */
 	 
-	for(i = 0; i < n_emu_points; i++){
-		for(j = 0; j < options->nparams; j++){
-			fprintf(fptr, "%g\t", gsl_matrix_get(new_x, i, j));
-		}
-		fprintf(fptr, "%g\t", gsl_vector_get(new_mean, i));
-		fprintf(fptr,"%g\n", gsl_vector_get(new_variance, i));
-	}
+/* 	for(i = 0; i < n_emu_points; i++){ */
+/* 		for(j = 0; j < options->nparams; j++){ */
+/* 			fprintf(fptr, "%g\t", gsl_matrix_get(new_x, i, j)); */
+/* 		} */
+/* 		fprintf(fptr, "%g\t", gsl_vector_get(new_mean, i)); */
+/* 		fprintf(fptr,"%g\n", gsl_vector_get(new_variance, i)); */
+/* 	} */
 		
-	gsl_matrix_free(new_x);
-	gsl_vector_free(new_mean);
-	gsl_vector_free(new_variance);
-	gsl_vector_free(h_vector);
-	gsl_vector_free(beta_vector);
-	gsl_matrix_free(c_matrix);
-	gsl_matrix_free(cinverse);
-	gsl_matrix_free(h_matrix);
-	gsl_vector_free(kplus);
-	gsl_matrix_free(temp_matrix);
-	gsl_permutation_free(c_LU_permutation);
-	fclose(fptr);
-}
+/* 	gsl_matrix_free(new_x); */
+/* 	gsl_vector_free(new_mean); */
+/* 	gsl_vector_free(new_variance); */
+/* 	gsl_vector_free(h_vector); */
+/* 	gsl_vector_free(beta_vector); */
+/* 	gsl_matrix_free(c_matrix); */
+/* 	gsl_matrix_free(cinverse); */
+/* 	gsl_matrix_free(h_matrix); */
+/* 	gsl_vector_free(kplus); */
+/* 	gsl_matrix_free(temp_matrix); */
+/* 	gsl_permutation_free(c_LU_permutation); */
+/* 	fclose(fptr); */
+/* } */
 
 /* /\**  */
 /*  * does the maximum likelyhood estimation on the model_input to try and find the best hyperparams */
