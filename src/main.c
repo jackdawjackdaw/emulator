@@ -81,7 +81,7 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 
 	/**!!!! set the number of regression fns
 	 * 
-	 *  this is regression model dependant
+	 * this is regression model dependant
 	 * this is correct for the simple linear fit in each dimension plus a constant intercept
 	 * this shou be set by some kind of or through the cli
 	 */
@@ -95,6 +95,7 @@ void setup_cov_fn(optstruct *options){
 	 */
 	message("using gaussian cov fn\n", 1);
 	options->covariance_fn = covariance_fn_gaussian;
+	options->cov_fn_alpha = 2.0;
 	options->nthetas = options->nparams+2;
 }
 
@@ -119,7 +120,7 @@ void setup_optimization_ranges(optstruct* options){
 
 	// and force the nugget to be small
 	gsl_matrix_set(options->grad_ranges, 1, 0, 0.00001);
-	gsl_matrix_set(options->grad_ranges, 1, 1, 0.003);
+	gsl_matrix_set(options->grad_ranges, 1, 1, 0.0003);
 
 	for(i = 0; i < options->nthetas;i++){
 		sprintf(buffer, "%d %g %g\n", i, gsl_matrix_get(options->grad_ranges, i, 0), gsl_matrix_get(options->grad_ranges, i, 1));
@@ -187,12 +188,13 @@ int main (int argc, char ** argv){
 
 	alloc_modelstruct(&the_model, &options);
 
-	// proc the input_data
+	// push the input_data into the model structure
 	fill_modelstruct(&the_model, &options, input_data, number_lines);
 	
 	fprintf(stderr, "nthetas = %d\n", options.nthetas);
 	fprintf(stderr, "nparams = %d\n", options.nparams);
-	
+
+	// estimate the hyperparameters for this model
 	estimate_thetas_threaded(&the_model, &options);
 
 	fprintf(stderr, "rescaled thetas:");
@@ -206,16 +208,14 @@ int main (int argc, char ** argv){
 	}
 	fprintf(stderr, "\n");
 
+	// write the optimum thetas to a text file  ./thetas.txt 
+	// perhaps seralising the_model and everything else so that it can be 
+	// passed to the emulator would be more efficient
 	write_thetas(theta_file, the_model.thetas, &options);
 
-	// calc the new means, new variance and dump to emulator-out.txt
-	// we'll do this in the emulator code now
-	//emulate_model(xmodel_input, training_vector, thetas, &options);
-	
 	free_modelstruct(&the_model);
 	free_optstruct(&options);
 	free_char_array(input_data, number_lines);
-	//exit(1);
 	return(0);
 }
 

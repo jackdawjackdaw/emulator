@@ -1,4 +1,6 @@
 #include "modelstruct.h"
+#include "libEmu/emulator.h"
+
 
 /**
  * allocate a modelstruct from the params in optstruct
@@ -62,9 +64,9 @@ void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_d
 
 	sprintf(buffer, "read the following input matrix: %d x %d\n", options->nmodel_points, options->nparams);
 	message(buffer, 2);
-	//print_matrix(xmodel_input, options.nmodel_points, options.nparams);
+	//print_matrix(the_model->xmodel, options->nmodel_points, options->nparams);
 	//fprintf(stderr, "the training data is:\n");
-	//print_vector_quiet(training_vector, options.nmodel_points);
+	//print_vector_quiet(the_model->training_vector, options->nmodel_points);
 	
 }
 	
