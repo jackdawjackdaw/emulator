@@ -100,6 +100,8 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	setup_params(&params, the_model, options, nthreads, thread_level_tries);
 
 	best_thetas = gsl_vector_alloc(options->nthetas);
+	gsl_vector_set_zero(best_thetas);
+
 
 	// set the jobnumber back to zero otherwise running twice will kill ya
 	jobnumber = 0;

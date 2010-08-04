@@ -103,9 +103,20 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 
 	double dsave[29]; // don't know what this does yet
 	int iprint = -1; // turn off output
+	/**
+	 * factor and gradtol control the accuracy level of the algorithm, 
+	 * you can read the lbfgs source/paper but it's probably not worth worrying about
+	 *
+	 */
 	double factor = 1E7;
 	double gradtol = 1E-12;
 
+	/**
+	 * the fortran code needs it's "internal memory" setup very carefully or it'll 
+	 * barf, of particular importance is the task string which is used for flow control.
+	 * 
+	 * don't mess with this unless something is really messed up.
+	 */
 	
 	set_zero(grad, nparams);
 	set_zero(lower,nparams);
@@ -147,8 +158,6 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 	/* printf("gradtol = %g\n", gradtol); */
 	
 	fnval = 0.0;
-
-
 
 	while(go_flag == 1){
 		

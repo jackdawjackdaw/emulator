@@ -23,10 +23,8 @@ struct estimate_thetas_params{
 	gsl_matrix* h_matrix;
 	int max_tries;
 } estimate_thetas_params;
-// why do you need this ^ ident?
 
-
-
+// have to include this after derining the above struct or you get tied in knots
 #include "maxlbfgs.h"
 
 #define USEMUTEX

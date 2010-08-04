@@ -103,7 +103,7 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 		r_temp = exp(gsl_vector_get(thetas, i+2));
 		r_temp = pow(r_temp , alpha); 
 		// gaussian term				
-		exponent += (-1.0/2.0)*pow(xm_temp-xn_temp, alpha)/(r_temp);
+		exponent += (-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp);
 		//DEBUGprintf("%g\n", covariance);
 		if (fabs(xm_temp - xn_temp) < 0.0000000000000001){
 			truecount++; 		
@@ -383,14 +383,17 @@ void makeCovMatrix(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* theta
 	double covariance; 
 	gsl_vector_view xmodel_row_i;
 	gsl_vector_view xmodel_row_j;
+
 	for(i = 0; i < nmodel_points; i++){
 		for(j = 0; j < nmodel_points; j++){
 			xmodel_row_i = gsl_matrix_row(xmodel, i);
 			xmodel_row_j = gsl_matrix_row(xmodel, j);
 			covariance = the_covariance_fn(&xmodel_row_i.vector, &xmodel_row_j.vector, thetas, nthetas,nparams, 1.9);
+			//printf("(%d,%d) cov: %g\n", i, j, covariance);
 			gsl_matrix_set(cov_matrix, i,j, covariance);
 		}
 	}
+	//print_matrix(cov_matrix, nmodel_points, nmodel_points);
 }
 	
 

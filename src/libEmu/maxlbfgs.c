@@ -35,19 +35,7 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 	params->h_matrix = gsl_matrix_alloc(params->options->nmodel_points, params->options->nregression_fns);
 
 	makeHMatrix(params->h_matrix, params->the_model->xmodel,params->options->nmodel_points, params->options->nparams, params->options->nregression_fns);
-
-	/* /\* setup the arguments which will be used in the eval and gradient functions *\/ */
-	/* struct evalFnLBFGSArgs eval_fn_args; */
-	/* eval_fn_args.nparams = params->options->nparams; */
-	/* eval_fn_args.nmodel_points = params->options->nmodel_points; */
-	/* eval_fn_args.xmodel = gsl_matrix_alloc(params->options->nmodel_points, params->options->nparams); */
-	/* eval_fn_args.training_vector = gsl_vector_alloc(params->options->nmodel_points); */
-	/* eval_fn_args.h_matrix = gsl_matrix_alloc(params->options->nmodel_points, params->options->nregression_fns); */
-	/* eval_fn_args.nregression_fns = params->options->nregression_fns; */
-	/* gsl_matrix_memcpy(eval_fn_args.xmodel, params->the_model->xmodel); */
-	/* gsl_matrix_memcpy(eval_fn_args.h_matrix, h_matrix); */
-	/* gsl_vector_memcpy(eval_fn_args.training_vector, params->the_model->training_vector); */
-
+	
 	gsl_vector_set_zero(xBest);
 	gsl_vector_set_zero(xFinal);
 	set_random_initial_value(params->random_number, xInit, params->options->grad_ranges, params->options->nthetas);
@@ -101,7 +89,6 @@ double evalLikelyhoodLBFGS_struct(struct estimate_thetas_params *params){
 	for(i = 0; i < params->options->nthetas; i++) 	/* setup xinput*/
 		xinput[i] = gsl_vector_get(params->the_model->thetas, i);
 	
-
 	likelihood = evalFnLBFGS(xinput, params->options->nthetas, params);;
 
 	free(xinput);
@@ -139,17 +126,9 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	// using the random initial conditions! (xold not thetas)
 	makeCovMatrix(covariance_matrix, params->the_model->xmodel, xk, params->options->nmodel_points, nthetas, params->options->nparams, params->options->covariance_fn);
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
+	//print_matrix(temp_matrix, params->options->nmodel_points, params->options->nmodel_points);
 
-#define _CHOLDECOMP
-#ifndef _CHOLDECOMP
-	// this is not stable it seems
-	gsl_linalg_LU_decomp(temp_matrix, c_LU_permutation, &lu_signum);
-	determinant_c = gsl_linalg_LU_decomp(temp_matrix, lu_signum);
-	gsl_linalg_LU_invert(temp_matrix, c_LU_permutation, cinverse); // now we have the inverse
-
-#else 
-	// do cholesky (should be twice as fast)
-	// do the decomp and then run along
+	// do a cholesky decomp of the cov matrix, LU is not stable for ill conditioned matrices
 	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
 	if(cholesky_test == GSL_EDOM){
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
@@ -166,8 +145,6 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	gsl_linalg_cholesky_invert(temp_matrix);
 	gsl_matrix_memcpy(cinverse, temp_matrix);
 
-#endif
-		
 	// temp_val is now the likelyhood for this answer
 	temp_val = getLogLikelyhood(cinverse, determinant_c, params->the_model->xmodel, params->the_model->training_vector, xk, params->h_matrix, params->options->nmodel_points, params->options->nthetas, params->options->nparams, params->options->nregression_fns);
 		
