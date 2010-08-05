@@ -1,11 +1,6 @@
 #include "estimate_threaded.h"
 
-
-// this lives in libEmu/emulator.c
-extern emulator_opts the_emulator_options;
-
 #define SCREWUPVALUE -20000
-
 
 //#define NUMBERTHREADS 2
 
@@ -35,8 +30,20 @@ int get_number_cpus(void){
 	return(ncpus);
 }
 
-// hack
-//#define DEBUGMODE
+
+#define DEBUGMODE
+
+void setup_params(struct estimate_thetas_params **params, modelstruct* the_model, optstruct* options, int nthreads, int max_tries){
+	int i;
+	for(i = 0; i < nthreads; i++){
+		copy_optstruct(params[i]->options, options);
+		// have to allocate the memory inside each model for each parameter
+		alloc_modelstruct(params[i]->the_model, options);
+		copy_modelstruct(params[i]->the_model, the_model);
+		params[i]->max_tries = max_tries;		
+	}
+	
+}
 
 //! threaded estimate thetas 
 /** 
@@ -46,18 +53,18 @@ int get_number_cpus(void){
  * by defining USEMUTEX (or not and then using spins). 
  * Spinlocks are slightly faster but they are probably not universally supported...
  */
-void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options){
-	
+void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
+	int i;
 	/* thread data */
 	int nthreads = get_number_cpus();
 
 	#ifdef DEBUGMODE
-	nthreads = 1;
+	nthreads = 2;
   #endif
 
 
 	fprintf(stderr, "nthreads = %d\n", nthreads);
-	
+
 	/* how many attempts to maximise should we make */
 	/* each thread will make this number of tries and then compare its best values 
 	 * to the ones in best_thetas, if it wins it will save them
@@ -77,14 +84,25 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	pthread_t *threads;
 	struct estimate_thetas_params *params;
 
+
 	threads = MallocChecked(sizeof(pthread_t)*nthreads);
 	params = MallocChecked(sizeof(struct estimate_thetas_params)*nthreads);
 
+	for(i=0; i < nthreads; i++){
+		params[i].the_model = MallocChecked(sizeof(modelstruct));
+		params[i].options = MallocChecked(sizeof(optstruct));
+	}
+
+	/*
+	 * setup the bulk of the parameter structures, but we need to 
+	 * setup the random_number afterwards
+	 */
+	setup_params(&params, the_model, options, nthreads, thread_level_tries);
+
 	best_thetas = gsl_vector_alloc(options->nthetas);
+	gsl_vector_set_zero(best_thetas);
 
 
-
-	
 	// set the jobnumber back to zero otherwise running twice will kill ya
 	jobnumber = 0;
 	best_likelyhood_val = SCREWUPVALUE;
@@ -92,45 +110,13 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	/* regular stuff */
 	const gsl_rng_type *T;
 	
-	int i; 
+
 	int number_steps = 20;
-	gsl_matrix *grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
 	T = gsl_rng_default;
 
-	/* set the ranges for the initial values of the NM lookup, 
-	 * might want to adjust these as required etc, but whatever */
-	/* \TODO replace this this set_likelyhood_ranges ? */
-
-	for(i = 0; i < options->nthetas; i++){
-		if(the_emulator_options.usematern == 0){
-			gsl_matrix_set(grad_ranges, i, 0, -10.0);
-			gsl_matrix_set(grad_ranges, i, 1, 5.0);
-		} else {
-			gsl_matrix_set(grad_ranges, i, 0, 0.0001);
-			gsl_matrix_set(grad_ranges, i, 1, 1.0);
-		}
-
-		gsl_vector_set(best_thetas, i, 0.0);
-	}
-
-	// fix the amp to be around 1
-	gsl_matrix_set(grad_ranges, 0, 0, 2.73);
-	gsl_matrix_set(grad_ranges, 0, 1, 3.00);
-
-	if(the_emulator_options.usematern ==0){
-		// hackity hack, force the nugget to be small
-		gsl_matrix_set(grad_ranges, 1, 0, 0.00001);
-		gsl_matrix_set(grad_ranges, 1, 1, 0.003);
-	} else {
-		// also force the nugget to be small for the matern
-		gsl_matrix_set(grad_ranges, 3, 0, 0.000001);
-		gsl_matrix_set(grad_ranges, 3, 1, 0.001);
-	}
-		
-	for(i = 0; i < options->nthetas;i++)
-		fprintf(stderr, "%d %g %g\n", i, gsl_matrix_get(grad_ranges, i, 0), gsl_matrix_get(grad_ranges, i, 1));
-	
-
+	/* 
+	 * grad_ranges now live in the optstruct
+	 */
 
 	/* setup the thread params */
 	for(i = 0; i < nthreads; i++){
@@ -138,23 +124,6 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 		params[i].random_number = gsl_rng_alloc(T);
 		// this is blocking right now (slooow)
 		gsl_rng_set(params[i].random_number, get_seed_noblock());
-		// not sure about this, perhaps each thread should make 10 tries
-		params[i].max_tries = thread_level_tries;
-		params[i].thetas = gsl_vector_alloc(options->nthetas);
-		params[i].grad_ranges = gsl_matrix_alloc(options->nthetas, 2);		
-		params[i].model_input = gsl_matrix_alloc(options->nmodel_points, options->nparams);
-		params[i].training_vector = gsl_vector_alloc(options->nmodel_points);
-		params[i].nmodel_points = options->nmodel_points;
-		params[i].nthetas = options->nthetas;
-		params[i].nparams = options->nparams;		
-		params[i].number_steps = number_steps;
-		params[i].nregression_fns = options->nregression_fns;
-		// now actually copy the stuff into the vectors / matrices
-		gsl_vector_memcpy(params[i].thetas, thetas);
-		gsl_matrix_memcpy(params[i].grad_ranges, grad_ranges);
-		gsl_matrix_memcpy(params[i].model_input, xmodel_input);
-		gsl_vector_memcpy(params[i].training_vector, training_vector);
-		
 	}
 	
 	#ifdef USEMUTEX
@@ -190,17 +159,13 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	// tear down the thread params
 	for(i = 0; i < nthreads; i++){
 		gsl_rng_free(params[i].random_number);
-		gsl_matrix_free(params[i].grad_ranges);
-		gsl_matrix_free(params[i].model_input);
-		gsl_vector_free(params[i].thetas);
-		gsl_vector_free(params[i].training_vector);
+		free_modelstruct(params[i].the_model);
 	}
 
 	// copy the global best_theta into the one provided 
-	gsl_vector_memcpy(thetas, best_thetas);
+	gsl_vector_memcpy(the_model->thetas, best_thetas);
 	// now free best_thetas
 	gsl_vector_free(best_thetas);
-	gsl_matrix_free(grad_ranges);
 
 	free(threads);
 	free(params);
@@ -212,9 +177,9 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 // will share the same scope as the rest of the crap here
 void* estimate_thread_function(void* args){
 	// cast the args back
-	struct estimate_thetas_params *p = (struct estimate_thetas_params*) args;
+	struct estimate_thetas_params *params = (struct estimate_thetas_params*) args;
 	int next_job;
-	unsigned long my_id = pthread_self();
+	unsigned long my_id = (unsigned long)pthread_self();
 	double my_theta_val = 0.0;
 	while(1){
 		/* see if we've done enough */
@@ -240,21 +205,12 @@ void* estimate_thread_function(void* args){
 		/* we're done so stop */
 		if(next_job == -1)
 			break;
-		
-		#ifdef NELDER
-		/* else we do the nelder mead stuff */
-		nelderMead(p->random_number, p->max_tries, p->number_steps, p->thetas, p->grad_ranges, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
-		#elif BFGS
-		maxWithBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas,	\
-								p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
-		#else 
-		maxWithLBFGS(p->random_number, p->max_tries, p->number_steps, p->grad_ranges, p->model_input, p->training_vector, p->thetas, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
-		#endif
 
+		/* just support LBFGS maximisation now */
+		maxWithLBFGS(params);
 
-		// kind of sneakily calling into the maximise.c api (aah well...)
-		// won't work without some more fiddling
-		my_theta_val = evalLikelyhood(p->thetas, p->model_input, p->training_vector, p->nmodel_points, p->nthetas, p->nparams, p->nregression_fns);
+		/* this returns the likelihood of the final set of thetas from maxWithLBFGS */
+		my_theta_val = evalLikelyhoodLBFGS_struct(params);
 
 		#ifdef USEMUTEX
 		pthread_mutex_lock(&results_mutex);
@@ -264,7 +220,7 @@ void* estimate_thread_function(void* args){
 		printf("results locked by %lu\n", my_id);
 		if(my_theta_val > best_likelyhood_val){
 			// this thread has produced better thetas than previously there
-			gsl_vector_memcpy(best_thetas, p->thetas); // save them
+			gsl_vector_memcpy(best_thetas, params->the_model->thetas); // save them
 			// save the new best too
 			best_likelyhood_val = my_theta_val;
 			printf("thread %lu, won with %g\n", my_id, my_theta_val);

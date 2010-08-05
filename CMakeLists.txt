@@ -15,6 +15,6 @@ MESSAGE("include dirs: ${CMAKE_include_directories}")
 SET(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 
 
-ADD_DEFINITIONS("-std=c99 -pg -O2 -Wextra -pedantic")
+ADD_DEFINITIONS("-std=c99 -pg -O0 -g -Wextra -pedantic")
 
 add_subdirectory(src)
