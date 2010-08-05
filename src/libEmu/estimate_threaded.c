@@ -59,7 +59,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	int nthreads = get_number_cpus();
 
 	#ifdef DEBUGMODE
-	nthreads = 1;
+	nthreads = 2;
   #endif
 
 
