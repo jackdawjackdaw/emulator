@@ -13,6 +13,13 @@ pthread_spinlock_t job_counter_spin;
 pthread_spinlock_t results_spin;
 #endif
 
+/**
+ * GLOBALS FOR THIS FILE
+ *
+ * these are used in the estimate_thread_function, because i'm a dumbass and can't figure out a 
+ * better way 
+ */
+
 /* how many lots of thread_level_tries to do */
 int ntries = 2; 
 /* mutex protected counter to keep track of completed jobs */
@@ -33,14 +40,18 @@ int get_number_cpus(void){
 
 #define DEBUGMODE
 
-void setup_params(struct estimate_thetas_params **params, modelstruct* the_model, optstruct* options, int nthreads, int max_tries){
+/**
+ * setup the params_array structure, this is an array of estimate_thetas_params structs which 
+ * each contain a copy of the  modelstruct and an opstruct, to be passed to each thread.
+ */
+void setup_params(struct estimate_thetas_params *params_array, modelstruct* the_model, optstruct* options, int nthreads, int max_tries){
 	int i;
 	for(i = 0; i < nthreads; i++){
-		copy_optstruct(params[i]->options, options);
+		copy_optstruct(params_array[i].options, options);
 		// have to allocate the memory inside each model for each parameter
-		alloc_modelstruct(params[i]->the_model, options);
-		copy_modelstruct(params[i]->the_model, the_model);
-		params[i]->max_tries = max_tries;		
+		alloc_modelstruct(params_array[i].the_model, options);
+		copy_modelstruct(params_array[i].the_model, the_model);
+		params_array[i].max_tries = max_tries;		
 	}
 	
 }
@@ -59,7 +70,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	int nthreads = get_number_cpus();
 
 	#ifdef DEBUGMODE
-	nthreads = 2;
+	nthreads = 1;
   #endif
 
 
@@ -97,7 +108,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * setup the bulk of the parameter structures, but we need to 
 	 * setup the random_number afterwards
 	 */
-	setup_params(&params, the_model, options, nthreads, thread_level_tries);
+	setup_params(params, the_model, options, nthreads, thread_level_tries);
 
 	best_thetas = gsl_vector_alloc(options->nthetas);
 	gsl_vector_set_zero(best_thetas);
@@ -160,6 +171,9 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	for(i = 0; i < nthreads; i++){
 		gsl_rng_free(params[i].random_number);
 		free_modelstruct(params[i].the_model);
+		gsl_matrix_free(params[i].options->grad_ranges);
+		free(params[i].the_model);
+		free(params[i].options);
 	}
 
 	// copy the global best_theta into the one provided 

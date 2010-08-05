@@ -2,7 +2,7 @@
 #define __INC_OPTSTRUCT__
 
 #include <gsl/gsl_matrix.h>
-#include <strings.h>
+#include <string.h>
 
 //! holds command line options
 

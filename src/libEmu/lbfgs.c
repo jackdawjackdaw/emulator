@@ -226,7 +226,7 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 	free(grad); 
 	free(lower); 
 	free(upper); 
-	//free(xvalue); /* causes some kind of double free ? */
+	free(xvalue); /* causes some kind of double free ? */
 	free(wa);
 }
 
