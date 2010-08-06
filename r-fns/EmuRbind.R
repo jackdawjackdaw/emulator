@@ -1,4 +1,4 @@
-dyn.load("libRbind.so")
+dyn.load("~/local/lib/libRBIND.so")
 #source("emulator-test-data.R")
 library("lhs")
 #library("scatterplot3d")
@@ -7,27 +7,7 @@ library("lhs")
 ## with alpha = 1.9
 setDefaultOps <- function(){
   
-  setEmulatorOptions(0,1.9)
-}
-
-
-## i've taken away the call in the C function, so you need to do this
-## before you CALL CODE or DEATH
-# the function we're calling has no return, it just switches
-# some options around so this should be pretty simple
-#
-# double:alpha -> sets the smoothness of the cov fn
-# 
-# int:useGauss
-# 0 use a gauss cov fn
-# 1 use a full Matern
-# 2 use a 3/2 Matern
-# 3 use a 5/2 Matern
-# 
-setEmulatorOptions <- function(useGauss, alpha){
-  foo<-.C("setEmulatorOptions",
-     as.integer(useGauss),
-     as.double(alpha))
+ 
 }
 
 
@@ -84,7 +64,7 @@ callcode <- function(model, nmodelpts, nparams=1, nthetas=4, nemupts=50, rangemi
 } 
 
 ## just estimates the thetas for a model (this is the slow ass part)
-callEstimate <- function(model, nmodelpts,nparams=1, nthetas=4){
+callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3){
 
   res <- .C("callEstimate",
             as.double(model$xmodel),
@@ -109,7 +89,7 @@ testCallEm <- function(){
 }
 
 ## use a given set of thetas to emulate the code
-callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=4, nemupts=100, rangemin=0.0, rangemax=1.0){
+callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=20, rangemin=0.0, rangemax=1.0){
   res <- .C("callEmulate",
             as.double(model$xmodel),
             as.integer(nparams),
