@@ -1,18 +1,14 @@
-#include "libEmu/emulator.h"
-#include "libEmu/estimator.h"
-#include "libEmu/emulate-fns.h"
-#include "libEmu/regression.h"
-#include "libEmu/estimate_threaded.h"
+#include "rbind.h"
 
-#include "useful.h"
-#include "stdio.h"
-
-#include "optstruct.h"
-#include "modelstruct.h"
-#include "resultstruct.h"
-
-void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx);
-void convertDoubleToVector(gsl_vector* the_vec, double* input, int nx);
+void callEmulator(double* xmodel_in, int *nparams_in, double* training_in, int *nmodelpts, int *nthetas, double* final_x, int* nemupts, \
+									double* finaly, double* finalvar, double* rangemin, double* rangemax){
+	double *thetas_vec;
+	thetas_vec = MallocChecked(sizeof(double)*(*nthetas));
+	// this will run the estimator and fill in the thetas vector with the best ones
+	callEstimate(xmodel_in, nparams_in, training_in, nmodelpts, nthetas, thetas_vec);
+	callEmulate(xmodel_in, nparams_in, training_in, nmodelpts, thetas_vec, nthetas, final_x, nemupts, finaly, finalvar, rangemin, rangemax);
+	free(thetas_vec);
+}
 
 
 /**
@@ -24,6 +20,7 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	int i;
 	optstruct options;
 	modelstruct the_model;
+
 	
 	// setup the optstruct
 	options.nmodel_points = *nmodelpts;
@@ -71,6 +68,8 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 	options.nemulate_points = *nemupts_in;
 	options.nthetas = *nthetas_in;
 	options.nregression_fns = options.nparams+1;
+	options.emulate_min = *range_min_in;
+	options.emulate_max = *range_max_in;
 	setup_cov_fn(&options);
 	setup_optimization_ranges(&options);	// this strictly isn't needed for emulator
 
@@ -100,6 +99,21 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 			final_emulated_x[i+j*options.nmodel_points] = gsl_matrix_get(results.new_x, i, j);
 		}
 	}
+
+	printf("hello from rbind-emulator\n");
+
+	for(i = 0; i < options.nthetas; i++)
+		printf("%g\t", gsl_vector_get(the_model.thetas, i));
+	printf("\n");
+					 
+
+	for(i = 0; i < options.nemulate_points; i++){
+		for(j = 0; j < options.nparams; j++)
+			printf("%g\t", gsl_matrix_get(results.new_x, i, j));
+		printf("%g\t", gsl_vector_get(results.emulated_mean, i));
+		printf("%g\n", gsl_vector_get(results.emulated_var, i));
+	}
+	
 
 	// tidy up
 	free_modelstruct(&the_model);

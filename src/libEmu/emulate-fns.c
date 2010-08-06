@@ -36,8 +36,12 @@ void emulate_model_results(modelstruct *the_model, optstruct* options, resultstr
 	
 	// set the new_x values
 	initialise_new_x(results->new_x, options->nparams, options->nemulate_points, options->emulate_min, options->emulate_max);
-	
+
 	for(i = 0; i < options->nemulate_points; i++){
+		printf("%g\n", gsl_matrix_get(results->new_x, i,0));
+	}
+	
+	for(i = 0; i < options->nemulate_points; i++){		
 		emulate_ith_location(the_model, options, results, i, h_matrix, cinverse, beta_vector);
 	}
 	
