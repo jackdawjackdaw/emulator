@@ -110,15 +110,11 @@ upq <- function(x, xprime, p,q, ndim, paramVariances, gpEmuVariances){
   paramVariancesSubQ <- matrix(0, nrow=ndim-1, ncol=ndim-1) # and this is M-q
 
   kmatrixSubP <- matrix(0, nrow=ndim-1, ncol=ndim-1)
-
-
-  
   
   gpEmuVariancesSubP <- gpEmuVariances[-p, -p]
   paramVariancesSubP <- paramVariances[-p, -p]
   gpEmuVariancesSubQ <- gpEmuVariances[-q, -q]
   paramVariancesSubQ <- paramVariances[-q, -q]
-
 
   kmatrixSubP <- gpEmuVariancesSubP %*% solve(gpEmuVariancesSubQ + paramVariancesSubQ) %*% gpEmuVariancesSubP
   if( p != q) {
@@ -127,9 +123,12 @@ upq <- function(x, xprime, p,q, ndim, paramVariances, gpEmuVariances){
     kpp <- 0
   }
 
+  if(ndim > 2){
+    prefactor <- sqrt(det(paramVariancesSubP)*det(paramVariancesSubQ) / (det(gpEmuVariancesSubQ + paramVariancesSubQ)*det(gpEmuVariancesSubP + paramVariancesSubP - kmatrixSubP)))
+  } else {
+    prefactor <- sqrt((paramVariancesSubP*paramVariancesSubQ)/((gpEmuVariancesSubP+paramVariancesSubQ)*(gpEmuVariancesSubP + paramVariancesSubP -  kmatrixSubP)))
+  }
   
-  prefactor <- sqrt(det(paramVariancesSubP)*det(paramVariancesSubQ) / (det(gpEmuVariancesSubQ + paramVariancesSubQ)*det(gpEmuVariancesSubP + paramVariancesSubP + kmatrixSubP)))
-
   if(p != q){
     exponent <- (-1/2)*(xprime*gpEmuVariances[q,q]*xprime + x*(gpEmuVariances[p,p] - kpp)*x)
   } else {

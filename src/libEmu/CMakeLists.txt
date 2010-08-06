@@ -1,10 +1,10 @@
 # cmake lists for libEmu
 # created by ccs: 15-may 2010
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 2.6)
 enable_language (Fortran)
 
 include_directories(${CMAKE_SOURCE_DIR})
-set(emudeps emulator.c bfgs.c estimate_threaded.c estimator.c lbfgs.c maxbfgs.c maximise.c maxlbfgs.c regression.c emulator.h bfgs.h estimate_threaded.h estimator.h lbfgs.h maxbfgs.h maximise.h maxlbfgs.h regression.h)
+set(emudeps emulator.c estimate_threaded.c estimator.c lbfgs.c maxlbfgs.c regression.c emulator.h estimate_threaded.h estimator.h lbfgs.h  maxlbfgs.h regression.h ../useful.c ../optstruct.c ../modelstruct.c ../resultstruct.c emulate-fns.c emulate-fns.h)
 
 # FFLAGS depend on the compiler
 get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
@@ -29,8 +29,12 @@ else (Fortran_COMPILER_NAME STREQUAL "gfortran")
   set (CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g")
 endif (Fortran_COMPILER_NAME STREQUAL "gfortran")
 
+ADD_LIBRARY(LBFGS SHARED routines.f)
 
 ADD_LIBRARY(Emu SHARED ${emudeps})
-ADD_LIBRARY(LBFGS SHARED routines.f)
+TARGET_LINK_LIBRARIES(Emu LBFGS ${libs})
+add_dependencies(Emu LBFGS)
+
+
 
 install(TARGETS Emu LBFGS RUNTIME DESTINATION bin LIBRARY DESTINATION libEmu)

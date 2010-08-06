@@ -135,7 +135,7 @@ int main (int argc, char ** argv){
 	//!!!! set the number of regression fns
 	// this is regression model dependant
 	// this is correct for the simple linear fit in each dimension plus a constant intercept
-	options.nregression_fns = options.nparams + 1;
+	options.nregression_fns = 1;
 	//!!!! 
 
 
@@ -190,7 +190,7 @@ int main (int argc, char ** argv){
 	fprintf(stderr, "nparams = %d\n", options.nparams);
 
 	// sanity check, this is to compare against mm output
-	do_sanity_check( xmodel_input, training_vector, &options);
+	//do_sanity_check( xmodel_input, training_vector, &options);
 	
 	
 	// changed the shape to be n, np
@@ -329,9 +329,10 @@ void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_v
 	theta_initial = 0.001;
 
 	theta_zero_offset = 20 / (double)(options->nemulate_points);
-	theta_one_offset = 2 / (double)(options->nemulate_points);
+	theta_one_offset = 20 / (double)(options->nemulate_points);
 	
-	gsl_vector_set_zero(thetas);
+	/* gsl_vector_set_zero(thetas); */
+	gsl_vector_set(thetas, 0, 2.73);
 	gsl_vector_set(thetas, 1, 0.003);
 
 	for(i = 0; i < options->nemulate_points; i++){
@@ -339,7 +340,7 @@ void calculate_likelyhood_gauss(gsl_matrix* xmodel_input, gsl_vector* training_v
 		gsl_vector_set(thetas, 2, theta_initial_one + (double)i*theta_zero_offset);		
 		for(j = 0; j < options->nemulate_points; j++){
 			// varying the nugget over a huge range
-			gsl_vector_set(thetas,1, theta_initial + (double)j*theta_one_offset);
+			gsl_vector_set(thetas,3, theta_initial_one + (double)j*theta_one_offset);
 
 			the_likelyhood = evalLikelyhood(thetas, xmodel_input, training_vector, options->nmodel_points, options->nthetas, options->nparams, options->nregression_fns);
 			gsl_matrix_set(local_like_matrix, i, j, the_likelyhood);

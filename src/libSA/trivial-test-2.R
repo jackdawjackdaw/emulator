@@ -34,8 +34,7 @@ wmatrix <- solve(t(hmatrix) %*% cinv %*% hmatrix)
 r <- rZero(nreg)
                                         # need to include the scale too
 t <- tZero(designMatrix, nModelPts, nDimensions, paramVariances, gpEmuVariances)
-emat <- makeEVector(betaVec, hmatrix, training, cinv
-)
+emat <- makeEVector(betaVec, hmatrix, training, cinv)
 
 resultsMeans <- matrix(0, ncol=nSamples, nrow=nDimensions)
 resultsVariances <- matrix(0, ncol=nSamples, nrow=nDimensions)

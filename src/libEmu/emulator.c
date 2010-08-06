@@ -10,39 +10,6 @@
  * functions can be used  
  */
 
-//! a GLOBAL structure which will be queried by the functions to set params
-emulator_opts the_emulator_options;
-
-
-//! this MUST BE CALLED FIRST before any emulatoring
-void set_emulator_defaults(emulator_opts* x){
-	// set some default behaviour
-	x->alpha = 1.9;
-	// don't use any of the matern functions
-	x->usematern = 0;
-	x->usematern_three = 0;
-	x->usematern_five = 0;
-	// don't use the crazy non-diagonal matrix function
-	x->use_gaussian_nondiag = 0;
-}
-	
-
-void print_emulator_options(emulator_opts* x){
-	if(x->usematern ==0 && x->usematern_three == 0 && x->usematern_five==0){
-		fprintf(stderr, "using a power-exp covariance function\n");
-		fprintf(stderr, "alpha = %g\n", x->alpha);				
-	} else if (x->usematern == 1){
-		fprintf(stderr, "using a *FULL* matern  covariance function\n");
-	} else if (x->usematern_three ==1){
-		fprintf(stderr, "using 3/2 matern  covariance function\n");
-	} else if (x->use_gaussian_nondiag ==1){
-		fprintf(stderr, "using nondiagonal gaussian covariance, need nthetas = nparams^2 + 2");
-	} else {
-		fprintf(stderr, "using 5/2 matern  covariance function\n");
-	}
-}
-
-
 
 //! print the given matrix to the stdout
 /**
@@ -69,19 +36,13 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
  * it seems that the matern version doesn't work very well compared to the 
  * gaussian covariance function, at least not on the ising model.
  */
-inline double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
-	if(the_emulator_options.usematern == 1){
-		return(covariance_fn_matern(xm, xn, thetas, nthetas, nparams));
-	} else if(the_emulator_options.usematern_three ==1){
-		return(covariance_fn_matern_three(xm,xn, thetas, nthetas, nparams));
-	} else if(the_emulator_options.usematern_five ==1){
-		return(covariance_fn_matern_five(xm,xn, thetas, nthetas, nparams));
-	} else if(the_emulator_options.use_gaussian_nondiag == 1){
-		return(covariance_fn_gaussian_nondiag(xm, xn , thetas, nthetas, nparams, the_emulator_options.alpha));
-	} else {
-		// this is the default option
-		return(covariance_fn_gaussian(xm, xn , thetas, nthetas, nparams, the_emulator_options.alpha));
-	}
+/*
+ * have to fix the other fns in this file to work with this fn ptr defn
+ */
+inline double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams, double(*the_covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double)){
+	fprintf(stderr, "this shouldn't be called\n");
+	exit(1);
+	return(0);
 }
 
 /** 
@@ -182,7 +143,7 @@ double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*
 	double small_no = 1E-10;
 	int i, j, diagcount = 0; 
 
-	assert(thetas->size == (nparams*nparams) + 2);
+	assert((int)thetas->size == (nparams*nparams) + 2);
 
 	for(i = 0; i < nparams; i++){
 		for(j = 0; j < nparams; j++){
@@ -396,13 +357,13 @@ double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* the
  * @param thetas -> the hyperparams of the gp used in the estimation.
  * @return kvector is set to the result
  */
-void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams){
+void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams, double(*the_covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double)){
 	int i = 0; 
 	gsl_vector_view  xmodel_row;
 	for (i = 0; i < nmodel_points; i++){
 		xmodel_row = gsl_matrix_row(xmodel, i);
 		// send the rows from the xmodel matrix to the kvector, these have nparams width
-		gsl_vector_set(kvector, i, covariance_fn(&xmodel_row.vector, xnew, thetas, nthetas, nparams));
+		gsl_vector_set(kvector, i, the_covariance_fn(&xmodel_row.vector, xnew, thetas, nthetas, nparams, 1.9));
 	}
 }
 
@@ -417,19 +378,22 @@ void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_
  * @param xmodel matrix of the model points (nmodel_points x nparams)
  * @param thetas hyperparameters
  */
-void makeCovMatrix(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams){
+void makeCovMatrix(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams, double(*the_covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double)){
 	int i,j;
 	double covariance; 
 	gsl_vector_view xmodel_row_i;
 	gsl_vector_view xmodel_row_j;
+
 	for(i = 0; i < nmodel_points; i++){
 		for(j = 0; j < nmodel_points; j++){
 			xmodel_row_i = gsl_matrix_row(xmodel, i);
 			xmodel_row_j = gsl_matrix_row(xmodel, j);
-			covariance = covariance_fn(&xmodel_row_i.vector, &xmodel_row_j.vector, thetas, nthetas, nparams);
+			covariance = the_covariance_fn(&xmodel_row_i.vector, &xmodel_row_j.vector, thetas, nthetas,nparams, 1.9);
+			//printf("(%d,%d) cov: %g\n", i, j, covariance);
 			gsl_matrix_set(cov_matrix, i,j, covariance);
 		}
 	}
+	//print_matrix(cov_matrix, nmodel_points, nmodel_points);
 }
 	
 
