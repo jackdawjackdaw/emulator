@@ -8,7 +8,7 @@
  * this is the main routine for the estimator code.
  *
  * purpose: to read input from stdin and calculate the optimal hyperparams for the data 
- * and covfn.
+n * and covfn.
  *
  * key structures: modelstruct, optstruct
  * modelstruct -> contains the input data, such as training points, training values, thetas etc

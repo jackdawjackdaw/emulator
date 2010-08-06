@@ -29,10 +29,14 @@ gsl_vector *best_thetas;
 /* the best likelyhood we find */
 double best_likelyhood_val = SCREWUPVALUE;
 
+/**
+ * end of global section
+ */
+
 int get_number_cpus(void){
 	int ncpus = 0;
 	/* now try and find the number of threads by seeing how many cpus we have */
-	ncpus = sysconf(_SC_NPROCESSORS_ONLN); // man 3 sysconf
+	ncpus = sysconf(_SC_NPROCESSORS_ONLN); // man 3 sysconf (should be posix?)
 	fprintf(stderr, "NCPUS: %d\n", ncpus);
 	return(ncpus);
 }
@@ -82,7 +86,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * we only care about the *best* so it doesn't matter if we just throw 
 	 * the rest out the window... 
 	 */
-	int thread_level_tries = 20; 
+	int thread_level_tries = 1; 
 	/* if(nthreads > 2) { */
 	/* 	thread_level_tries = thread_level_tries / nthreads;		 */
 	/* } */
@@ -172,6 +176,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 		gsl_rng_free(params[i].random_number);
 		free_modelstruct(params[i].the_model);
 		gsl_matrix_free(params[i].options->grad_ranges);
+		gsl_matrix_free(params[i].h_matrix); // hehe was free'ing this way too early before, gives strange behaviour
 		free(params[i].the_model);
 		free(params[i].options);
 	}
@@ -222,10 +227,11 @@ void* estimate_thread_function(void* args){
 
 		/* just support LBFGS maximisation now */
 		maxWithLBFGS(params);
-
+		
 		/* this returns the likelihood of the final set of thetas from maxWithLBFGS */
 		my_theta_val = evalLikelyhoodLBFGS_struct(params);
-
+		
+		
 		#ifdef USEMUTEX
 		pthread_mutex_lock(&results_mutex);
 		#else 

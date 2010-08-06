@@ -69,7 +69,6 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 	gsl_vector_free(xInit);
 	gsl_vector_free(xFinal);
 	gsl_vector_free(xBest);
-	gsl_matrix_free(params->h_matrix);
 	free(tempVec);
 }
 

@@ -22,7 +22,7 @@ void free_modelstruct(modelstruct* the_model){
 }
 
 /**
- * copy a modelstruct from dst->src
+ * copy a modelstruct from src->dst
  */
 void copy_modelstruct(modelstruct* dst, modelstruct* src){
 	gsl_matrix_memcpy(dst->xmodel, src->xmodel);
