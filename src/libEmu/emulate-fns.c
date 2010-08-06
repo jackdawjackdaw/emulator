@@ -58,15 +58,16 @@ void emulate_ith_location(modelstruct *the_model, optstruct *options, resultstru
 	gsl_vector *kplus = gsl_vector_alloc(options->nmodel_points);
 	gsl_vector *h_vector = gsl_vector_alloc(options->nregression_fns);
 
+	// read the new x location 
 	new_x_row = gsl_matrix_row(results->new_x, i);
 	
-
 	makeKVector(kplus, the_model->xmodel, &new_x_row.vector, the_model->thetas, options->nmodel_points, options->nthetas, options->nparams, options->covariance_fn);
 	makeHVector(h_vector, &new_x_row.vector, options->nparams);
-
+	
 	temp_mean = makeEmulatedMean(cinverse, the_model->training_vector, kplus, h_vector, h_matrix, beta_vector, options->nmodel_points);
 	kappa = options->covariance_fn(&new_x_row.vector, &new_x_row.vector, the_model->thetas, options->nthetas, options->nparams, options->cov_fn_alpha);
 	temp_var = makeEmulatedVariance(cinverse, kplus, h_vector, h_matrix, kappa, options->nmodel_points, options->nregression_fns);
+
 	gsl_vector_set(results->emulated_mean, i, temp_mean);
 	gsl_vector_set(results->emulated_var, i, temp_var);
 

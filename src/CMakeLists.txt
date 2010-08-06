@@ -12,6 +12,7 @@ MESSAGE("link libs: ${libs}")
 
 set(emulator_SOURCES emulator-main ioread useful optstruct resultstruct modelstruct bin_support)
 set(estimator_SOURCES main ioread useful optstruct modelstruct resultstruct bin_support)
+
 #set(lhood_SOURCES likelyhoody ioread useful)
 
 link_directories(${PROJECT_SOURCE_DIR}/src/libEmu)
@@ -24,6 +25,10 @@ add_dependencies(estimator Emu LBFGS)
 add_executable(emulator ${emulator_SOURCES})
 target_link_libraries(emulator Emu LBFGS ${libs})
 add_dependencies(emulator Emu LBFGS)
+
+add_library(RBIND SHARED rbind.c)
+target_link_libraries(RBIND Emu LBFGS ${libs})									
+add_dependencies(RBIND Emu LBFGS)
 
 # deprecated
 #add_executable(lhood ${lhood_SOURCES})

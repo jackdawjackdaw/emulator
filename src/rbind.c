@@ -1,11 +1,15 @@
 #include "libEmu/emulator.h"
 #include "libEmu/estimator.h"
-#include "libEmu/maximise.h"
+#include "libEmu/emulate-fns.h"
 #include "libEmu/regression.h"
-#include "estimate_threaded.h"
-#include "multifit.h"
+#include "libEmu/estimate_threaded.h"
+
 #include "useful.h"
 #include "stdio.h"
+
+#include "optstruct.h"
+#include "modelstruct.h"
+#include "resultstruct.h"
 
 void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx);
 void convertDoubleToVector(gsl_vector* the_vec, double* input, int nx);
@@ -35,15 +39,15 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	alloc_modelstruct(&the_model, &options);
 
 	// fill in xmodel 
-	convertDoubleToMatrix(the_model.xmodel, xmodel_in, nparams, nmodel_points);
+	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	// fill in the training vec
-	convertDoubleToVector(the_model.training_vec, training_in, nmodel_points);
+	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
 
 	// actually do the estimation using libEmu
 	estimate_thetas_threaded(&the_model, &options);
 
 	// set the final results
-	for(i = 0; i < nthetas; i++)
+	for(i = 0; i < options.nthetas; i++)
 		final_thetas[i] = gsl_vector_get(the_model.thetas, i);
 
 	// tidy up
@@ -57,14 +61,14 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
  */
 void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* nmodelpts, double* thetas_in, int* nthetas_in, double* final_emulated_x, int *nemupts_in, double* final_emulated_y, double* final_emulated_variance, double* range_min_in, double*range_max_in){
 	
-	opstruct options;
+	optstruct options;
 	modelstruct the_model;
-	resultstruct emu_results;
+	resultstruct results;
 
 	int i, j;
 	options.nmodel_points = *nmodelpts;
 	options.nparams = *nparams_in;
-	options.nemupts = *nemupts_in;
+	options.nemulate_points = *nemupts_in;
 	options.nthetas = *nthetas_in;
 	options.nregression_fns = options.nparams+1;
 	setup_cov_fn(&options);
@@ -72,35 +76,35 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 
 	alloc_modelstruct(&the_model, &options);
 
-	alloc_resultstruct(&emu_results, &options);
+	alloc_resultstruct(&results, &options);
 	
 	// fill in thetas
-	convertDoubleToVector(the_model.thetas, thetas_in, nthetas);
+	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
 	// fill in xmodel 
-	convertDoubleToMatrix(the_model.xmodel, xmodel_in, nparams, nmodel_points);
+	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	// fill in the training vec
-	convertDoubleToVector(the_model.training_vec, training_in, nmodel_points);
+	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
 
 	// and call out to libEmu
-	emulate_model_results(&the_model, &options, &emu_results);
+	emulate_model_results(&the_model, &options, &results);
 	
 	// Fill in emulated_y, emulated_variance
-	for(i = 0; i < nemupts; i++){
+	for(i = 0; i < options.nemulate_points; i++){
 		final_emulated_y[i] = gsl_vector_get(results.emulated_mean, i);
 		final_emulated_variance[i] = gsl_vector_get(results.emulated_var, i);
 	}
 
 	// fill in final emulated_x
-	for(j = 0; j < nparams; j++){
-		for(i = 0; i < nemupts; i++){
-			final_emulated_x[i+j*nmodel_points] = gsl_matrix_get(results.new_x, i, j);
+	for(j = 0; j < options.nparams; j++){
+		for(i = 0; i < options.nemulate_points; i++){
+			final_emulated_x[i+j*options.nmodel_points] = gsl_matrix_get(results.new_x, i, j);
 		}
 	}
 
 	// tidy up
 	free_modelstruct(&the_model);
 	free_optstruct(&options);
-	free_resultstruct(&emu_results);
+	free_resultstruct(&results);
 }
 
 
@@ -116,27 +120,54 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in, \
 													int *nmodelpts_in, int* nthetas_in, double* thetas_in, \
 													double* answer){
-
-	int nmodel_points = *nmodelpts_in;
-	int nparams = *nparams_in;
-	int nthetas = *nthetas_in;
-	gsl_matrix *xmodel = gsl_matrix_alloc(nmodel_points, nparams);
-	gsl_vector *training_vec = gsl_vector_alloc(nmodel_points);
-	gsl_vector *thetas = gsl_vector_alloc(nthetas);
+	optstruct options;
+	modelstruct the_model;
 	double the_likelyhood = 0.0;
+	struct estimate_thetas_params params;
+	const gsl_rng_type *T;
+	
+	T = gsl_rng_default;
 
-	convertDoubleToMatrix(xmodel, xmodel_in, nparams, nmodel_points);
-	convertDoubleToVector(training_vec, training_in, nmodel_points);
-	convertDoubleToVector(thetas, thetas_in, nthetas);
+	params.the_model = MallocChecked(sizeof(modelstruct));
+	params.options = MallocChecked(sizeof(optstruct));
+
+	
+	options.nmodel_points = *nmodelpts_in;
+	options.nparams = *nparams_in;
+	options.nthetas = *nthetas_in;
+	options.nregression_fns = options.nparams+1;
+	setup_cov_fn(&options);
+	setup_optimization_ranges(&options);
+	
+	alloc_modelstruct(&the_model, &options);
+	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
+	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
+	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
+
+	// copy in the structures we just created
+	copy_optstruct(params.options, &options);
+	alloc_modelstruct(params.the_model, &options);
+	copy_modelstruct(params.the_model, &the_model);
+	
+	params.random_number = gsl_rng_alloc(T);
+	gsl_rng_set(params.random_number, get_seed_noblock());
 
 	// this calls the log likelyhood
-	the_likelyhood = evalLikelyhood(thetas, xmodel, training_vec, nmodel_points, nthetas, nparams);
+	the_likelyhood = evalLikelyhoodLBFGS_struct(&params);
 
 	*answer = the_likelyhood;
-
-	gsl_matrix_free(xmodel);
-	gsl_vector_free(training_vec);
-	gsl_vector_free(thetas);
+	
+	// tidy up
+	gsl_rng_free(params.random_number);
+	free_modelstruct(params.the_model);
+	free_modelstruct(&the_model);
+	gsl_matrix_free(options.grad_ranges);
+	gsl_matrix_free(params.options->grad_ranges);
+	gsl_matrix_free(params.h_matrix);
+	free(params.the_model);
+	free(params.options);
+	 
+	
 
 }
 
