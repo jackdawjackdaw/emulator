@@ -26,11 +26,7 @@ add_executable(emulator ${emulator_SOURCES})
 target_link_libraries(emulator Emu LBFGS ${libs})
 add_dependencies(emulator Emu LBFGS)
 
-add_library(RBIND SHARED rbind.c)
+add_library(RBIND SHARED rbind bin_support)
 target_link_libraries(RBIND Emu LBFGS ${libs})									
 add_dependencies(RBIND Emu LBFGS)
 
-# deprecated
-#add_executable(lhood ${lhood_SOURCES})
-#target_link_libraries(lhood Emu LBFGS ${libs})
-#add_dependencies(lhood Emu LBFGS)
