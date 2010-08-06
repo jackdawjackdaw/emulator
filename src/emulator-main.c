@@ -1,4 +1,5 @@
 #include "main.h"
+#include "resultstruct.h"
 
 
 void print_results(optstruct *options, resultstruct *results, FILE* fptr);

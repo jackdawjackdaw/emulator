@@ -6,6 +6,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 get_filename_component(default_prefix ".." ABSOLUTE)
 set(CMAKE_INSTALL_PREFIX $(default_prefix))
 
+add_subdirectory("./libEmu")
 
 MESSAGE("link libs: ${libs}")
 
