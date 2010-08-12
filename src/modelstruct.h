@@ -8,9 +8,15 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 
+/** 
+ * @file modelstruct.h
+ * \brief defines modelstruct which contains the raw data to be worked on by emulator and estimator
+ */
+
 //! holds the main data structures for a single model emulator run
 
 /**
+ * \struct modelstruct
  * this structure is everything you need to do run the estimation and the 
  * emulation
  *
@@ -21,9 +27,30 @@
  * a pointer to the options used to init this model (should *not* be free'd)
  */
 typedef struct modelstruct{
+	/** 
+	 * \brief x_values (nmodel_points * nparams)
+	 * 
+	 * the points at which the model (that which is to be emulated) was evaluated, 
+	 * each row is a new model points, the columns are the dimensions 
+	 */
 	gsl_matrix* xmodel;
+	/** 
+	 * \brief y_values (nmodel_points)
+	 * 
+	 * the values of the model evaluated at each model point
+	 * this is what we aim to interpolate
+	 */
 	gsl_vector* training_vector;
+	/** 
+	 * \brief hyperparameters (nthetas)
+	 * 
+	 * working and eventually best values of the covariance fns (hyper)parameters which 
+	 * should force the emulated model to pass through all of the training points 
+	 */
 	gsl_vector* thetas;
+	/**
+	 * a pointer back to the options struct used to init this structure, just for fun really
+	 */
 	optstruct*  options;
 } modelstruct;
 

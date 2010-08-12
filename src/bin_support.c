@@ -100,6 +100,17 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 }
 
 
+/**
+ * \brief set the covariance_fn pointer to the gaussian covariance fn
+ *
+ * sets the function pointer to the gaussian cov funtion. because i suck there's actually
+ * a broken interface lurking here. the other cov fns may have more or fewer args than the
+ * gaussian one. Be careful when changing. 
+ * 
+ * you *shouldn't* need to change cov fn, the gaussian one is quite suitable
+ * \todo cov_fn_alpha is broken
+ * \todo test changing the fn ptr
+ */
 void setup_cov_fn(optstruct *options){
 	/*
 	 * we'll use the gaussian covariance fn by default
@@ -110,6 +121,20 @@ void setup_cov_fn(optstruct *options){
 	options->nthetas = options->nparams+2;
 }
 
+/**
+ * \brief set the allowed ranges for the maximisation routine lbfgs
+ *
+ * \todo add a flag to optstruct for log-scaled and regular thetas
+ * 
+ * this fills the options->grad_ranges matrix with lower and upper bounds to be used in the
+ * bounded bfgs maximisation routine lbfgs (see libEmu/maxlbfgs.c) for more info on this.
+ * 
+ * Note that the gaussian covfn uses log scaled thetas and so the range of values is
+ * log[0..upper] -> [-infty .. log(uppper)]
+ * 
+ * this is not the case for the other fns, but the rest of the code may have the assumption
+ * frozen into it that the ranges *are* log-scaled.
+ */
 void setup_optimization_ranges(optstruct* options){
 	int i;
 	char buffer[128];
@@ -119,11 +144,13 @@ void setup_optimization_ranges(optstruct* options){
 	 */
 	options->grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
 
+	/* these are log-scaled ranges, note the negative lower bound */
 	for(i = 0; i < options->nthetas; i++){
 		if(options->covariance_fn == covariance_fn_gaussian){
 			gsl_matrix_set(options->grad_ranges, i, 0, -10.0);
 			gsl_matrix_set(options->grad_ranges, i, 1, 5.0);	
 		} else {
+			/* these are the regular ranges */
 			gsl_matrix_set(options->grad_ranges, i, 0, 0.0001);
 			gsl_matrix_set(options->grad_ranges, i, 1, 1.0);
 		}

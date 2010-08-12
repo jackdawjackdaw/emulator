@@ -1,6 +1,7 @@
-/* 11-1-09
- * CCS
- * useful.h, some basic functions one always uses in scientific code
+/**
+ * \date 11-1-09
+ * \file useful.h,
+ * \brief some basic functions one always uses in scientific code
  */
 
 #include "stdio.h"
@@ -11,9 +12,10 @@
 #include "math.h"
 #include "sys/time.h"
 
-//*****************
-// puts a message in the log (or in the stderr)
-//*****************
+
+/**
+ *  puts a message in the log (or in the stderr)
+ */
 void message(char* the_message, int level);
 
 //*******************

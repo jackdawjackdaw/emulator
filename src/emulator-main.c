@@ -1,8 +1,25 @@
 #include "main.h"
 #include "resultstruct.h"
 
+/** 
+ * \file emulator-main.c
+ * \brief runs the emulation process
+ */
+
+
 
 void print_results(optstruct *options, resultstruct *results, FILE* fptr);
+
+/**
+ * \brief the binary interface to the emulator fns
+ * 
+ * reads thetas.txt and the modeldata from stdin (same as estimator)
+ * 
+ * emulate_model_results fills out a resultstruct with the estimated gp model being
+ * evaluated at the various positions ion the parameter space. 
+ * 
+ * the results are then spewed out to emulator-out.txt or another filename.
+ */
 
 int main (int argc, char **argv){
 	optstruct options;

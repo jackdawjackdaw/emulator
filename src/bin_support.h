@@ -14,10 +14,11 @@
 
 
 /**
- * contains the fns needed for the estimator and emulator binaries, 
+ * @file bin_support.h
+ * \brief contains the fns needed for the estimator and emulator binaries, 
  * shouldn't contain anything vital for the actual statistical code 
- * (this should all be in libEmu)
  */ 
+
 void print_usage_estimator(void);
 void print_usage_emulator(void);
 

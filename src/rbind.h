@@ -14,6 +14,12 @@
 #include "modelstruct.h"
 #include "resultstruct.h"
 
+/**
+ * \file rbind.h
+ * \brief defines the interface to R (messy)
+ */
+
+
 void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx);
 void convertDoubleToVector(gsl_vector* the_vec, double* input, int nx);
 void callEmulator(double* xmodel_in, int *nparams_in, double* training_in, int *nmodelpts, int *nthetas, double* final_x, int* nemupts, \
