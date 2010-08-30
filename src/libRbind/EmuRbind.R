@@ -3,19 +3,12 @@ dyn.load("~/local/lib/libRBIND.so")
 library("lhs")
 #library("scatterplot3d")
 
-## this selects the power exponential function
-## with alpha = 1.9
-setDefaultOps <- function(){
-  
- 
-}
-
 
 # i don't quite understand how to push the results together into a data
 # frame i should check on this.
 # note that the rangemin/max create a square domain in 2d.
 # not sure how to grab the results?
-callcode <- function(model, nmodelpts, nparams=1, nthetas=4, nemupts=50, rangemin=0.0, rangemax=4.0){
+callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemin=0.0, rangemax=4.0){
 
   if(nparams==1){
   
@@ -53,9 +46,9 @@ callcode <- function(model, nmodelpts, nparams=1, nthetas=4, nemupts=50, rangemi
      finalvar = double(nemupts),
      as.double(rangemin),
      as.double(rangemax))
-    
 
   } else {
+    ## \todo fix emulator to work with n >> 2
     print("sorry, won't work with nparams > 2")
   }
   #browser()
@@ -83,6 +76,7 @@ testCallEm <- function(){
   # just made up but about right for matern
   ans <- c(0.89, 0.54, 0.334, 0.64)
   f1<-callEmulate(model, ans, m, nemupts=10)
+  plot(f1$emulatedx, f1$emulatedy)
   print(f1)
   f2<-callEmulate(model, ans,m, nemupts=10)
   print(f2)

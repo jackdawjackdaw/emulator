@@ -135,7 +135,7 @@ unsigned long int get_seed(void){
 // RNG 
 // tries to read from /dev/random, or otherwise uses the system time
 unsigned long int get_seed_noblock(void){
-	unsigned int seed;
+	unsigned long int seed;
 	struct timeval tv;
 	FILE *devrandom;
 

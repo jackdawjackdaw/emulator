@@ -106,12 +106,13 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 		printf("%g\t", gsl_vector_get(the_model.thetas, i));
 	printf("\n");
 					 
-
+	// check that the results struct agrees with final_emulated etc
 	for(i = 0; i < options.nemulate_points; i++){
 		for(j = 0; j < options.nparams; j++)
-			printf("%g\t", gsl_matrix_get(results.new_x, i, j));
-		printf("%g\t", gsl_vector_get(results.emulated_mean, i));
-		printf("%g\n", gsl_vector_get(results.emulated_var, i));
+			printf("%g\t%g\t", gsl_matrix_get(results.new_x, i, j), final_emulated_x[i+j*options.nmodel_points]);
+		
+		printf("%g\t%g\t", gsl_vector_get(results.emulated_mean, i), final_emulated_y[i]);
+		printf("%g\t%g\n", gsl_vector_get(results.emulated_var, i), final_emulated_variance[i]);
 	}
 	
 

@@ -30,19 +30,19 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /opt/local/bin/cmake
+CMAKE_COMMAND = /usr/bin/cmake
 
 # The command to remove a file.
-RM = /opt/local/bin/cmake -E remove -f
+RM = /usr/bin/cmake -E remove -f
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /opt/local/bin/ccmake
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/chris/Projects/Emulator
+CMAKE_SOURCE_DIR = /home/einstein/grad/cec24/Projects/Emulator
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/chris/Projects/Emulator
+CMAKE_BINARY_DIR = /home/einstein/grad/cec24/Projects/Emulator/src
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -50,7 +50,7 @@ CMAKE_BINARY_DIR = /Users/chris/Projects/Emulator
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/opt/local/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -60,19 +60,19 @@ edit_cache/fast: edit_cache
 # Special rule for the target install
 install: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/opt/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install
 
 # Special rule for the target install
 install/fast: preinstall/fast
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Install the project..."
-	/opt/local/bin/cmake -P cmake_install.cmake
+	/usr/bin/cmake -P cmake_install.cmake
 .PHONY : install/fast
 
 # Special rule for the target install/local
 install/local: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing only the local directory..."
-	/opt/local/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
 .PHONY : install/local
 
 # Special rule for the target install/local
@@ -82,7 +82,7 @@ install/local/fast: install/local
 # Special rule for the target install/strip
 install/strip: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Installing the project stripped..."
-	/opt/local/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
 .PHONY : install/strip
 
 # Special rule for the target install/strip
@@ -101,7 +101,7 @@ list_install_components/fast: list_install_components
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/opt/local/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/usr/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -110,14 +110,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /Users/chris/Projects/Emulator && $(CMAKE_COMMAND) -E cmake_progress_start /Users/chris/Projects/Emulator/CMakeFiles /Users/chris/Projects/Emulator/src/CMakeFiles/progress.marks
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f CMakeFiles/Makefile2 src/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/chris/Projects/Emulator/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/einstein/grad/cec24/Projects/Emulator/src/CMakeFiles /home/einstein/grad/cec24/Projects/Emulator/src/CMakeFiles/progress.marks
+	$(MAKE) -f CMakeFiles/Makefile2 all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/einstein/grad/cec24/Projects/Emulator/src/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f CMakeFiles/Makefile2 src/clean
+	$(MAKE) -f CMakeFiles/Makefile2 clean
 .PHONY : clean
 
 # The main clean target
@@ -126,192 +126,83 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f CMakeFiles/Makefile2 src/preinstall
+	$(MAKE) -f CMakeFiles/Makefile2 preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f CMakeFiles/Makefile2 src/preinstall
+	$(MAKE) -f CMakeFiles/Makefile2 preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /Users/chris/Projects/Emulator && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	$(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-# Convenience name for target.
-src/CMakeFiles/emulator.dir/rule:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f CMakeFiles/Makefile2 src/CMakeFiles/emulator.dir/rule
-.PHONY : src/CMakeFiles/emulator.dir/rule
+#=============================================================================
+# Target rules for targets named emulator
 
-# Convenience name for target.
-emulator: src/CMakeFiles/emulator.dir/rule
+# Build rule for target.
+emulator: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 emulator
 .PHONY : emulator
 
 # fast build rule for target.
 emulator/fast:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/build
+	$(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/build
 .PHONY : emulator/fast
 
-# Convenience name for target.
-src/CMakeFiles/estimator.dir/rule:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f CMakeFiles/Makefile2 src/CMakeFiles/estimator.dir/rule
-.PHONY : src/CMakeFiles/estimator.dir/rule
+#=============================================================================
+# Target rules for targets named estimator
 
-# Convenience name for target.
-estimator: src/CMakeFiles/estimator.dir/rule
+# Build rule for target.
+estimator: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 estimator
 .PHONY : estimator
 
 # fast build rule for target.
 estimator/fast:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/build
+	$(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/build
 .PHONY : estimator/fast
 
-# Convenience name for target.
-src/CMakeFiles/lhood.dir/rule:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f CMakeFiles/Makefile2 src/CMakeFiles/lhood.dir/rule
-.PHONY : src/CMakeFiles/lhood.dir/rule
+#=============================================================================
+# Target rules for targets named Emu
 
-# Convenience name for target.
-lhood: src/CMakeFiles/lhood.dir/rule
-.PHONY : lhood
+# Build rule for target.
+Emu: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 Emu
+.PHONY : Emu
 
 # fast build rule for target.
-lhood/fast:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/lhood.dir/build.make src/CMakeFiles/lhood.dir/build
-.PHONY : lhood/fast
+Emu/fast:
+	$(MAKE) -f src/libEmu/CMakeFiles/Emu.dir/build.make src/libEmu/CMakeFiles/Emu.dir/build
+.PHONY : Emu/fast
 
-emulator-main.o: emulator-main.c.o
-.PHONY : emulator-main.o
+#=============================================================================
+# Target rules for targets named LBFGS
 
-# target to build an object file
-emulator-main.c.o:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/emulator-main.c.o
-.PHONY : emulator-main.c.o
+# Build rule for target.
+LBFGS: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 LBFGS
+.PHONY : LBFGS
 
-emulator-main.i: emulator-main.c.i
-.PHONY : emulator-main.i
+# fast build rule for target.
+LBFGS/fast:
+	$(MAKE) -f src/libEmu/CMakeFiles/LBFGS.dir/build.make src/libEmu/CMakeFiles/LBFGS.dir/build
+.PHONY : LBFGS/fast
 
-# target to preprocess a source file
-emulator-main.c.i:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/emulator-main.c.i
-.PHONY : emulator-main.c.i
+#=============================================================================
+# Target rules for targets named RBIND
 
-emulator-main.s: emulator-main.c.s
-.PHONY : emulator-main.s
+# Build rule for target.
+RBIND: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 RBIND
+.PHONY : RBIND
 
-# target to generate assembly for a file
-emulator-main.c.s:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/emulator-main.c.s
-.PHONY : emulator-main.c.s
-
-ioread.o: ioread.c.o
-.PHONY : ioread.o
-
-# target to build an object file
-ioread.c.o:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/ioread.c.o
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/ioread.c.o
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/lhood.dir/build.make src/CMakeFiles/lhood.dir/ioread.c.o
-.PHONY : ioread.c.o
-
-ioread.i: ioread.c.i
-.PHONY : ioread.i
-
-# target to preprocess a source file
-ioread.c.i:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/ioread.c.i
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/ioread.c.i
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/lhood.dir/build.make src/CMakeFiles/lhood.dir/ioread.c.i
-.PHONY : ioread.c.i
-
-ioread.s: ioread.c.s
-.PHONY : ioread.s
-
-# target to generate assembly for a file
-ioread.c.s:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/ioread.c.s
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/ioread.c.s
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/lhood.dir/build.make src/CMakeFiles/lhood.dir/ioread.c.s
-.PHONY : ioread.c.s
-
-likelyhoody.o: likelyhoody.c.o
-.PHONY : likelyhoody.o
-
-# target to build an object file
-likelyhoody.c.o:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/lhood.dir/build.make src/CMakeFiles/lhood.dir/likelyhoody.c.o
-.PHONY : likelyhoody.c.o
-
-likelyhoody.i: likelyhoody.c.i
-.PHONY : likelyhoody.i
-
-# target to preprocess a source file
-likelyhoody.c.i:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/lhood.dir/build.make src/CMakeFiles/lhood.dir/likelyhoody.c.i
-.PHONY : likelyhoody.c.i
-
-likelyhoody.s: likelyhoody.c.s
-.PHONY : likelyhoody.s
-
-# target to generate assembly for a file
-likelyhoody.c.s:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/lhood.dir/build.make src/CMakeFiles/lhood.dir/likelyhoody.c.s
-.PHONY : likelyhoody.c.s
-
-main.o: main.c.o
-.PHONY : main.o
-
-# target to build an object file
-main.c.o:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/main.c.o
-.PHONY : main.c.o
-
-main.i: main.c.i
-.PHONY : main.i
-
-# target to preprocess a source file
-main.c.i:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/main.c.i
-.PHONY : main.c.i
-
-main.s: main.c.s
-.PHONY : main.s
-
-# target to generate assembly for a file
-main.c.s:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/main.c.s
-.PHONY : main.c.s
-
-useful.o: useful.c.o
-.PHONY : useful.o
-
-# target to build an object file
-useful.c.o:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/useful.c.o
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/useful.c.o
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/lhood.dir/build.make src/CMakeFiles/lhood.dir/useful.c.o
-.PHONY : useful.c.o
-
-useful.i: useful.c.i
-.PHONY : useful.i
-
-# target to preprocess a source file
-useful.c.i:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/useful.c.i
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/useful.c.i
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/lhood.dir/build.make src/CMakeFiles/lhood.dir/useful.c.i
-.PHONY : useful.c.i
-
-useful.s: useful.c.s
-.PHONY : useful.s
-
-# target to generate assembly for a file
-useful.c.s:
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/emulator.dir/build.make src/CMakeFiles/emulator.dir/useful.c.s
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/estimator.dir/build.make src/CMakeFiles/estimator.dir/useful.c.s
-	cd /Users/chris/Projects/Emulator && $(MAKE) -f src/CMakeFiles/lhood.dir/build.make src/CMakeFiles/lhood.dir/useful.c.s
-.PHONY : useful.c.s
+# fast build rule for target.
+RBIND/fast:
+	$(MAKE) -f src/libRbind/CMakeFiles/RBIND.dir/build.make src/libRbind/CMakeFiles/RBIND.dir/build
+.PHONY : RBIND/fast
 
 # Help Target
 help:
@@ -320,29 +211,16 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
-	@echo "... emulator"
-	@echo "... estimator"
 	@echo "... install"
 	@echo "... install/local"
 	@echo "... install/strip"
-	@echo "... lhood"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
-	@echo "... emulator-main.o"
-	@echo "... emulator-main.i"
-	@echo "... emulator-main.s"
-	@echo "... ioread.o"
-	@echo "... ioread.i"
-	@echo "... ioread.s"
-	@echo "... likelyhoody.o"
-	@echo "... likelyhoody.i"
-	@echo "... likelyhoody.s"
-	@echo "... main.o"
-	@echo "... main.i"
-	@echo "... main.s"
-	@echo "... useful.o"
-	@echo "... useful.i"
-	@echo "... useful.s"
+	@echo "... emulator"
+	@echo "... estimator"
+	@echo "... Emu"
+	@echo "... LBFGS"
+	@echo "... RBIND"
 .PHONY : help
 
 
@@ -354,6 +232,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /Users/chris/Projects/Emulator && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	$(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

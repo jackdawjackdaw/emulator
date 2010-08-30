@@ -7,9 +7,21 @@ project (Emulator)
 SET(${project_name}_major_version 1)
 SET(${project_name}_minor_version 0)
 
+# use, i.e. don't skip the full RPATH for the build tree
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
 
 # the RPATH to be used when installing
-#SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/libEmu")
+SET(CMAKE_INSTALL_RPATH "")
+
+# don't add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+
+
 
 find_package(GSL REQUIRED)
 message("GSL_INCLUDE_DIRS: ${GSL_INCLUDE_DIR}")
@@ -26,6 +38,7 @@ ADD_DEFINITIONS("-std=c99 -pg -O0 -g -Wextra -pedantic")
 add_subdirectory(src)
 
 ## this is dangerous, its very creaky right now.
+## plus the rpaths get all broken
 INSTALL_PROGRAMS("/bin" FILES src/estimator src/emulator)
 INSTALL_FILES("/lib" FILES src/libEmu/libEmu.so src/libEmu/libLBFGS.so src/libRbind/libRBIND.so)
 INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/lbfgs.h src/libEmu/maxlbfgs.h src/libEmu/regression.h)
