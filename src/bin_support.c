@@ -96,7 +96,7 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	 * this is correct for the simple linear fit in each dimension plus a constant intercept
 	 * this shou be set by some kind of or through the cli
 	 */
-	options->nregression_fns = options->nparams + 1;
+	options->nregression_fns =  1;
 }
 
 

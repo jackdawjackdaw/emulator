@@ -29,7 +29,7 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	options.emulate_min = EMULATEMINDEFAULT;
 	options.emulate_max = EMULATEMAXDEFAULT;
 	options.grad_ranges = gsl_matrix_alloc(options.nthetas, 2);
-	options.nregression_fns = options.nparams + 1;		// simple linear regression
+	options.nregression_fns = 1;		// simple constant regression
 	setup_cov_fn(&options);
 	setup_optimization_ranges(&options);
 
