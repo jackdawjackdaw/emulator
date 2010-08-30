@@ -1,4 +1,4 @@
-dyn.load("~/local/lib/libRBIND.so")
+#dyn.load("~/local/lib/libRBIND.so")
 #source("emulator-test-data.R")
 library("lhs")
 #library("scatterplot3d")

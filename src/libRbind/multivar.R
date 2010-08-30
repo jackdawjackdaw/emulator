@@ -1,4 +1,4 @@
-source("EmuRbind.R")
+source("~/Projects/Emulator/src/libRbind/EmuRbind.R")
 ## the idea is to take a model in a few (ideally-inde) y-dimensions (factored into principle cpts or whatever in another fn)
 ## and emulate/estimate each dimension as if it was a single scalar field over the parameters.
 
