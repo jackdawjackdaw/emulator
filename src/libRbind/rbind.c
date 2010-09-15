@@ -67,7 +67,8 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 	options.nparams = *nparams_in;
 	options.nemulate_points = *nemupts_in;
 	options.nthetas = *nthetas_in;
-	options.nregression_fns = options.nparams+1;
+	// fuck this needs to be set automatically :(
+	options.nregression_fns = 1;
 	options.emulate_min = *range_min_in;
 	options.emulate_max = *range_max_in;
 	setup_cov_fn(&options);
@@ -83,6 +84,19 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	// fill in the training vec
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
+
+	/* for(i = 0; i < options.nmodel_points; i++){ */
+	/* 	printf("%lf\n", gsl_vector_get(the_model.training_vector, i)); */
+	/* } */
+
+	/* printf("nparams:%d\n", options.nparams); */
+	/* for(i = 0; i < options.nparams; i++){ */
+	/* 	for(j = 0; j < options.nmodel_points; j++){ */
+	/* 		printf("%lf\t", gsl_matrix_get(the_model.xmodel, j, i)); */
+	/* 	} */
+	/* 	printf("\n"); */
+	/* } */
+						 
 
 	// and call out to libEmu
 	emulate_model_results(&the_model, &options, &results);
@@ -106,10 +120,13 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 		printf("%g\t", gsl_vector_get(the_model.thetas, i));
 	printf("\n");
 					 
+	printf("nemulate pts = %d\n", options.nemulate_points);
+
 	// check that the results struct agrees with final_emulated etc
 	for(i = 0; i < options.nemulate_points; i++){
-		for(j = 0; j < options.nparams; j++)
-			printf("%g\t%g\t", gsl_matrix_get(results.new_x, i, j), final_emulated_x[i+j*options.nmodel_points]);
+		for(j = 0; j < options.nparams; j++){
+			printf("%d:%g\t%g\t", i+j*options.nemulate_points, gsl_matrix_get(results.new_x, i, j), final_emulated_x[i+j*options.nemulate_points]);
+		}
 		
 		printf("%g\t%g\t", gsl_vector_get(results.emulated_mean, i), final_emulated_y[i]);
 		printf("%g\t%g\n", gsl_vector_get(results.emulated_var, i), final_emulated_variance[i]);

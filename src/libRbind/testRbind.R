@@ -1,4 +1,4 @@
-source("EmuRbind.R")
+source("~/Projects/Emulator/src/libRbind/EmuRbind.R")
 
 ## some test functions and the interface to rbind (at the end of the file)
 ## the main ones of interest are callcode and setEmulatorOptions

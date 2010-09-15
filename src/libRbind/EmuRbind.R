@@ -58,7 +58,7 @@ callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemi
 
 ## just estimates the thetas for a model (this is the slow ass part)
 callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3){
-
+  #browser()
   res <- .C("callEstimate",
             as.double(model$xmodel),
             as.integer(nparams),
@@ -84,6 +84,7 @@ testCallEm <- function(){
 
 ## use a given set of thetas to emulate the code
 callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=20, rangemin=0.0, rangemax=1.0){
+  #browser()
   res <- .C("callEmulate",
             as.double(model$xmodel),
             as.integer(nparams),
@@ -91,14 +92,14 @@ callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=
             as.integer(nmodelpts),
             as.double(thetas),
             as.integer(nthetas),
-            finalx = double(nemupts*nemupts),
+            finalx = double(nemupts),
             as.integer(nemupts),
             finaly = double(nemupts),
             finalvar = double(nemupts),
             as.double(rangemin),
             as.double(rangemax))
             
-   results <- data.frame(emulatedx=res$finalx[1:nemupts], emulatedy=res$finaly, emulatedvar=res$finalvar)           
+   results <- list(emulatedx=res$finalx, emulatedy=res$finaly, emulatedvar=res$finalvar)           
   results
 }
 
