@@ -103,7 +103,23 @@ callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=
   results
 }
 
-   
+
+callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthetas=3){
+  res <- .C("callEmulateAtPt",
+            as.double(model$xmodel),
+            as.integer(nparams),
+            as.double(point),
+            as.double(model$training),
+            as.integer(nmodelpts),
+            as.double(thetas),
+            as.integer(nthetas),
+            finaly = double,
+            finalvar = double
+            )
+  results <- list(des=point, mean=res$finaly, var=res$finalvar)
+}
+
+
 callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=4){
   answer <- 0.0
   likely <- .C("callEvalLikelyhood",

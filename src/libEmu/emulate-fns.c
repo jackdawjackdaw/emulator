@@ -53,6 +53,58 @@ void emulate_model_results(modelstruct *the_model, optstruct* options, resultstr
 }
 
 /**
+ * emulate teh model at the location of the_point
+ * @return *the_variance is set to the variance at this location
+ * @return *the_mean is set to the emulated mean at this loc
+ */
+void emulateAtPoint(modelstruct *the_model, gsl_vector* the_point, optstruct* options, double* the_mean, double* the_variance){
+
+	int i;
+	double determinant_c = 0.0;
+
+	gsl_matrix *c_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	gsl_matrix *cinverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	gsl_vector *beta_vector = gsl_vector_alloc(options->nregression_fns);
+	gsl_matrix *h_matrix = gsl_matrix_alloc(options->nmodel_points, options->nregression_fns);
+	gsl_matrix *temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	double kappa;
+	double temp_mean, temp_var;
+	gsl_vector_view new_x_row;
+	gsl_vector *kplus = gsl_vector_alloc(options->nmodel_points);
+	gsl_vector *h_vector = gsl_vector_alloc(options->nregression_fns);
+
+	
+	// create the covariance matrix and save a copy in temp_matrix
+	makeCovMatrix(c_matrix, the_model->xmodel, the_model->thetas,options->nmodel_points, options->nthetas, options->nparams, options->covariance_fn);
+	gsl_matrix_memcpy(temp_matrix, c_matrix);
+	
+	chol_inverse_cov_matrix(options, temp_matrix, cinverse, &determinant_c);
+
+	// regression cpts
+	makeHMatrix(h_matrix, the_model->xmodel, options->nmodel_points, options->nparams, options->nregression_fns);
+	estimateBeta(beta_vector, h_matrix, cinverse, the_model->training_vector, options->nmodel_points, options->nregression_fns);
+	
+	makeKVector(kplus, the_model->xmodel, the_point, the_model->thetas, options->nmodel_points, options->nthetas, options->nparams, options->covariance_fn);
+	makeHVector(h_vector, the_point, options->nparams);
+	
+	temp_mean = makeEmulatedMean(cinverse, the_model->training_vector, kplus, h_vector, h_matrix, beta_vector, options->nmodel_points);
+	kappa = options->covariance_fn(the_point, the_point, the_model->thetas, options->nthetas, options->nparams, options->cov_fn_alpha);
+	temp_var = makeEmulatedVariance(cinverse, kplus, h_vector, h_matrix, kappa, options->nmodel_points, options->nregression_fns);
+
+	*the_mean = temp_mean;
+	*the_variance = temp_var;
+
+	gsl_vector_free(kplus);
+	gsl_vector_free(h_vector);
+	gsl_matrix_free(c_matrix);
+	gsl_matrix_free(cinverse);
+	gsl_matrix_free(h_matrix);
+	gsl_matrix_free(temp_matrix);
+	gsl_vector_free(beta_vector);
+	
+}
+
+/**
  * emulate the model at the ith entry in results->new_x
  */
 void emulate_ith_location(modelstruct *the_model, optstruct *options, resultstruct *results,int i, gsl_matrix* h_matrix, gsl_matrix* cinverse, gsl_vector *beta_vector){

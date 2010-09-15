@@ -54,6 +54,51 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 }
 
 /**
+ * computes the mean and variance at point_in 
+ * @return final_emulated_y is the mean at point
+ * @return final_emulated_variance is the variance at point
+ * @param point_in is a double array of nparams length, the point that we wish to eval the emulator at 
+ */
+void callEmulateAtPt(double* xmodel_in, double* nparams_in, double* point_in, double* training_in, int* nmodelpts, double* thetas_in, int* nthetas_in, double* final_emulated_y, double* final_emulated_variance){
+	optstruct options;
+	modelstruct the_model;
+	double the_mean, the_variance;
+	gsl_vector *the_point;
+	
+	options.nmodel_points = *nmodelpts;
+	options.nparams = *nparams_in;
+	options.nemulate_points = 1;
+	options.nthetas = *nthetas_in;
+	// fuck this needs to be set automatically :(
+	options.nregression_fns = 1;
+	options.emulate_min = 0; // won't be used
+	options.emulate_max = 1;
+	setup_cov_fn(&options);
+	setup_optimization_ranges(&options);	// this strictly isn't needed for emulator
+
+	alloc_modelstruct(&the_model, &options);
+
+	the_point = gsl_vector_alloc(options.nparams);
+
+	convertDoubleToVector(the_point, point_in, options.nparams);
+
+	// fill in thetas
+	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
+	// fill in xmodel 
+	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
+	// fill in the training vec
+	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
+	
+	emulateAtPoint(&the_model, the_point, &options, &the_mean, &the_variance);
+	
+
+	gsl_vector_free(the_point);
+	// tidy up
+	free_modelstruct(&the_model);
+	free_optstruct(&options);
+}
+
+/**
  * run the emulator against a given set of data and given hyperparams theta
  */
 void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* nmodelpts, double* thetas_in, int* nthetas_in, double* final_emulated_x, int *nemupts_in, double* final_emulated_y, double* final_emulated_variance, double* range_min_in, double*range_max_in){
