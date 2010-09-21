@@ -286,6 +286,14 @@ void lagrange_interp(double* xin, double* valin, int* npts_in, double* desired_p
 	
 }
 
+void testConvert(double* matrix, int *nx_in, int *ny_in){
+	int nx = *nx_in;
+	int ny = *ny_in;
+	printf("nx = %d\tny= %d\n", nx, ny);
+	gsl_matrix *test = gsl_matrix_alloc(nx, ny);
+	convertDoubleToMatrix(test, matrix, nx, ny);
+	gsl_matrix_free(test);
+}
 
 
 
@@ -300,9 +308,11 @@ void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int nx, int ny
 	int i, j;
 	for(j = 0; j < ny; j++){
 		for(i =0; i < nx; i++){
-			gsl_matrix_set(the_matrix, j, i, input[nx*j+i]);
+			gsl_matrix_set(the_matrix, j, i, input[j+ny*i]);
+			printf("%d,%d=%lf\n", j, i, gsl_matrix_get(the_matrix,j,i));
 		}
 	}
+
 }
 
 										 
