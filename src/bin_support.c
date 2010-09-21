@@ -115,7 +115,7 @@ void setup_cov_fn(optstruct *options){
 	/*
 	 * we'll use the gaussian covariance fn by default
 	 */
-	message("using gaussian cov fn\n", 1);
+	//message("using gaussian cov fn\n", 1);
 	options->covariance_fn = covariance_fn_gaussian;
 	options->cov_fn_alpha = 2.0;
 	options->nthetas = options->nparams+2;
@@ -158,12 +158,12 @@ void setup_optimization_ranges(optstruct* options){
 
 	// and force the nugget to be small
 	gsl_matrix_set(options->grad_ranges, 1, 0, 0.00001);
-	gsl_matrix_set(options->grad_ranges, 1, 1, 0.0003);
+	gsl_matrix_set(options->grad_ranges, 1, 1, 0.003);
 
-	for(i = 0; i < options->nthetas;i++){
-		sprintf(buffer, "%d %g %g\n", i, gsl_matrix_get(options->grad_ranges, i, 0), gsl_matrix_get(options->grad_ranges, i, 1));
-		message(buffer, 1);
-	}
+	/* for(i = 0; i < options->nthetas;i++){ */
+	/* 	sprintf(buffer, "%d %g %g\n", i, gsl_matrix_get(options->grad_ranges, i, 0), gsl_matrix_get(options->grad_ranges, i, 1)); */
+	/* 	message(buffer, 1); */
+	/* } */
 
 }
 

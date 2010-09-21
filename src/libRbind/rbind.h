@@ -23,7 +23,7 @@
 void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int ny, int nx);
 void convertDoubleToVector(gsl_vector* the_vec, double* input, int nx);
 
-void callEmulateAtPt(double* xmodel_in, double* nparams_in, double* point_in, double* training_in, int* nmodelpts, double* thetas_in, int* nthetas_in, double* final_emulated_y, double* final_emulated_variance);
+void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, double* training_in, int* nmodelpts, double* thetas_in, int* nthetas_in, double* final_emulated_y, double* final_emulated_variance);
 
 
 void callEmulator(double* xmodel_in, int *nparams_in, double* training_in, int *nmodelpts, int *nthetas, double* final_x, int* nemupts, \

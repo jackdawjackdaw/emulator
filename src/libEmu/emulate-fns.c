@@ -91,6 +91,19 @@ void emulateAtPoint(modelstruct *the_model, gsl_vector* the_point, optstruct* op
 	kappa = options->covariance_fn(the_point, the_point, the_model->thetas, options->nthetas, options->nparams, options->cov_fn_alpha);
 	temp_var = makeEmulatedVariance(cinverse, kplus, h_vector, h_matrix, kappa, options->nmodel_points, options->nregression_fns);
 
+	if(temp_mean > 100){
+		printf("EF:mean:%lf\tvar:%lf\n", temp_mean, temp_var);
+		print_vector_quiet(the_point,options->nparams);
+		printf("kplus:\n");
+		print_vector_quiet(kplus, options->nmodel_points);
+		printf("hvector:\n");
+		print_vector_quiet(h_vector, options->nregression_fns);
+		printf("beta:\n");
+		print_vector_quiet(beta_vector, options->nregression_fns);
+		//exit(1);
+	}
+	
+
 	*the_mean = temp_mean;
 	*the_variance = temp_var;
 

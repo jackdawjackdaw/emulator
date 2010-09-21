@@ -360,10 +360,15 @@ double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* the
 void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams, double(*the_covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double)){
 	int i = 0; 
 	gsl_vector_view  xmodel_row;
+	double cov;
 	for (i = 0; i < nmodel_points; i++){
 		xmodel_row = gsl_matrix_row(xmodel, i);
 		// send the rows from the xmodel matrix to the kvector, these have nparams width
-		gsl_vector_set(kvector, i, the_covariance_fn(&xmodel_row.vector, xnew, thetas, nthetas, nparams, 1.9));
+		cov = the_covariance_fn(&xmodel_row.vector, xnew, thetas, nthetas, nparams, 1.9);
+		if(cov < 1E-10){
+			cov = 0.0;
+		}
+		gsl_vector_set(kvector, i, cov);
 	}
 }
 

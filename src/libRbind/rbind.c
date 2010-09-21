@@ -29,7 +29,7 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	options.emulate_min = EMULATEMINDEFAULT;
 	options.emulate_max = EMULATEMAXDEFAULT;
 	options.grad_ranges = gsl_matrix_alloc(options.nthetas, 2);
-	options.nregression_fns = 1;		// simple constant regression
+	options.nregression_fns = 1 + options.nparams;		// simple constant regression
 	setup_cov_fn(&options);
 	setup_optimization_ranges(&options);
 
@@ -59,7 +59,7 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
  * @return final_emulated_variance is the variance at point
  * @param point_in is a double array of nparams length, the point that we wish to eval the emulator at 
  */
-void callEmulateAtPt(double* xmodel_in, double* nparams_in, double* point_in, double* training_in, int* nmodelpts, double* thetas_in, int* nthetas_in, double* final_emulated_y, double* final_emulated_variance){
+void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, double* training_in, int* nmodelpts, double* thetas_in, int* nthetas_in, double* final_emulated_y, double* final_emulated_variance){
 	optstruct options;
 	modelstruct the_model;
 	double the_mean, the_variance;
@@ -70,11 +70,14 @@ void callEmulateAtPt(double* xmodel_in, double* nparams_in, double* point_in, do
 	options.nemulate_points = 1;
 	options.nthetas = *nthetas_in;
 	// fuck this needs to be set automatically :(
-	options.nregression_fns = 1;
+	options.nregression_fns = 1 + options.nparams;
 	options.emulate_min = 0; // won't be used
 	options.emulate_max = 1;
 	setup_cov_fn(&options);
 	setup_optimization_ranges(&options);	// this strictly isn't needed for emulator
+
+	
+	//printf("nparams:%d\tnmodel_pts:%d\tnthetas:%d\n", options.nparams, options.nmodel_points, options.nthetas);
 
 	alloc_modelstruct(&the_model, &options);
 
@@ -90,7 +93,11 @@ void callEmulateAtPt(double* xmodel_in, double* nparams_in, double* point_in, do
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
 	
 	emulateAtPoint(&the_model, the_point, &options, &the_mean, &the_variance);
-	
+
+	//print_vector_quiet(the_point,options.nparams);
+	printf("mean:%lf\tvar:%lf\n", the_mean, the_variance);
+	*final_emulated_y  = the_mean;
+	*final_emulated_variance = the_variance;
 
 	gsl_vector_free(the_point);
 	// tidy up
@@ -113,7 +120,7 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 	options.nemulate_points = *nemupts_in;
 	options.nthetas = *nthetas_in;
 	// fuck this needs to be set automatically :(
-	options.nregression_fns = 1;
+	options.nregression_fns = 1 + options.nparams;
 	options.emulate_min = *range_min_in;
 	options.emulate_max = *range_max_in;
 	setup_cov_fn(&options);

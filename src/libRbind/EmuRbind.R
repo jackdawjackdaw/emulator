@@ -105,6 +105,7 @@ callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=
 
 
 callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthetas=3){
+  #browser()
   res <- .C("callEmulateAtPt",
             as.double(model$xmodel),
             as.integer(nparams),
@@ -113,8 +114,8 @@ callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthet
             as.integer(nmodelpts),
             as.double(thetas),
             as.integer(nthetas),
-            finaly = double,
-            finalvar = double
+            finaly = double(1),
+            finalvar = double(1)
             )
   results <- list(des=point, mean=res$finaly, var=res$finalvar)
 }
