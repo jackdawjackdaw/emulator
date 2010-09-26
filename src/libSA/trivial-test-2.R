@@ -77,8 +77,8 @@ an4 <- function(x){
   exp(-12.5)*exp((-0.1)^2/2) + 0.2*x^2
 }
 
-
-plot(x, resultsMeans[1,], type="l", col="black", ylim=c(-5,5), xlab="standardised input value", ylab="E(Y|x)",
+pdf("sensitivity-test.pdf")
+plot(x, resultsMeans[1,], type="l", col="black", ylim=c(-5,5), xlab="standardised input value", ylab="E(Y|x_i)",
      main = "Sensitivity Analysis of y = exp(-0.1x)cos(5y) + 3sin(z) + 3z + 0.2w^2")
 lines(x, resultsMeans[2,], col="red")
 lines(x, resultsMeans[3,], col="green")
@@ -100,11 +100,11 @@ lines(x, resultsMeans[4,] + abconf[4,], col="purple", lty=2)
 lines(x, resultsMeans[4,] - abconf[4,], col="purple", lty=2)
 
 
-legend(x=1,y=-2, legend=c('E*{E(Y|x)}', 'E*{E(Y|y)}', 'E*{E(Y|z)}', 'E*{E(Y|w)}', 'E(Y|x)', 'E(Y|y)', 'E(Y|z)', 'E(Y|w)'),
+legend(x=1,y=-1, legend=c('E*{E(Y|x)}', 'E*{E(Y|y)}', 'E*{E(Y|z)}', 'E*{E(Y|w)}', 'E(Y|x)', 'E(Y|y)', 'E(Y|z)', 'E(Y|w)'),
        col=c('black', 'red', 'green', 'purple', 'black', 'red', 'green', 'purple'),
        pch=c(-1,-1,-1,-1,1,1,1,1),
        lty=c(1,1,1,1,0,0,0,0),
        bg='white'
        )
-       
+dev.off()       
        

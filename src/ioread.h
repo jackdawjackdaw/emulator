@@ -8,6 +8,12 @@
 #include "gsl/gsl_vector.h"
 #include "useful.h"
 
+/**
+ * @file ioread.h
+ * \brief fns for reading simple tab/space separated input from stdin or a file 
+ * 
+ * leave this alone
+ */
 
 char** unconstrained_read(char* filename, int* line_count_final);
 void copy_char_arrays(char** dest, char** src, int lx, int ly);

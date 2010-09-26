@@ -192,10 +192,12 @@ int main (int argc, char ** argv){
 	// sanity check, this is to compare against mm output
 	//do_sanity_check( xmodel_input, training_vector, &options);
 	
-
+	
+	// changed the shape to be n, np
 	likelyhood = gsl_matrix_alloc(options.nemulate_points, options.nemulate_points);
 
 	calculate_likelyhood_gauss(xmodel_input, training_vector, likelyhood, &options);
+
 	
 
 	/* r likes to make contour plots of things which come

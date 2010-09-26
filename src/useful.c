@@ -2,10 +2,23 @@
 #include "useful.h"
 
 
+//! takes a print statement and either prints it out, or logs it 
+/**
+ * \note should finish implementing this, or find a nice logging lib to do it
+ */
+void message(char* the_message, int level){
+	// for now it just prints
+	char buffer[128];
+	sprintf(buffer, "LOG: %s\n", the_message);
+	fprintf(stderr, "%s\n", the_message);
+}
+
+
+
 //! checks for null
 void *MallocChecked(size_t size){
 	void *r = malloc(size);
-	
+
 	if( r == NULL)
 		unix_error("memory wasn't allocated");
 	
@@ -27,6 +40,16 @@ void error(char *msg){
 	fprintf(stderr, "%s\n", msg);
 	exit(0);
 }
+
+//! print a vector to stderr
+void print_vector_quiet(gsl_vector *x, int n){
+int i;
+	for(i =0; i < n; i++){
+		fprintf(stderr, "%g\t", gsl_vector_get(x, i));
+	}
+	fprintf(stderr,"\n");
+}
+
 
 // memory management
 
@@ -112,7 +135,7 @@ unsigned long int get_seed(void){
 // RNG 
 // tries to read from /dev/random, or otherwise uses the system time
 unsigned long int get_seed_noblock(void){
-	unsigned int seed;
+	unsigned long int seed;
 	struct timeval tv;
 	FILE *devrandom;
 

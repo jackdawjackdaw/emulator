@@ -1,21 +1,14 @@
-dyn.load("~/local/lib/libRBIND.so")
+#dyn.load("~/local/lib/libRBIND.so")
 #source("emulator-test-data.R")
 library("lhs")
 #library("scatterplot3d")
-
-## this selects the power exponential function
-## with alpha = 1.9
-setDefaultOps <- function(){
-  
- 
-}
 
 
 # i don't quite understand how to push the results together into a data
 # frame i should check on this.
 # note that the rangemin/max create a square domain in 2d.
 # not sure how to grab the results?
-callcode <- function(model, nmodelpts, nparams=1, nthetas=4, nemupts=50, rangemin=0.0, rangemax=4.0){
+callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemin=0.0, rangemax=4.0){
 
   if(nparams==1){
   
@@ -53,9 +46,9 @@ callcode <- function(model, nmodelpts, nparams=1, nthetas=4, nemupts=50, rangemi
      finalvar = double(nemupts),
      as.double(rangemin),
      as.double(rangemax))
-    
 
   } else {
+    ## \todo fix emulator to work with n >> 2
     print("sorry, won't work with nparams > 2")
   }
   #browser()
@@ -65,7 +58,7 @@ callcode <- function(model, nmodelpts, nparams=1, nthetas=4, nemupts=50, rangemi
 
 ## just estimates the thetas for a model (this is the slow ass part)
 callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3){
-
+  #browser()
   res <- .C("callEstimate",
             as.double(model$xmodel),
             as.integer(nparams),
@@ -83,6 +76,7 @@ testCallEm <- function(){
   # just made up but about right for matern
   ans <- c(0.89, 0.54, 0.334, 0.64)
   f1<-callEmulate(model, ans, m, nemupts=10)
+  plot(f1$emulatedx, f1$emulatedy)
   print(f1)
   f2<-callEmulate(model, ans,m, nemupts=10)
   print(f2)
@@ -90,6 +84,7 @@ testCallEm <- function(){
 
 ## use a given set of thetas to emulate the code
 callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=20, rangemin=0.0, rangemax=1.0){
+  #browser()
   res <- .C("callEmulate",
             as.double(model$xmodel),
             as.integer(nparams),
@@ -97,18 +92,35 @@ callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=
             as.integer(nmodelpts),
             as.double(thetas),
             as.integer(nthetas),
-            finalx = double(nemupts*nemupts),
+            finalx = double(nemupts),
             as.integer(nemupts),
             finaly = double(nemupts),
             finalvar = double(nemupts),
             as.double(rangemin),
             as.double(rangemax))
             
-   results <- data.frame(emulatedx=res$finalx[1:nemupts], emulatedy=res$finaly, emulatedvar=res$finalvar)           
+   results <- list(emulatedx=res$finalx, emulatedy=res$finaly, emulatedvar=res$finalvar)           
   results
 }
 
-   
+
+callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthetas=3){
+  #browser()
+  res <- .C("callEmulateAtPt",
+            as.double(model$xmodel),
+            as.integer(nparams),
+            as.double(point),
+            as.double(model$training),
+            as.integer(nmodelpts),
+            as.double(thetas),
+            as.integer(nthetas),
+            finaly = double(1),
+            finalvar = double(1)
+            )
+  results <- list(des=point, mean=res$finaly, var=res$finalvar)
+}
+
+
 callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=4){
   answer <- 0.0
   likely <- .C("callEvalLikelyhood",

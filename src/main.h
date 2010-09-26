@@ -6,62 +6,44 @@
 #include "getopt.h"
 #include "libEmu/estimator.h"
 #include "libEmu/emulator.h"
-#include "libEmu/maximise.h"
-#include "libEmu/maxbfgs.h"
 #include "libEmu/estimate_threaded.h"
 #include "libEmu/regression.h"
 #include "ioread.h"
 #include "sys/time.h"
 #include "useful.h"
 #include "optstruct.h"
+#include "modelstruct.h"
+#include "defaults.h"
+#include "bin_support.h"
 
-//#define NELDER
+
 
 /**
- * @file
+ * @file main.h
  * @author Chris Coleman-Smith cec24@phy.duke.edu
  * @version 0.2
  * @section Description
+ *
+ * \brief The emulator project is intended to run a gaussian process interpolation 
+ * model on a data set. 
  * 
- * The main apparatus to run the emulator, reads in options from the command line and
- * reads the actual data points from the given filename
+ * This is the main header for the two binaries, emulator and estimator. They share a lot of
+ * common boiler plate code. 
  * 
- * threaded the estimator call function
+ * Estimator should be run first, this reads data from stdin, and 
+ * estimates an optimial set of hyperparameters which then specify entirely the gaussian-process 
+ * model (which may be of variable fidelity) of the supplied data. Estimator produces a file
+ * thetas.txt containing the optimum values of the hyperparams
+ *
+ * Emulator reads the thetas.txt file and again reads the model data from stdin, the data
+ * is then interpolated/emulated and values of the gaussian-process model of the supplied
+ * data are produced in a regular grid over the parameter space. These are written to 
+ * emulator-out.
+ * 
+ * 
  */
  
 
-/* 
- * 1 -> read command line parameters
- * 2 -> read and process stream data
- * 3 -> estimate thetas
- * 4 -> calculate new means and variances
- * 5 -> output
- */
-
-
-/* 
- * in the 1d case
- *  now there are only 3 hyperparams by default 
- *  -> vertical-scale theta0
- *  -> nugget theta1
- *  -> length-scale theta2...theta(Nparams-2⎈)
- */
-#define NTHETASDEFAULT 4
-#define NPARAMSDEFAULT 1
-#define NEMULATEDEFAULT 4096
-#define EMULATEMINDEFAULT 0.0
-#define EMULATEMAXDEFAULT 1.0
-
-
-
-
-void print_usage(void);
-void print_vector_quiet(gsl_vector* vec, int npts);
-void parse_arguments(int argc, char** argv, optstruct* options);
-void emulate_model(gsl_matrix* xmodel, gsl_vector* training, gsl_vector*thetas, optstruct* options);
-void estimate_thetas(gsl_matrix* xmodel_input, gsl_vector* training_vector, gsl_vector* thetas, optstruct* options);
-void read_input_bounded(gsl_matrix* model, gsl_vector* training, optstruct * options);
-void read_input_fromfile(gsl_matrix *xmodel, gsl_vector *training, optstruct *options);
 void write_thetas(char* theta_file, gsl_vector* thetas, optstruct *options);
 
 #endif

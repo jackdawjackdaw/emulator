@@ -1,14 +1,22 @@
-/* 11-1-09
- * CCS
- * useful.h, some basic functions one always uses in scientific code
+/**
+ * \date 11-1-09
+ * \file useful.h,
+ * \brief some basic functions one always uses in scientific code
  */
 
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
 #include "gsl/gsl_rng.h"
+#include "gsl/gsl_vector.h"
 #include "math.h"
 #include "sys/time.h"
+
+
+/**
+ *  puts a message in the log (or in the stderr)
+ */
+void message(char* the_message, int level);
 
 //*******************
 // memory management
@@ -17,7 +25,7 @@ double* alloc_2d_double_array(int size_x, int size_y, double init_val);
 int* alloc_2d_int_array(int size_x, int size_y, int init_val);
 void print_double_array(double* the_array, int n_x, int n_y);
 void print_int_array(int* the_array, int n_x, int n_y);
-
+void print_vector_quiet(gsl_vector *x, int n);
 //******************
 // tries to get a seed from /dev/random or otherwise uses the system time
 //*****************

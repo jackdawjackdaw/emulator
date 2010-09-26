@@ -4,14 +4,19 @@ cmake_minimum_required(VERSION 2.6)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
-ADD_SUBDIRECTORY(libEmu)
+get_filename_component(default_prefix ".." ABSOLUTE)
+set(CMAKE_INSTALL_PREFIX $(default_prefix))
 
+
+
+add_subdirectory("./libEmu")
+add_subdirectory("./libRbind")
 
 MESSAGE("link libs: ${libs}")
 
+set(emulator_SOURCES emulator-main ioread useful optstruct resultstruct modelstruct bin_support)
+set(estimator_SOURCES main ioread useful optstruct modelstruct resultstruct bin_support)
 
-set(emulator_SOURCES emulator-main ioread useful)
-set(estimator_SOURCES main ioread useful)
 #set(lhood_SOURCES likelyhoody ioread useful)
 
 link_directories(${PROJECT_SOURCE_DIR}/src/libEmu)
@@ -25,7 +30,6 @@ add_executable(emulator ${emulator_SOURCES})
 target_link_libraries(emulator Emu LBFGS ${libs})
 add_dependencies(emulator Emu LBFGS)
 
-# deprecated
-#add_executable(lhood ${lhood_SOURCES})
-#target_link_libraries(lhood Emu LBFGS ${libs})
-#add_dependencies(lhood Emu LBFGS)
+
+
+

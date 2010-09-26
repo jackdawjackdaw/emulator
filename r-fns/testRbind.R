@@ -20,7 +20,7 @@ testIsing <- function(){
   setDefaultOps()
   ans<-callcode(model, nmodelpts, nemupts=nemupts)
   plotResults(model, ans)  
-  #ans
+  ans
 }
 
 
