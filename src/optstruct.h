@@ -16,6 +16,8 @@ typedef struct optstruct{
 	double emulate_max;
 	char  filename[128];
 	char outputfile[128];
+	
+	gsl_matrix* grad_ranges;
 } optstruct;
 
 #endif

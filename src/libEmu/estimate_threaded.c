@@ -81,9 +81,6 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 	params = MallocChecked(sizeof(struct estimate_thetas_params)*nthreads);
 
 	best_thetas = gsl_vector_alloc(options->nthetas);
-
-
-
 	
 	// set the jobnumber back to zero otherwise running twice will kill ya
 	jobnumber = 0;
@@ -129,7 +126,6 @@ void estimate_thetas_threaded(gsl_matrix* xmodel_input, gsl_vector* training_vec
 		
 	for(i = 0; i < options->nthetas;i++)
 		fprintf(stderr, "%d %g %g\n", i, gsl_matrix_get(grad_ranges, i, 0), gsl_matrix_get(grad_ranges, i, 1));
-	
 
 
 	/* setup the thread params */

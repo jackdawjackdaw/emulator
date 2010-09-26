@@ -97,7 +97,6 @@ int main (int argc, char ** argv){
 	int number_lines = 0;
 
 	parse_arguments(argc, argv, &options);	
-	
 
 	#ifdef NELDER
 	fprintf(stderr, "using nelder-mead\n");
@@ -149,7 +148,6 @@ int main (int argc, char ** argv){
 	// show the default options in the lib
 	print_emulator_options(&the_emulator_options);
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 
 	// we only need 4, so maximisation is a little nicer
 	if(the_emulator_options.usematern == 1 || the_emulator_options.usematern_three == 1 || the_emulator_options.usematern_five == 1){
