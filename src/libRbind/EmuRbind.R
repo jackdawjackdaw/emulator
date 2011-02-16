@@ -13,7 +13,7 @@ callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemi
   if(nparams==1){
   
     res<-  .C("callEmulator",
-     as.double(model$xmodel),
+     as.double((model$xmodel)),
      as.integer(nparams),
      as.double(model$training),
      as.integer(nmodelpts),
@@ -60,7 +60,7 @@ callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemi
 callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3){
   #browser()
   res <- .C("callEstimate",
-            as.double(model$xmodel),
+            as.double((model$xmodel)),
             as.integer(nparams),
             as.double(model$training),
             as.integer(nmodelpts),
@@ -86,7 +86,7 @@ testCallEm <- function(){
 callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=20, rangemin=0.0, rangemax=1.0){
   #browser()
   res <- .C("callEmulate",
-            as.double(model$xmodel),
+            as.double((model$xmodel)),
             as.integer(nparams),
             as.double(model$training),
             as.integer(nmodelpts),
@@ -107,7 +107,7 @@ callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=
 callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthetas=3){
   #browser()
   res <- .C("callEmulateAtPt",
-            as.double(model$xmodel),
+            as.double((model$xmodel)),
             as.integer(nparams),
             as.double(point),
             as.double(model$training),
@@ -124,7 +124,7 @@ callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthet
 callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=4){
   answer <- 0.0
   likely <- .C("callEvalLikelyhood",
-               as.double(model$xmodel),
+               as.double((model$xmodel)),
                as.integer(nparams),
                as.double(model$training),
                as.integer(nmodelpoints),
