@@ -36,5 +36,7 @@ TARGET_LINK_LIBRARIES(Emu LBFGS ${libs})
 add_dependencies(Emu LBFGS)
 
 
-
-install(TARGETS Emu LBFGS RUNTIME DESTINATION bin LIBRARY DESTINATION libEmu)
+# this is now in the top level file?
+install(TARGETS Emu LBFGS 
+				RUNTIME DESTINATION bin 
+				LIBRARY DESTINATION lib)

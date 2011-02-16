@@ -96,7 +96,7 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	 * this is correct for the simple linear fit in each dimension plus a constant intercept
 	 * this shou be set by some kind of or through the cli
 	 */
-	options->nregression_fns =  1;
+	options->nregression_fns =  1+options->nparams;
 }
 
 
@@ -158,7 +158,7 @@ void setup_optimization_ranges(optstruct* options){
 
 	// and force the nugget to be small
 	gsl_matrix_set(options->grad_ranges, 1, 0, 0.00001);
-	gsl_matrix_set(options->grad_ranges, 1, 1, 0.003);
+	gsl_matrix_set(options->grad_ranges, 1, 1, 0.00005);
 
 	/* for(i = 0; i < options->nthetas;i++){ */
 	/* 	sprintf(buffer, "%d %g %g\n", i, gsl_matrix_get(options->grad_ranges, i, 0), gsl_matrix_get(options->grad_ranges, i, 1)); */
