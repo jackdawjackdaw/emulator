@@ -39,9 +39,18 @@ add_subdirectory(src)
 
 ## this is dangerous, its very creaky right now.
 ## plus the rpaths get all broken
-INSTALL_PROGRAMS("/bin" FILES src/estimator src/emulator)
-INSTALL_FILES("/lib" FILES src/libEmu/libEmu.so src/libEmu/libLBFGS.so src/libRbind/libRBIND.so)
-INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/lbfgs.h src/libEmu/maxlbfgs.h src/libEmu/regression.h)
-INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h)
+
+# found this in the cmake docs
+# install(TARGETS myExe mySharedLib myStaticLib
+#          RUNTIME DESTINATION bin
+#        LIBRARY DESTINATION lib
+#          ARCHIVE DESTINATION lib/static)
+#  install(TARGETS mySharedLib DESTINATION /some/full/path)
+				
+
+# INSTALL_PROGRAMS("~/local/bin" FILES src/estimator src/emulator)
+# INSTALL_FILES("~/local/lib" FILES src/libEmu/libEmu.so src/libEmu/libLBFGS.so src/libRbind/libRBIND.so)
+# INSTALL_FILES("~/local/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/lbfgs.h src/libEmu/maxlbfgs.h src/libEmu/regression.h)
+# INSTALL_FILES("~/local/include/libRbind/" FILES src/libRbind/rbind.h)
 
 
