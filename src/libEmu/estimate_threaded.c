@@ -42,7 +42,7 @@ int get_number_cpus(void){
 }
 
 
-//#define DEBUGMODE
+#define DEBUGMODE
 
 /**
  * setup the params_array structure, this is an array of estimate_thetas_params structs which 
