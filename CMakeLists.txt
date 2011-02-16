@@ -37,11 +37,5 @@ ADD_DEFINITIONS("-std=c99 -pg -O0 -g -Wextra -pedantic")
 
 add_subdirectory(src)
 
-## this is dangerous, its very creaky right now.
-## plus the rpaths get all broken
-INSTALL_PROGRAMS("/bin" FILES src/estimator src/emulator)
-INSTALL_FILES("/lib" FILES src/libEmu/libEmu.so src/libEmu/libLBFGS.so src/libRbind/libRBIND.so)
-INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/lbfgs.h src/libEmu/maxlbfgs.h src/libEmu/regression.h)
-INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h)
 
 
