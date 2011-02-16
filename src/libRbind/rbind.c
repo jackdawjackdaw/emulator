@@ -35,11 +35,16 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 
 	alloc_modelstruct(&the_model, &options);
 
-	// fill in xmodel 
+	// fill in xmodel, this is the right way!
+	// note that xmodel has to be transposd in EmuRbind.R or else disaster
+	printf("nx = %d, ny = %d\n", options.nparams, options.nmodel_points);
 	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	// fill in the training vec
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
 
+	//print_matrix(the_model.xmodel, options.nmodel_points, options.nparams);
+	//printf("\n\n");
+	//exit(1);
 	// actually do the estimation using libEmu
 	estimate_thetas_threaded(&the_model, &options);
 
@@ -64,6 +69,7 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	modelstruct the_model;
 	double the_mean, the_variance;
 	gsl_vector *the_point;
+	int i;
 	
 	options.nmodel_points = *nmodelpts;
 	options.nparams = *nparams_in;
@@ -77,11 +83,18 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	setup_optimization_ranges(&options);	// this strictly isn't needed for emulator
 
 	
-	//printf("nparams:%d\tnmodel_pts:%d\tnthetas:%d\n", options.nparams, options.nmodel_points, options.nthetas);
+	printf("nparams:%d\tnmodel_pts:%d\tnthetas:%d\n", options.nparams, options.nmodel_points, options.nthetas);
+	printf("point: %lf", point_in[0]);
+	for(i = 0; i < options.nparams; i++)	 
+		printf("\t%lf", point_in[i]);
+	printf("\n");
 
 	alloc_modelstruct(&the_model, &options);
 
+	
 	the_point = gsl_vector_alloc(options.nparams);
+
+	print_vector_quiet(the_point, options.nparams);
 
 	convertDoubleToVector(the_point, point_in, options.nparams);
 
@@ -290,7 +303,7 @@ void testConvert(double* matrix, int *nx_in, int *ny_in){
 	int nx = *nx_in;
 	int ny = *ny_in;
 	printf("nx = %d\tny= %d\n", nx, ny);
-	gsl_matrix *test = gsl_matrix_alloc(nx, ny);
+	gsl_matrix *test = gsl_matrix_alloc(ny, nx);
 	convertDoubleToMatrix(test, matrix, nx, ny);
 	gsl_matrix_free(test);
 }
@@ -298,18 +311,48 @@ void testConvert(double* matrix, int *nx_in, int *ny_in){
 
 
 /*
- * driving to atlanta: fixed bug in this
- * 
  * takes an ALLOCATED gsl_matrix and copies the input vector into it, 
  * doesn't check anything
+ * 
+ * matrices in R are stored like this
+ *      [,1] [,2] [,3] [,4]
+ * [1,]    1    4    7    0
+ * [2,]    2    5    8    0
+ * [3,]    3    6    9    0
+ * 
+ * the input vector will look like this:
+ * nx = 4	ny= 3
+ * IN:0 = 1.000000
+ * IN:1 = 2.000000
+ * IN:2 = 3.000000
+ * IN:3 = 4.000000
+ * IN:4 = 5.000000
+ * IN:5 = 6.000000
+ * IN:6 = 7.000000
+ * IN:7 = 8.000000
+ * IN:8 = 9.000000
+ * IN:9 = 0.000000
+ * IN:10 = 0.000000
+ * IN:11 = 0.000000
+ *
+ * as far as c is concerned matrices are going to be indexed by y and then x, i.e
+ * a faithful copy of the input matrix should have:
+ * 
+ * m[1,1] = 1, m[2,1] = , m[3,2] =6 etc
+ * does this work?
  */
-/** dimensions are interleaved! */
 void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int nx, int ny){
 	int i, j;
-	for(j = 0; j < ny; j++){
-		for(i =0; i < nx; i++){
+	/* for(i = 0; i < nx*ny; i++){ */
+	/* 	printf("IN:%d = %lf\n", i, input[i]); */
+	/* } */
+	/* printf("\n"); */
+	/* printf("nx = %d\tny=%d\n", nx, ny); */
+	for(i = 0; i < nx; i++){
+		for(j =0; j < ny; j++){
 			gsl_matrix_set(the_matrix, j, i, input[j+ny*i]);
-			printf("%d,%d=%lf\n", j, i, gsl_matrix_get(the_matrix,j,i));
+			/* printf("j+ny*i = %d\n", j+ny*i); */
+			/* printf("MAT(%d,%d)=%lf\n", j+1, i+1, gsl_matrix_get(the_matrix,j,i)); */
 		}
 	}
 
