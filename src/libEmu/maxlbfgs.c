@@ -31,6 +31,7 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 	gsl_vector *xFinal = gsl_vector_alloc(params->options->nthetas);
 	gsl_vector *xBest = gsl_vector_alloc(params->options->nthetas);
 	double *tempVec = malloc(sizeof(double)*params->options->nthetas);
+	pthread_t self = pthread_self(); // this is your thread id
 
 	params->h_matrix = gsl_matrix_alloc(params->options->nmodel_points, params->options->nregression_fns);
 
@@ -46,13 +47,14 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 		
 		copy_gslvec_vec(xFinal, tempVec, params->options->nthetas);
 		likelyHood = -1*evalFnLBFGS(tempVec, params->options->nthetas, (void*)params);
-		printf("%lu:L = %g\n", (unsigned long)pthread_self(), likelyHood);
-		printf("try = %d\n", tries);
+		fprintPt(stdout, self);
+		printf(":L = %g:try = %d\n", likelyHood, tries);
 		if(likelyHood > bestLikelyHood && (isnan(likelyHood) == 0 && isinf(likelyHood) == 0)){
 			bestLikelyHood = likelyHood;
 			gsl_vector_memcpy(xBest, xFinal);
 
-			printf("%lu:best = %g\n", (unsigned long)pthread_self(), bestLikelyHood);
+			fprintPt(stdout, self);
+			printf(":best = %g\n", bestLikelyHood);
 		}
 		tries++;
 		set_random_initial_value(params->random_number, xInit, params->options->grad_ranges, params->options->nthetas);

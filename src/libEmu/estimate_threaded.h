@@ -22,6 +22,7 @@ struct estimate_thetas_params{
 	gsl_rng* random_number;	
 	gsl_matrix* h_matrix;
 	int max_tries;
+	double my_best; // want to check on the local best values
 } estimate_thetas_params;
 
 // have to include this after derining the above struct or you get tied in knots
@@ -38,7 +39,7 @@ int get_number_cpus(void);
 
 void setup_params(struct estimate_thetas_params *params, modelstruct* the_model, optstruct* options, int nthreads, int max_tries);
 
-
+void fprintPt(FILE *f, pthread_t pt);
 
 // see the source for defs of the number of threads etc etc
 #endif
