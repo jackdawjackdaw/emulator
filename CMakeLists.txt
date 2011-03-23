@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
+project (Emulator)
 
 ################### 
 # the install prefix is where the bins and libs get dropped. 
@@ -8,9 +9,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 set(CMAKE_INSTALL_PREFIX "/home/einstein/grad/cec24/local")
 if(APPLE)
 	set(CMAKE_INSTALL_PREFIX "/Users/chris/local")
-	message("Hello Apple User!")
 endif(APPLE)										 
-project (Emulator)
+
 
 SET(${project_name}_major_version 1)
 SET(${project_name}_minor_version 0)
