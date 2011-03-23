@@ -64,9 +64,9 @@ void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_d
 
 	sprintf(buffer, "read the following input matrix: %d x %d\n", options->nmodel_points, options->nparams);
 	message(buffer, 2);
-	//print_matrix(the_model->xmodel, options->nmodel_points, options->nparams);
-	//fprintf(stderr, "the training data is:\n");
-	//print_vector_quiet(the_model->training_vector, options->nmodel_points);
+	print_matrix(the_model->xmodel, options->nmodel_points, options->nparams);
+	fprintf(stderr, "the training data is:\n");
+	print_vector_quiet(the_model->training_vector, options->nmodel_points);
 	
 }
 	
