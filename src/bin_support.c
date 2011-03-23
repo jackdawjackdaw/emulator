@@ -93,10 +93,11 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	/**!!!! set the number of regression fns
 	 * 
 	 * this is regression model dependant
-	 * this is correct for the simple linear fit in each dimension plus a constant intercept
-	 * this shou be set by some kind of or through the cli
+	 * 
+	 * (1+ options->nparams) is correct for the simple linear fit in each dimension plus a constant intercept
+	 * 
 	 */
-	options->nregression_fns =  1;
+	options->nregression_fns =  1 + options->nparams;
 }
 
 
@@ -115,7 +116,7 @@ void setup_cov_fn(optstruct *options){
 	/*
 	 * we'll use the gaussian covariance fn by default
 	 */
-	//message("using gaussian cov fn\n", 1);
+	message("using gaussian cov fn\n", 1);
 	options->covariance_fn = covariance_fn_gaussian;
 	options->cov_fn_alpha = 2.0;
 	options->nthetas = options->nparams+2;
