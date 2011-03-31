@@ -47,8 +47,12 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 		
 		copy_gslvec_vec(xFinal, tempVec, params->options->nthetas);
 		likelyHood = -1*evalFnLBFGS(tempVec, params->options->nthetas, (void*)params);
-		fprintPt(stdout, self);
-		printf(":L = %g:try = %d\n", likelyHood, tries);
+		
+		/*annoying!
+		 *fprintPt(stdout, self);
+		 *printf(":L = %g:try = %d\n", likelyHood, tries);
+		 */
+		
 		if(likelyHood > bestLikelyHood && (isnan(likelyHood) == 0 && isinf(likelyHood) == 0)){
 			bestLikelyHood = likelyHood;
 			gsl_vector_memcpy(xBest, xFinal);

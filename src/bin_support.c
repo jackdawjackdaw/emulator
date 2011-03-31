@@ -117,10 +117,14 @@ void setup_cov_fn(optstruct *options){
 	/*
 	 * we'll use the gaussian covariance fn by default
 	 */
-	message("using gaussian cov fn\n", 1);
+	//message("using gaussian cov fn\n", 1); // this is annoying
 	options->covariance_fn = covariance_fn_gaussian;
 	options->cov_fn_alpha = 2.0;
 	options->nthetas = options->nparams+2;
+
+	/* message("using matern 3/2", 1); */
+	/* options->covariance_fn = covariance_fn_matern_five; */
+	/* options->nthetas = 3; */
 }
 
 /**

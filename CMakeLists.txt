@@ -43,13 +43,13 @@ MESSAGE("include dirs: ${CMAKE_include_directories}")
 SET(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 
 # use clang
-#SET(CMAKE_C_COMPILER /usr/bin/clang)
+SET(CMAKE_C_COMPILER /usr/bin/clang)
 
 
 # make a debug release
-set(CMAKE_BUILD_TYPE debug)
+#set(CMAKE_BUILD_TYPE debug)
 
-SET(CMAKE_C_FLAGS "-std=c99 -pg -O3")
+SET(CMAKE_C_FLAGS "-std=c99 -pg -O4")
 SET(CMAKE_C_FLAGS_DEBUG "-std=c99 -pg -O0 -g -Wall -Wextra -pedantic")
 
 
@@ -64,20 +64,18 @@ endif(${CMAKE_BUILD_TYPE} MATCHES "debug")
 add_subdirectory(src)
 
 
-## do all the installations at the target level, saves worrying about the
-## actual file names etc
-
-#INSTALL_PROGRAMS("/bin" FILES src/estimator src/emulator)
-# on os-x we get .dylib instead of .so
-# there is certainly a better way to do this
-# if(APPLE)
-# 	INSTALL_FILES("/lib" FILES src/libEmu/libEmu.dylib src/libEmu/libLBFGS.dylib src/libRbind/libRBIND.dylib)
-# else()
-# 	INSTALL_FILES("/lib" FILES src/libEmu/libEmu.so src/libEmu/libLBFGS.so src/libRbind/libRBIND.so)				
-# endif(APPLE)
+INSTALL_PROGRAMS("/bin" FILES src/estimator src/emulator)
+#on os-x we get .dylib instead of .so
+#there is certainly a better way to do this
+if(APPLE)
+	INSTALL_FILES("/lib" FILES src/libEmu/libEmu.dylib src/libEmu/libLBFGS.dylib src/libRbind/libRBIND.dylib)
+else()
+	INSTALL_FILES("/lib" FILES src/libEmu/libEmu.so src/libEmu/libLBFGS.so src/libRbind/libRBIND.so)				
+endif(APPLE)
 				
-# INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/lbfgs.h src/libEmu/maxlbfgs.h src/libEmu/regression.h)
-# INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h)
+INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/lbfgs.h src/libEmu/maxlbfgs.h src/libEmu/regression.h)
+# ccs: added the R files we need to use rbind
+INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h src/libRbind/EmuRbind.R src/libRbind/multivar.R)
 
 
 ## this is dangerous, its very creaky right now.

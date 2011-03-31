@@ -70,7 +70,7 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cmatrix,  gsl_matrix *x
 
 	// the  log likelyhood is a given by
 	// L = (-1/2)*Log[Det[cinverse]]  - (1/2)*trainingvector.cinverse.trainingvector - (nmodel_points/2)*Log[2*Pi]
-	the_likelyhood = -(1.0/2.0)*log_det_c -  (nmodel_points/2.0)*log_2_pi;
+	the_likelyhood = -(1.0/2.0)*log_det_c -  (nmodel_points/2.0)*log_2_pi; 
 	
 	gsl_blas_dgemv(CblasNoTrans, 1.0, cinverse, train_sub_mean, 0.0, result_holder);
 	gsl_blas_ddot(train_sub_mean, result_holder, &vector_matrix_vector_product);

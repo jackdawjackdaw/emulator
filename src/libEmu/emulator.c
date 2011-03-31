@@ -84,8 +84,24 @@ inline double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
  * Using the neldermead optimisation, this function is all you need to change
  * to use the grad-desc type methods which rely on the derivative of C we need 
  * to adjust some of the calls there. 
+ * 
+ * updated: march 23rd 11
+ * optimisations by fixing alpha = 2.0 allowing us to remove calls to pow 
+ * exp calls are reduced by clamping the range over which we actually compute the
+ * exponential from 0..CLAMPVALUE, the rest are taken to be zero.
+ * 
+ * 
  *
  */
+
+/** CLAMPVALUE is the cutoff for calculating the exponential covariance, anythign less than this
+ * is just a waste of precision and computation
+ * 
+ * -10 is too large
+ * -25 is about right, but you can fiddle around with this a bit to pull a tiny smidgin more speed out of the code
+ * -100 is too small
+ */
+#define CLAMPVALUE -15
 double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams, double alpha){
 	// calc the covariance for a given set of input points
 	int i, truecount  = 0;
@@ -94,6 +110,7 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 	double xm_temp = 0.0;
 	double xn_temp = 0.0;
 	double r_temp = 0.0;
+	double dist_temp = 0.0;
 	double amp = exp(gsl_vector_get(thetas, 0));
 	double nug = gsl_vector_get(thetas, 1);
 	
@@ -101,15 +118,27 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
 		xn_temp = gsl_vector_get(xn, i);
 		r_temp = exp(gsl_vector_get(thetas, i+2));
-		r_temp = pow(r_temp , alpha); 
+		// fix alpha = 2.0
+		//r_temp = pow(r_temp , alpha); 
+		r_temp = r_temp * r_temp;
 		// gaussian term				
-		exponent += (-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp);
+		// change from pow to explicit multiplication, for alpha = 2.0
+		//exponent += (-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp);
+		dist_temp = fabs(xm_temp-xn_temp);
+		exponent += (-1.0/2.0)*dist_temp*dist_temp/(r_temp);
+
 		//DEBUGprintf("%g\n", covariance);
-		if (fabs(xm_temp - xn_temp) < 0.0000000000000001){
+		if (dist_temp < 0.0000000001){
 			truecount++; 		
 		}
 	}
-	covariance = exp(exponent)*amp;
+	
+	// we're going to clamp exp(exponent) == 0 if exponent < -100
+	if(exponent < CLAMPVALUE){
+		covariance = 0.0;
+	} else {
+		covariance = exp(exponent)*amp;
+	}
 
 	/** 
 	 * the nugget is only added to the diagonal covariance terms,
@@ -250,13 +279,16 @@ double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
  * this doesn't use quite the same normalisation as the other matern function
  * i don't think this will make much difference although you can't directly 
  * compare the "best" hyperparams
+ * 
+ * added fake argument (foo) to make intereface compatible with gaussian (duummmb)
  */
-double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams, double foo){
 	double covariance = 0.0;
 	int i, truecount = 0;
 	double xm_temp = 0.0;
 	double xn_temp = 0.0;
 	double distance = 0.0;
+	double temp_dist = 0.0;
 	
 	assert(nthetas >= 3); // can throw away the upper ones no problem
 
@@ -272,8 +304,9 @@ double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* th
 		xm_temp = gsl_vector_get(xm, i);
 		xn_temp = gsl_vector_get(xn, i);
 		// this is currently the distance squared
-		distance += pow(fabs(xm_temp - xn_temp), 2.0);
-		if(fabs(xm_temp - xn_temp) < 0.0000000000000001){
+		temp_dist = fabs(xm_temp-xn_temp);
+		distance += temp_dist * temp_dist;
+		if(temp_dist < 0.0000000000000001){
 			truecount++;
 		}			
 	}
@@ -282,10 +315,10 @@ double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* th
 
 	if(distance > 0.0){
 		covariance = sigsquared*(1 + root3*(distance/rho))*exp(-root3*(distance/rho));
-	} else if(distance == 0){
+	} else {
 		covariance = sigsquared;
 	}
-	
+
 	// this means we're on a diagonal term, golly but i write bad code :(
 	if(truecount == nparams){
 		covariance += nugget;
@@ -301,8 +334,10 @@ double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* th
  * 
  * 
  * same hyperparam normalisation as covariance_fn_matern_three,
+ * 
+ * added fake argument (foo) to make interface compatible with gaussian
  */
-double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams, double foo){
 	double covariance = 0.0;
 	int i, truecount = 0;
 	double xm_temp = 0.0;

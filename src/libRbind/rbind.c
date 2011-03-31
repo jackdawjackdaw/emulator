@@ -42,9 +42,6 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	// fill in the training vec
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
 
-	//print_matrix(the_model.xmodel, options.nmodel_points, options.nparams);
-	//printf("\n\n");
-	//exit(1);
 	// actually do the estimation using libEmu
 	estimate_thetas_threaded(&the_model, &options);
 
@@ -55,7 +52,6 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	// tidy up
 	free_modelstruct(&the_model);
 	free_optstruct(&options);
-
 }
 
 /**
@@ -82,21 +78,30 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	setup_cov_fn(&options);
 	setup_optimization_ranges(&options);	// this strictly isn't needed for emulator
 
-	
-	printf("nparams:%d\tnmodel_pts:%d\tnthetas:%d\n", options.nparams, options.nmodel_points, options.nthetas);
-	printf("point: %lf", point_in[0]);
-	for(i = 0; i < options.nparams; i++)	 
-		printf("\t%lf", point_in[i]);
-	printf("\n");
+	// noisy
+	/* fprintf(stderr, "nparams:%d\tnmodel_pts:%d\tnthetas:%d\n", options.nparams, options.nmodel_points, options.nthetas); */
+	/* fprintf(stderr,"point:"); */
+	/* for(i = 0; i < options.nparams; i++)	  */
+	/* 	fprintf(stderr,"\t%lf", point_in[i]); */
+	/* fprintf(stderr,"\n"); */
 
 	alloc_modelstruct(&the_model, &options);
 
 	
 	the_point = gsl_vector_alloc(options.nparams);
-
-	print_vector_quiet(the_point, options.nparams);
+	
+	/* checking convertDoubleToVector
+	 * 	fprintf(stderr, "point pre-alloc: ");
+	 * print_vector_quiet(the_point, options.nparams);
+	 */
 
 	convertDoubleToVector(the_point, point_in, options.nparams);
+
+	/* check tht convertDoubleToVector works 
+	 * fprintf(stderr, "point post-alloc: ");
+	 * print_vector_quiet(the_point, options.nparams);
+	 */
+	
 
 	// fill in thetas
 	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
@@ -108,7 +113,7 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	emulateAtPoint(&the_model, the_point, &options, &the_mean, &the_variance);
 
 	//print_vector_quiet(the_point,options.nparams);
-	printf("mean:%lf\tvar:%lf\n", the_mean, the_variance);
+	fprintf(stderr, "mean:%lf\tvar:%lf\n", the_mean, the_variance);
 	*final_emulated_y  = the_mean;
 	*final_emulated_variance = the_variance;
 

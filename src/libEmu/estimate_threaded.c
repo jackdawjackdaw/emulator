@@ -21,7 +21,7 @@ pthread_spinlock_t results_spin;
  */
 
 /* how many lots of thread_level_tries to do */
-int ntries = 10; 
+int ntries = 4; 
 /* mutex protected counter to keep track of completed jobs */
 int jobnumber = 0; 
 /* global spot for the best thetas to be kept in */
@@ -37,8 +37,12 @@ double best_likelyhood_val = SCREWUPVALUE;
 
 int get_number_cpus(void){
 	int ncpus = 0;
+	char buffer[256];
 	/* now try and find the number of threads by seeing how many cpus we have */
 	ncpus = sysconf(_SC_NPROCESSORS_ONLN); // man 3 sysconf (should be posix?)
+	if(ncpus == -1){
+		ncpus = 1;
+	}
 	fprintf(stderr, "NCPUS: %d\n", ncpus);
 	return(ncpus);
 }
@@ -73,7 +77,15 @@ void setup_params(struct estimate_thetas_params *params_array, modelstruct* the_
 void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	int i;
 	/* thread data */
-	int nthreads = get_number_cpus();
+	/* \bug
+	 * at least on os-x there is some kind of bug where the code gets stuck hanging with
+	 * all but one of the threads finished, this only happens with some orderings of execution
+	 * and only if there are >= 4 threads (on my MBP). don't want to spend too much time trying 
+	 * to fix this right now
+	 * 
+	 * it's slower with 4 threads on the MBP than it is with 2
+	 */
+	int nthreads = 2; //get_number_cpus();
 	
 	/* force each thread to do at least one of the tries */
 	if(ntries < nthreads){
@@ -120,7 +132,8 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	/* regular stuff */
 	const gsl_rng_type *T;
 
-	int number_steps = 64;
+	/* optimum value for this seems to be 32, for 1d testing using model-cut.dat */
+	int number_steps = 32;
 	T = gsl_rng_default;
 
 	/* 
@@ -218,6 +231,7 @@ void* estimate_thread_function(void* args){
 			fprintPt(stdout, my_id);
 			printf("\n");
 		}
+		printf("jobnumber = %d\tnext_job = %d\tntries = %d\n", jobnumber, next_job, ntries);
 		/* now we can unlock the job counter */
 		#ifdef USEMUTEX		
 		pthread_mutex_unlock(&job_counter_mutex);
@@ -255,7 +269,7 @@ void* estimate_thread_function(void* args){
 			// save the new best too
 			best_likelyhood_val = my_theta_val;
 			fprintPt(stdout, my_id);
-			printf(" won with %g\n", my_id, my_theta_val);
+			printf(" won with %g\n",  my_theta_val);
 		}
 		#ifdef USEMUTEX
 		pthread_mutex_unlock(&results_mutex);
@@ -265,9 +279,12 @@ void* estimate_thread_function(void* args){
 		printf("results unlocked by:");
 		fprintPt(stdout, my_id);
 		printf("\n");
-		
+
 	}
 	// and relax...
+	printf("thread: ");
+	fprintPt(stdout, my_id); 
+	printf(" is done\n");
 	return NULL;
 }
 

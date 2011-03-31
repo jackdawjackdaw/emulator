@@ -36,6 +36,6 @@ TARGET_LINK_LIBRARIES(Emu LBFGS ${libs})
 add_dependencies(Emu LBFGS)
 
 
-install(TARGETS Emu LBFGS 
-				RUNTIME DESTINATION bin 
-				LIBRARY DESTINATION lib)
+# install(TARGETS Emu LBFGS 
+# 				RUNTIME DESTINATION bin 
+# 				LIBRARY DESTINATION lib)
