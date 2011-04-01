@@ -102,7 +102,6 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	 * print_vector_quiet(the_point, options.nparams);
 	 */
 	
-
 	// fill in thetas
 	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
 	// fill in xmodel 
@@ -113,7 +112,7 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	emulateAtPoint(&the_model, the_point, &options, &the_mean, &the_variance);
 
 	//print_vector_quiet(the_point,options.nparams);
-	fprintf(stderr, "mean:%lf\tvar:%lf\n", the_mean, the_variance);
+	fprintf(stderr, "#mean:%lf\tvar:%lf\n", the_mean, the_variance);
 	*final_emulated_y  = the_mean;
 	*final_emulated_variance = the_variance;
 
