@@ -53,7 +53,7 @@ void emulate_model_results(modelstruct *the_model, optstruct* options, resultstr
 }
 
 /**
- * emulate teh model at the location of the_point
+ * emulate the model at the location of the_point
  * @return *the_variance is set to the variance at this location
  * @return *the_mean is set to the emulated mean at this loc
  */

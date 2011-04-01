@@ -30,6 +30,3 @@ add_dependencies(emulator Emu LBFGS)
 install (TARGETS estimator emulator 
 				RUNTIME DESTINATION bin
 				LIBRARY DESTINATION lib)
-
-
-

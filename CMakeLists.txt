@@ -64,17 +64,17 @@ endif(${CMAKE_BUILD_TYPE} MATCHES "debug")
 add_subdirectory(src)
 
 
-INSTALL_PROGRAMS("/bin" FILES src/estimator src/emulator)
-#on os-x we get .dylib instead of .so
-#there is certainly a better way to do this
-if(APPLE)
-	INSTALL_FILES("/lib" FILES src/libEmu/libEmu.dylib src/libEmu/libLBFGS.dylib src/libRbind/libRBIND.dylib)
-else()
-	INSTALL_FILES("/lib" FILES src/libEmu/libEmu.so src/libEmu/libLBFGS.so src/libRbind/libRBIND.so)				
-endif(APPLE)
+# INSTALL_PROGRAMS("/bin" FILES src/estimator src/emulator)
+# #on os-x we get .dylib instead of .so
+# #there is certainly a better way to do this
+# if(APPLE)
+# 	INSTALL_FILES("/lib" FILES src/libEmu/libEmu.dylib src/libEmu/libLBFGS.dylib src/libRbind/libRBIND.dylib)
+# else()
+# 	INSTALL_FILES("/lib" FILES src/libEmu/libEmu.so src/libEmu/libLBFGS.so src/libRbind/libRBIND.so)				
+# endif(APPLE)
 				
 INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/lbfgs.h src/libEmu/maxlbfgs.h src/libEmu/regression.h)
-# ccs: added the R files we need to use rbind
+# # ccs: added the R files we need to use rbind
 INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h src/libRbind/EmuRbind.R src/libRbind/multivar.R)
 
 
