@@ -6,10 +6,9 @@ project (Emulator)
 ################### 
 # the install prefix is where the bins and libs get dropped. 
 #
-set(CMAKE_INSTALL_PREFIX "/home/einstein/grad/cec24/local")
-if(APPLE)
-	set(CMAKE_INSTALL_PREFIX "/Users/chris/local")
-endif(APPLE)										 
+
+message("Setting Install prefix to Home folder: $ENV{HOME}")
+set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local")
 
 
 SET(${project_name}_major_version 1)
@@ -42,9 +41,10 @@ INCLUDE_DIRECTORIES(${GSL_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/libEmu)
 MESSAGE("include dirs: ${CMAKE_include_directories}")
 SET(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 
+if(APPLE)
 # use clang
 SET(CMAKE_C_COMPILER /usr/bin/clang)
-
+endif(APPLE)
 
 # make a debug release
 #set(CMAKE_BUILD_TYPE debug)
@@ -63,36 +63,11 @@ endif(${CMAKE_BUILD_TYPE} MATCHES "debug")
 
 add_subdirectory(src)
 
-
-# INSTALL_PROGRAMS("/bin" FILES src/estimator src/emulator)
-# #on os-x we get .dylib instead of .so
-# #there is certainly a better way to do this
-# if(APPLE)
-# 	INSTALL_FILES("/lib" FILES src/libEmu/libEmu.dylib src/libEmu/libLBFGS.dylib src/libRbind/libRBIND.dylib)
-# else()
-# 	INSTALL_FILES("/lib" FILES src/libEmu/libEmu.so src/libEmu/libLBFGS.so src/libRbind/libRBIND.so)				
-# endif(APPLE)
-				
+# explicitly install the headers we need, and the r-files				
 INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/lbfgs.h src/libEmu/maxlbfgs.h src/libEmu/regression.h)
 # # ccs: added the R files we need to use rbind
-INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h src/libRbind/EmuRbind.R src/libRbind/multivar.R)
-
-
-## this is dangerous, its very creaky right now.
-## plus the rpaths get all broken
-
-# found this in the cmake docs
-# install(TARGETS myExe mySharedLib myStaticLib
-#          RUNTIME DESTINATION bin
-#        LIBRARY DESTINATION lib
-#          ARCHIVE DESTINATION lib/static)
-#  install(TARGETS mySharedLib DESTINATION /some/full/path)
-				
-
-# INSTALL_PROGRAMS("~/local/bin" FILES src/estimator src/emulator)
-# INSTALL_FILES("~/local/lib" FILES src/libEmu/libEmu.so src/libEmu/libLBFGS.so src/libRbind/libRBIND.so)
-# INSTALL_FILES("~/local/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/lbfgs.h src/libEmu/maxlbfgs.h src/libEmu/regression.h)
-# INSTALL_FILES("~/local/include/libRbind/" FILES src/libRbind/rbind.h)
+# we have moved the contents of multivar.R into EmuRbind.R
+INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h src/libRbind/EmuRbind.R )
 
 
 
