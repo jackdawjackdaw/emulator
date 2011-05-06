@@ -17,6 +17,9 @@
 
 void emulate_model_results(modelstruct *the_model, optstruct* options, resultstruct* results);
 void emulateAtPoint(modelstruct *the_model, gsl_vector* the_point, optstruct* options, double* the_mean, double* the_variance);
+void emulateAtPointList(modelstruct *the_model, gsl_matrix* point_list, optstruct* options,
+												double* the_mean, double* the_variance);
+
 void emulate_ith_location(modelstruct *the_model, optstruct *options, resultstruct *results,int i, gsl_matrix* h_matrix, gsl_matrix* cinverse, gsl_vector *beta_vector);
 void chol_inverse_cov_matrix(optstruct* options, gsl_matrix* temp_matrix, gsl_matrix* result_matrix, double* final_determinant_c);
 #endif

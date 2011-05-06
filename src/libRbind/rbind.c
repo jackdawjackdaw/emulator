@@ -55,6 +55,56 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 }
 
 /**
+ * compute the mean and variance at a set of points
+ * @return final_emulated_y is a vector of the mean at each point
+ * @return final_emulated_variance is a vector of the variance at each point
+ * @param nemupoints is a list of how many points to emulate
+ * @param points_in is a double array of nparams x nemupoints 
+ */
+void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, int *nemupoints, double* training_in,
+											 int *nmodelpts, double* thetas_in, int *nthetas_in, double* final_emulated_y, 
+											 double* final_emulated_variance){
+	optstruct options;
+	modelstruct the_model; 
+	double the_mean, the_variance;
+	gsl_matrix *the_point_array;
+	int i;
+
+	options.nmodel_points = *nmodelpts;
+	options.nparams = *nparams_in;
+	options.nemulate_points = *nemupoints;
+	// eep
+	options.nregression_fns = 1 + options.nparams;
+	options.emulate_min = 0; // again unused
+	options.emulate_max = 1; 
+	setup_cov_fn(&options);
+	setup_optimization_ranges(&options); // not used
+
+	alloc_modelstruct(&the_model, &options);
+	the_point_array = gsl_matrix_alloc(options.nparams, options.nemulate_points);
+
+	// fill in the point array
+	convertDoubleToMatrix(the_point_array, points_n, options.nparams, options.nemulate_points);
+
+	// fill in thetas
+	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
+	// fill in xmodel 
+	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
+	// fill in the training vec
+	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
+	
+	// now do emulate at point list
+	// need to implement this ... 
+	emulateAtPointList(&the_model, the_point_array, &options, &the_mean, &the_variance);	
+	
+	gsl_matrix_free(the_point_array);
+	// tidy up
+	free_modelstruct(&the_model);
+	free_optstruct(&options);
+
+}
+
+/**
  * computes the mean and variance at point_in 
  * @return final_emulated_y is the mean at point
  * @return final_emulated_variance is the variance at point

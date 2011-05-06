@@ -5,8 +5,6 @@ project (Emulator)
 
 ################### 
 # the install prefix is where the bins and libs get dropped. 
-#
-
 message("Setting Install prefix to Home folder: $ENV{HOME}")
 set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local")
 

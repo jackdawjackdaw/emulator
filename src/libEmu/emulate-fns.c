@@ -52,6 +52,71 @@ void emulate_model_results(modelstruct *the_model, optstruct* options, resultstr
 	gsl_vector_free(beta_vector);
 }
 
+
+/** 
+ * this is the same as calling emulateAtPoint a bunch of times but you 
+ * save on the setup costs of init'ing all the memory, should be quite
+ * a lot faster for a large number of points
+ * 
+ * emulate the model at a list of points
+ * @return *the_variance is set to the variance of each location in the list
+ * @return *the_mean is set to the mean at each loc
+ */
+void emulateAtPointList(modelstruct *the_model, gsl_matrix* point_list, optstruct* options,
+												double* the_mean, double* the_variance){
+	int i;
+	double determinant_c = 0.0;
+	
+	resultstruct *results;
+
+	gsl_matrix *c_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	gsl_matrix *cinverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+
+	gsl_vector *beta_vector = gsl_vector_alloc(options->nregression_fns);
+	gsl_matrix *h_matrix = gsl_matrix_alloc(options->nmodel_points, options->nregression_fns);
+
+	gsl_matrix *temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+
+	// allocate the resultsstruct
+	alloc_resultstruct(results, options);
+	// copy in the x-values we want
+	gsl_matrix_memcpy(results->new_x, point_list);
+	
+	
+	// create the covariance matrix and save a copy in temp_matrix
+	makeCovMatrix(c_matrix, the_model->xmodel, the_model->thetas,options->nmodel_points, options->nthetas, options->nparams, options->covariance_fn);
+	gsl_matrix_memcpy(temp_matrix, c_matrix);
+	
+	chol_inverse_cov_matrix(options, temp_matrix, cinverse, &determinant_c);
+
+	// regression cpts
+	makeHMatrix(h_matrix, the_model->xmodel, options->nmodel_points, options->nparams, options->nregression_fns);
+	estimateBeta(beta_vector, h_matrix, cinverse, the_model->training_vector, options->nmodel_points, options->nregression_fns);
+
+
+	for(i = 0; i < options->nemulate_points; i++){
+		printf("%g\n", gsl_matrix_get(results->new_x, i,0));
+	}
+	
+	for(i = 0; i < options->nemulate_points; i++){		
+		emulate_ith_location(the_model, options, results, i, h_matrix, cinverse, beta_vector);
+		the_mean[i] = gsl_vector_get(results->emulated_mean, i);
+		the_variance[i] = gsl_vector_get(results->emulated_var, i);
+	}
+
+
+	
+	gsl_matrix_free(c_matrix);
+	gsl_matrix_free(cinverse);
+	gsl_matrix_free(h_matrix);
+	gsl_matrix_free(temp_matrix);
+	gsl_vector_free(beta_vector);
+
+	free_resultstruct(results);
+	
+}
+
+
 /**
  * emulate the model at the location of the_point
  * @return *the_variance is set to the variance at this location

@@ -116,6 +116,26 @@ callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthet
   results <- list(des=point, mean=res$finaly, var=res$finalvar)
 }
 
+callEmulateAtList <- function(model, thetas, pointList, nmodelpoints,nemupts, nparams=1, nthetas=3){
+  if(nemupts != dim(points)[2]){
+    print("error not enough emulate points")
+  }
+  
+  res <- .C("callEmulateAtPt",
+            as.double((model$xmodel)),
+            as.integer(nparams),
+            as.double(pointList),
+            as.integer(nemupts),
+            as.double(model$training),
+            as.integer(nmodelpts),
+            as.double(thetas),
+            as.integer(nthetas),
+            finaly = double(nemupts),
+            finalvar = double(nemupts)
+            )
+  results <- list(des=point, mean=res$finaly, var=res$finalvar)
+}
+
 
 callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=4){
   answer <- 0.0
