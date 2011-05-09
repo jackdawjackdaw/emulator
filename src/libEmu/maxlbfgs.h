@@ -9,6 +9,10 @@
 
 double evalFnLBFGS(double *xinput, int nthetas, void* args);
 
+void getGradientExactGauss(double *xinput, double* gradient, int nparams, void* args);
+double getGradientCn(gsl_matrix * dCdtheta, gsl_matrix *cinvese,  gsl_vector* training_vector,int nmodel_points, int nthetas);
+void setupdCdThetaLength(gsl_matrix *dCdTheta, gsl_matrix *covsub, gsl_matrix* xmodel, double thetaLength, int index, int nmodel_points);
+
 //! wrapper for evalFnLBFGS
 double evalLikelyhoodLBFGS_struct(struct estimate_thetas_params *p);
 
