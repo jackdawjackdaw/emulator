@@ -437,7 +437,7 @@ void makeCovMatrix(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* theta
 }
 	
 
-//! caculate the emulated mean 
+//! calculate the emulated mean 
 /**
  * calculate the mean at t+1 using the current training vec, the inverse matrix (calculated elsewhere!) and the
  * kplus vector
