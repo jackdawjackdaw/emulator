@@ -6,6 +6,7 @@
  * allocate a modelstruct from the params in optstruct
  */
 void alloc_modelstruct(modelstruct* the_model, optstruct* options){
+	// row x column
 	the_model->xmodel = gsl_matrix_alloc(options->nmodel_points, options->nparams);
 	the_model->training_vector = gsl_vector_alloc(options->nmodel_points);
 	the_model->thetas = gsl_vector_alloc(options->nthetas);
@@ -62,7 +63,7 @@ void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_d
 		gsl_vector_set(the_model->training_vector, i, temp_value);
 	}
 
-	sprintf(buffer, "read the following input matrix: %d x %d\n", options->nmodel_points, options->nparams);
+	fprintf(stderr, "read the following input matrix: %d x %d\n", options->nmodel_points, options->nparams);
 	message(buffer, 2);
 	print_matrix(the_model->xmodel, options->nmodel_points, options->nparams);
 	fprintf(stderr, "the training data is:\n");

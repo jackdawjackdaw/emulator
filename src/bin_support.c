@@ -157,14 +157,14 @@ void setup_optimization_ranges(optstruct* options){
 			gsl_matrix_set(options->grad_ranges, i, 1, 5.0);	
 		} else {
 			/* these are the regular ranges */
-			gsl_matrix_set(options->grad_ranges, i, 0, 0.0001);
-			gsl_matrix_set(options->grad_ranges, i, 1, 1.0);
+			gsl_matrix_set(options->grad_ranges, i, 0, 0.00001);
+			gsl_matrix_set(options->grad_ranges, i, 1, 10.0);
 		}
 	}
 
 	// and force the nugget to be small
 	gsl_matrix_set(options->grad_ranges, 1, 0, 0.00001);
-	gsl_matrix_set(options->grad_ranges, 1, 1, 0.00005);
+	gsl_matrix_set(options->grad_ranges, 1, 1, 0.005);
 
 	/* for(i = 0; i < options->nthetas;i++){ */
 	/* 	sprintf(buffer, "%d %g %g\n", i, gsl_matrix_get(options->grad_ranges, i, 0), gsl_matrix_get(options->grad_ranges, i, 1)); */
