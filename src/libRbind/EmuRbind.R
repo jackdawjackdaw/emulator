@@ -116,24 +116,31 @@ callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthet
   results <- list(des=point, mean=res$finaly, var=res$finalvar)
 }
 
-callEmulateAtList <- function(model, thetas, pointList, nmodelpoints,nemupts, nparams=1, nthetas=3){
-  if(nemupts != dim(points)[2]){
+callEmulateAtList <- function(model, thetas, pointList,nemupts, nmodelpoints, nparams=1, nthetas=3){
+  #browser()
+  if(nemupts != dim(points)[1]){
+    cat("nemupts ", nemupts, "\n")
     print("error not enough emulate points")
   }
+
+  cat("calling Emulate at list\n")
+  cat("nmodelpoints: ", nmodelpoints, "\n")
+  cat("nemupts: ", nemupts, "\n")
+  cat("nparams: ", nparams, "\n")
   
-  res <- .C("callEmulateAtPt",
+  res <- .C("callEmulateAtList",
             as.double((model$xmodel)),
             as.integer(nparams),
             as.double(pointList),
             as.integer(nemupts),
             as.double(model$training),
-            as.integer(nmodelpts),
+            as.integer(nmodelpoints),
             as.double(thetas),
             as.integer(nthetas),
             finaly = double(nemupts),
             finalvar = double(nemupts)
             )
-  results <- list(des=point, mean=res$finaly, var=res$finalvar)
+  results <- list(des=pointList, mean=res$finaly, var=res$finalvar)
 }
 
 

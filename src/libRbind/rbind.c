@@ -66,9 +66,9 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 											 double* final_emulated_variance){
 	optstruct options;
 	modelstruct the_model; 
-	double the_mean, the_variance;
+	//double the_mean, the_variance;
 	gsl_matrix *the_point_array;
-	int i;
+	int i, j;
 
 	options.nmodel_points = *nmodelpts;
 	options.nparams = *nparams_in;
@@ -80,11 +80,27 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	setup_cov_fn(&options);
 	setup_optimization_ranges(&options); // not used
 
+	fprintf(stderr, "callEmulate at list, nparams %d, nemulate_points %d\n", *nparams_in, *nemupoints);
+
 	alloc_modelstruct(&the_model, &options);
-	the_point_array = gsl_matrix_alloc(options.nparams, options.nemulate_points);
+
+	//the_point_array = gsl_matrix_alloc(options.nparams, options.nemulate_points);
+	the_point_array = gsl_matrix_alloc(options.nemulate_points, options.nparams);
+
 
 	// fill in the point array
-	convertDoubleToMatrix(the_point_array, points_n, options.nparams, options.nemulate_points);
+	convertDoubleToMatrix(the_point_array, points_in, options.nparams, options.nemulate_points);
+	//convertDoubleToMatrix(the_point_array, points_in, options.nemulate_points, options.nparams);
+	
+
+	/* for(i = 0; i < *nemupoints; i++){ */
+	/* 	for(j = 0; j < *nparams_in; j++){ */
+	/* 		fprintf(stderr, "%lf ", gsl_matrix_get(the_point_array, i, j)); */
+	/* 	} */
+	/* 	fprintf(stderr,"\n"); */
+	/* } */
+							
+
 
 	// fill in thetas
 	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
@@ -92,10 +108,12 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	// fill in the training vec
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
+
 	
 	// now do emulate at point list
 	// need to implement this ... 
-	emulateAtPointList(&the_model, the_point_array, &options, &the_mean, &the_variance);	
+	emulateAtPointList(&the_model, the_point_array, &options, final_emulated_y, final_emulated_variance);	
+
 	
 	gsl_matrix_free(the_point_array);
 	// tidy up
