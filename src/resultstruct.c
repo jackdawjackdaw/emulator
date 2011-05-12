@@ -13,9 +13,9 @@ void free_resultstruct(resultstruct *res){
  * allocate the resultstruct from the options
  */
 void alloc_resultstruct(resultstruct *res, optstruct* opts){
-	fprintf(stderr, "allocating resultstruct\n");
-	fprintf(stderr, "nemupts: %d\n", opts->nemulate_points);	
-	fprintf(stderr, "nparams: %d\n", opts->nparams);	
+	/* fprintf(stderr, "allocating resultstruct\n"); */
+	/* fprintf(stderr, "nemupts: %d\n", opts->nemulate_points);	 */
+	/* fprintf(stderr, "nparams: %d\n", opts->nparams);	 */
 	res->new_x = gsl_matrix_alloc(opts->nemulate_points, opts->nparams);
 	res->emulated_mean = gsl_vector_alloc(opts->nemulate_points);
 	res->emulated_var = gsl_vector_alloc(opts->nemulate_points);

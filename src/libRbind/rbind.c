@@ -80,7 +80,7 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	setup_cov_fn(&options);
 	setup_optimization_ranges(&options); // not used
 
-	fprintf(stderr, "callEmulate at list, nparams %d, nemulate_points %d\n", *nparams_in, *nemupoints);
+	fprintf(stderr, "#callEmulate at list, nparams %d, nemulate_points %d\n", *nparams_in, *nemupoints);
 
 	alloc_modelstruct(&the_model, &options);
 

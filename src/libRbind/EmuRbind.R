@@ -123,10 +123,10 @@ callEmulateAtList <- function(model, thetas, pointList,nemupts, nmodelpoints, np
     print("error not enough emulate points")
   }
 
-  cat("calling Emulate at list\n")
-  cat("nmodelpoints: ", nmodelpoints, "\n")
-  cat("nemupts: ", nemupts, "\n")
-  cat("nparams: ", nparams, "\n")
+  ## cat("calling Emulate at list\n")
+  ## cat("nmodelpoints: ", nmodelpoints, "\n")
+  ## cat("nemupts: ", nemupts, "\n")
+  ## cat("nparams: ", nparams, "\n")
   
   res <- .C("callEmulateAtList",
             as.double((model$xmodel)),
