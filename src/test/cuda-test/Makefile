@@ -1,5 +1,5 @@
 INCLUDE = -I/xtmp/cec24/NVIDIA_gpu_computing_sdk/shared/inc
-LIBS = -lgsl -lgslcblas -lcublas -lcuda
+LIBS = -lgsl -lgslcblas -lcublas -lcuda -O3
 
 approxInv: approxInvCuda.cpp
 	nvcc -c   approxInvCuda.cpp 
@@ -8,4 +8,4 @@ test: approxInv
 	nvcc approxInvCuda.o ../approxInverse.c -DNPOINTS=512 $(LIBS)
 
 test2: 
-	nvcc -x=c++ -o approxCuda approxInvCuda.cpp ../approxInverse.c $(INCLUDE) -DNPOINTS=512 $(LIBS)
+	nvcc -x=c++ -o approxCuda approxInvCuda.cpp ../approxInverse.c $(INCLUDE) -DNPOINTS=512 $(LIBS) 
