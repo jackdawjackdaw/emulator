@@ -118,10 +118,11 @@ callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthet
 
 callEmulateAtList <- function(model, thetas, pointList,nemupts, nmodelpoints, nparams=1, nthetas=3){
   #browser()
-  if(nemupts != dim(points)[1]){
-    cat("nemupts ", nemupts, "\n")
-    print("error not enough emulate points")
-  }
+
+  ## if(nemupts != dim(pointList)[1]){
+  ##   cat("nemupts ", nemupts, "\n")
+  ##   print("error not enough emulate points")
+  ## }
 
   ## cat("calling Emulate at list\n")
   ## cat("nmodelpoints: ", nmodelpoints, "\n")

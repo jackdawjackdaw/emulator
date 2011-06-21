@@ -5,7 +5,9 @@
 #include "gsl/gsl_vector.h"
 #include "gsl/gsl_blas.h"
 #include "gsl/gsl_linalg.h"
+#include <sys/time.h>
 
+extern void invertMatrixVectorCuda(gsl_matrix* Cn, gsl_vector* u, gsl_vector *answer, double theta3);
 
 double covFn(double x1, double x2, double theta1, double theta2, double theta3);
 void invertMatrixVector(gsl_matrix* Cn, gsl_vector* u, gsl_vector *answer, double theta3);
@@ -18,15 +20,24 @@ void computeNextH(gsl_vector* h, gsl_vector* gnext, double gamma, gsl_vector* hn
 void computeNextY(gsl_vector *y, gsl_vector *h, double lambda, gsl_vector *ynext);
 
 int main (void){
-	int npoints = 10;
+	int npoints = NPOINTS;
 	int i,j;
 	double theta1, theta2, theta3;
 	double ctemp;
 	double qmax;
+	double texact, tapprox, tcuda, mindev,maxdev;
+	double mindevCuda, maxdevCuda;
+	struct timeval start, stop, diff;
+	FILE *fptr;
 	gsl_vector *temp = gsl_vector_calloc(npoints);
 	gsl_vector *uvector = gsl_vector_calloc(npoints);
 	gsl_vector *yexact = gsl_vector_calloc(npoints);
 	gsl_vector *yapprox = gsl_vector_calloc(npoints);
+	gsl_vector *diffVec = gsl_vector_calloc(npoints);
+
+	gsl_vector *yapproxCuda = gsl_vector_calloc(npoints);
+	gsl_vector *diffVecCuda = gsl_vector_calloc(npoints);
+
 	
 	gsl_matrix *cmatrix = gsl_matrix_alloc(npoints, npoints);
 
@@ -49,37 +60,85 @@ int main (void){
 		for(j = 0; j < npoints; j++){
 			ctemp = covFn(gsl_vector_get(uvector, i), gsl_vector_get(uvector, j), theta1, theta2, theta3);
 			gsl_matrix_set(cmatrix, i, j, ctemp);
-			printf("%lf ", ctemp);
+			//printf("%lf ", ctemp);
 		}
-		printf("\n");
+		//printf("\n");
 	}
+
 	
-	// so now we'll do the inversion exactly
-	gsl_matrix_memcpy(cinverse, cmatrix);
-	gsl_linalg_cholesky_decomp(cinverse);
-	gsl_linalg_cholesky_invert(cinverse);
+	/* gettimeofday(&start, NULL); // get the time  */
+	/* // so now we'll do the inversion exactly */
+	/* gsl_matrix_memcpy(cinverse, cmatrix); */
+	/* gsl_linalg_cholesky_decomp(cinverse); */
+	/* gsl_linalg_cholesky_invert(cinverse); */
 
+	/* //gsl_blas_dsymv(CblasNoTrans, 1.0,Cn, h, 0.0, temp); */
+	/* // now form the product */
+	/* gsl_blas_dsymv(CblasUpper, 1.0, cinverse, uvector, 0.0, yexact); */
+	/* gettimeofday(&stop, NULL); */
 
-	//gsl_blas_dsymv(CblasNoTrans, 1.0,Cn, h, 0.0, temp);
-	// now form the product
-	gsl_blas_dsymv(CblasUpper, 1.0, cinverse, uvector, 0.0, yexact);
+	/* timersub(&stop, &start, &diff); */
+	/* texact = diff.tv_sec + diff.tv_usec/1000000.0; */
+	/* printf("exact time: %lf\n", texact); */
 
 	// we can also compute Qmax to check what's going on
-	qmax = computeQValue(cmatrix, uvector, yexact);
-	printf("qmax: %lf\t\n", qmax);
+	// this is basically cheating
+	/* qmax = computeQValue(cmatrix, uvector, yexact); */
+	/* printf("qmax: %lf\t\n", qmax); */
 
+	gettimeofday(&start, NULL); // get the time 	
 	invertMatrixVector(cmatrix, uvector, yapprox, theta3);
+	gettimeofday(&stop, NULL);
+
+	timersub(&stop, &start, &diff);
+	tapprox = diff.tv_sec + diff.tv_usec/1000000.0;
+	printf("approx time: %lf\n", tapprox);
+
+	gettimeofday(&start, NULL); // get the time 	
+	invertMatrixVectorCuda(cmatrix, uvector, yapproxCuda, theta3);
+	gettimeofday(&stop, NULL);
+
+	timersub(&stop, &start, &diff);
+	tcuda = diff.tv_sec + diff.tv_usec/1000000.0;
+	printf("cuda time: %lf\n", tcuda);
 	
-	/* for(i = 0; i < npoints; i++) */
-	/* 	printf("%d %lf %lf\n", i, gsl_vector_get(yexact, i), gsl_vector_get(yapprox, i)); */
+
 	
+	/* for(i = 0; i < npoints; i++){ */
+	/* 	//printf("%d %lf %lf %lf\n", i, gsl_vector_get(yexact, i), gsl_vector_get(yapprox, i), fabs(gsl_vector_get(yexact,i) - gsl_vector_get(yapprox,i))); */
+	/* 	gsl_vector_set(diffVec, i, fabs(gsl_vector_get(yexact,i) - gsl_vector_get(yapprox,i)) / gsl_vector_get(yexact, i)); */
+	/* 	gsl_vector_set(diffVecCuda, i, fabs(gsl_vector_get(yexact,i) - gsl_vector_get(yapproxCuda,i)) / gsl_vector_get(yexact, i)); */
+	/* } */
 	
+	/* maxdev = gsl_vector_max(diffVec); */
+	/* mindev = gsl_vector_min(diffVec); */
+
+	/* maxdevCuda = gsl_vector_max(diffVecCuda); */
+	/* mindevCuda = gsl_vector_min(diffVecCuda); */
+
+
+	/* printf("max deviation %lf cuda %lf: \n", maxdev, maxdevCuda); */
+	/* printf("min deviation %lf cuda %lf: \n", mindev, mindevCuda); */
+		
 	gsl_vector_free(uvector);
 	gsl_vector_free(yexact);
 	gsl_vector_free(yapprox);
+	gsl_vector_free(diffVec);
+
+	gsl_vector_free(yapproxCuda);
+	gsl_vector_free(diffVecCuda);
 
 	gsl_matrix_free(cmatrix);
 	gsl_matrix_free(cinverse);
+	
+	fptr = NULL;
+	fptr = fopen("test-results.dat", "a");
+	if(fptr == NULL){
+		fprintf(stderr, "couldn't open results file!\n");
+		return EXIT_FAILURE;
+	}
+	fprintf(fptr, "%d %lf %lf %lf\n", NPOINTS, tapprox, tcuda);
+					
 
 	return EXIT_SUCCESS;
 }
@@ -100,13 +159,16 @@ double covFn(double x1, double x2, double theta1, double theta2, double theta3){
  * want to compute Cn^{-1}.u 
  */
 void invertMatrixVector(gsl_matrix* Cn, gsl_vector* u, gsl_vector *answer, double theta3){
-	int nsteps = 50; // for testing...
+	int nsteps = 100; // for testing...
 	int i;
 	gsl_vector* y1, *g1, *h1;
 	gsl_vector* ynext, *gnext, *hnext;
 	double gamma, lambda;
 	double upperBound, lowerBound;
+	double lowerPrev;
 	double controlRatio;
+
+	double stopDiff = 0.0001;
 	
 	y1 = gsl_vector_calloc(u->size); // note that y1 is set to zero
 	g1 = gsl_vector_alloc(u->size);
@@ -122,6 +184,7 @@ void invertMatrixVector(gsl_matrix* Cn, gsl_vector* u, gsl_vector *answer, doubl
 
 	
 	// a single step
+	lowerPrev = lowerBound = 0;
 	for(i = 0; i < nsteps; i++){		
 		lambda = computeLambda(Cn, h1, g1);		
 		computeNextG(Cn, h1, g1, lambda, gnext);
@@ -136,14 +199,17 @@ void invertMatrixVector(gsl_matrix* Cn, gsl_vector* u, gsl_vector *answer, doubl
 		gsl_vector_memcpy(g1, gnext);
 		gsl_vector_memcpy(h1, hnext);
 
-		upperBound = computeQmax(Cn, u, y1, theta3);
+		//upperBound = computeQmax(Cn, u, y1, theta3);
 		lowerBound = computeQValue(Cn, u, y1);
-		controlRatio = fabs((upperBound - lowerBound))/(lowerBound);
-		fprintf(stderr, "upper: %lf\tlower: %lf\tcontrolRatio: %lf\n", upperBound, lowerBound, controlRatio);
+		if((lowerBound - lowerPrev) < stopDiff)
+			break;
+		//controlRatio = fabs((upperBound - lowerBound))/(lowerBound);
+		//fprintf(stderr, "upper: %lf\tlower: %lf\tcontrolRatio: %lf\n", upperBound, lowerBound, controlRatio);
 
-			
+		lowerPrev = lowerBound;
 	}
 	
+	printf("nsteps: %d\n", i);
 	
 	gsl_vector_memcpy(answer, y1);
 
@@ -165,6 +231,8 @@ double computeQValue(gsl_matrix* Cn, gsl_vector* u, gsl_vector *y){
 	gsl_vector *temp = gsl_vector_alloc(u->size);
 	gsl_blas_ddot(y, u, &qval);
 	
+	//printf("computeQ: qval1 = %lf\n", qval);
+
 	//-1/2 * C_n * y 
 	gsl_blas_dsymv(CblasUpper, -0.5, Cn, y, 0.0, temp);
 	gsl_blas_ddot(y, temp, &Atemp);
@@ -259,6 +327,8 @@ double computeLambda(gsl_matrix* Cn, gsl_vector* h, gsl_vector* g){
 	gsl_blas_ddot(g, temp, &denom);
 	
 	lambda = num / denom;
+
+	//printf("number = %f\tdenom = %f\tlambda = %f\n", num, denom, lambda);
 	
 	gsl_vector_free(temp);
 	return(lambda);
@@ -277,6 +347,7 @@ double computeGamma(gsl_vector *gnext, gsl_vector *g){
 	gsl_blas_ddot(g, g, &denom);
 	
 	gamma = num / denom;
+	//printf("g: num = %f\tdenom = %f\tgamma = %f\n", num, denom, num/denom);
 	return(gamma);
 }
 	
