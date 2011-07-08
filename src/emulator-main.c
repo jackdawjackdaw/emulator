@@ -49,7 +49,7 @@ int main (int argc, char **argv){
 
 	parse_arguments(argc, argv, &options);	
 	setup_cov_fn(&options);
-	setup_optimization_ranges(&options);
+
 
 	sprintf(input_file, "%s", "stdin");
 	sprintf(input_file_thetas, "thetas.txt");
@@ -78,6 +78,7 @@ int main (int argc, char **argv){
 
 	alloc_modelstruct(&the_model, &options);
 	fill_modelstruct(&the_model, &options, input_data, number_lines_training);
+	setup_optimization_ranges(&options, &the_model);
 
 	/**
 	 * read the thetas

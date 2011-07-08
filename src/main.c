@@ -66,7 +66,7 @@ int main (int argc, char ** argv){
 	/* after this the optstruct should be totally filled out */
 	parse_arguments(argc, argv, &options);	
 	setup_cov_fn(&options);
-	setup_optimization_ranges(&options);
+
 	
 	/* now we can allocate the modelstruct */
 	message("using lbfgs", 1);
@@ -104,6 +104,9 @@ int main (int argc, char ** argv){
 
 	/* push the input_data into the model structure */
 	fill_modelstruct(&the_model, &options, input_data, number_lines);
+
+
+	setup_optimization_ranges(&options, &the_model);
 	
 	sprintf(buffer, "nthetas = %d\n", options.nthetas);
 	message(buffer, 2);
