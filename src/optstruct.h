@@ -42,6 +42,8 @@ typedef struct optstruct{
 	int nemulate_points;
 	/**
 	 * indirectly controls the shape of the regression model, be very careful with this one
+	 * 
+	 * there should be an ENUM or something explaining the choice of regression scheme
 	 */
 	int nregression_fns;
 	/**
@@ -65,6 +67,10 @@ typedef struct optstruct{
 	 * argument to the gaussian cov fn and not the others
 	 */
 	double (*covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double);
+	
+	// set this to not zero if you want to use the length scales set by the data
+	int use_data_scales;
+
 } optstruct;
 
 void free_optstruct(optstruct *opts);

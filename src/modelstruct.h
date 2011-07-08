@@ -31,7 +31,7 @@ typedef struct modelstruct{
 	 * \brief x_values (nmodel_points * nparams)
 	 * 
 	 * the points at which the model (that which is to be emulated) was evaluated, 
-	 * each row is a new model points, the columns are the dimensions 
+	 * each row is a new model point, the columns are the dimensions 
 	 */
 	gsl_matrix* xmodel;
 	/** 
@@ -48,6 +48,11 @@ typedef struct modelstruct{
 	 * should force the emulated model to pass through all of the training points 
 	 */
 	gsl_vector* thetas;
+	/**
+   * the average distances between samples in the design in each dimension
+	 * this sets soft minima on the correlation function length
+	 */
+	gsl_vector* sample_scales; 
 	/**
 	 * a pointer back to the options struct used to init this structure, just for fun really
 	 */

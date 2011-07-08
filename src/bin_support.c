@@ -99,6 +99,9 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	 */
 	options->nregression_fns =  1 + options->nparams;
 
+
+	// use the data scales
+	options->use_data_scales = 1;
 }
 
 
@@ -127,10 +130,20 @@ void setup_cov_fn(optstruct *options){
 	/* options->nthetas = 3; */
 }
 
+
+
+
 /**
  * \brief set the allowed ranges for the maximisation routine lbfgs
  *
  * \todo add a flag to optstruct for log-scaled and regular thetas
+ *
+ * summer-2011, we should try setting lower-limits on the length-scale thetas
+ * interms of the average nearest-neighbour distance in the input data.
+ * i.e in a 1d model we may have samples 
+ *     x --- x --- x ---  x
+ * it doesn't make sense to have our length scale theta_1 < --- 
+ * because we dont have information at that frequency!
  * 
  * this fills the options->grad_ranges matrix with lower and upper bounds to be used in the
  * bounded bfgs maximisation routine lbfgs (see libEmu/maxlbfgs.c) for more info on this.
@@ -140,29 +153,59 @@ void setup_cov_fn(optstruct *options){
  * 
  * this is not the case for the other fns, but the rest of the code may have the assumption
  * frozen into it that the ranges *are* log-scaled.
+ *
+ *  
+ * this is called from: emulator-main.c, main.c and rbind.c
  */
-void setup_optimization_ranges(optstruct* options){
+void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
+{
 	int i;
 	char buffer[128];
+	double rangeMin, rangeMax;
 	/** 
 	 * alloc the grad_ranges matrix in the options and 
 	 * put in some sensible defaults 
 	 */
 	options->grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
 
-	/* these are log-scaled ranges, note the negative lower bound */
-	for(i = 0; i < options->nthetas; i++){
-		if(options->covariance_fn == covariance_fn_gaussian){
-			gsl_matrix_set(options->grad_ranges, i, 0, -10.0);
-			gsl_matrix_set(options->grad_ranges, i, 1, 5.0);	
-		} else {
-			/* these are the regular ranges */
-			gsl_matrix_set(options->grad_ranges, i, 0, 0.00001);
-			gsl_matrix_set(options->grad_ranges, i, 1, 10.0);
+
+	if(options->use_data_scales){ // use length scales set by the data
+		for(i = 0; i < options->nthetas; i++){
+			
+			if(options->covariance_fn == covariance_fn_gaussian && i > 1){
+				rangeMax = 5.0;
+				// need to get the fucking xmodel too, poop
+				rangeMin = 0.5*log(gsl_vector_get(the_model->sample_scales, i-2));
+				if(rangeMin > rangeMax){
+					fprintf(stderr, "#ranges failed\n");
+					printf("# %d ranges: %lf %lf\n", i, rangeMin, rangeMax);
+					printf("# sampleScale: %lf\n", gsl_vector_get(the_model->sample_scales, i-2));
+					exit(EXIT_FAILURE);
+				}
+			} else {
+				rangeMin = 0.00001;
+				rangeMax = 5.0;
+			}
+			printf("# %d ranges: %lf %lf\n", i, rangeMin, rangeMax);
+			gsl_matrix_set(options->grad_ranges, i, 0, rangeMin);
+			gsl_matrix_set(options->grad_ranges, i, 1, rangeMax);
 		}
+	} else { // use some default scales
+		/* these are log-scaled ranges, note the negative lower bound */
+		for(i = 0; i < options->nthetas; i++){
+			if(options->covariance_fn == covariance_fn_gaussian){
+				gsl_matrix_set(options->grad_ranges, i, 0, -10.0);
+				gsl_matrix_set(options->grad_ranges, i, 1, 5.0);	
+			} else {
+				/* these are the regular ranges */
+				gsl_matrix_set(options->grad_ranges, i, 0, 0.00001);
+				gsl_matrix_set(options->grad_ranges, i, 1, 10.0);
+			}
+		}
+	
 	}
 
-	// and force the nugget to be small
+	// and force the nugget to be small (this is still done by hand...)
 	gsl_matrix_set(options->grad_ranges, 1, 0, 0.00001);
 	gsl_matrix_set(options->grad_ranges, 1, 1, 0.005);
 

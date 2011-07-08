@@ -35,7 +35,7 @@ void setup_cov_fn(optstruct *options);
 /**
  * fills in the grad_ranges struct in the optstruct, vital for the estimator
  */
-void setup_optimization_ranges(optstruct* options);
+void setup_optimization_ranges(optstruct* options, modelstruct* model);
 
 
 #endif
