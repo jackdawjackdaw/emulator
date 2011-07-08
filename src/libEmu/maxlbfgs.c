@@ -43,7 +43,10 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 	
 	printf("max_tries = %d\n", params->max_tries);
 	while(tries < params->max_tries) {
-		doBoundedBFGS(&evalFnLBFGS, &getGradientNumericLBFGS, params->options->grad_ranges, xInit, xFinal, params->options->nthetas, 500, (void*)params);
+		// ccs, shouldn't we be doing getGradientExactGauss here?
+		// holy-craperal! We are doing the exact gradient, but we still pass in this
+		// shitty pointer too. whyyyy? (changed to null)
+		doBoundedBFGS(&evalFnLBFGS, NULL, params->options->grad_ranges, xInit, xFinal, params->options->nthetas, 500, (void*)params);
 		
 		copy_gslvec_vec(xFinal, tempVec, params->options->nthetas);
 		likelyHood = -1*evalFnLBFGS(tempVec, params->options->nthetas, (void*)params);
