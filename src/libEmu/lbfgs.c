@@ -43,6 +43,9 @@ double fPowers( double *x, int nparams, void *args){
 
 
 // adpated from the bfgs.c version
+// this is not efficient, and it's not smart, dont do this if you dont need to
+// it causes the estimator to bounce all over the place!
+// 
 void getGradientNumericLBFGS(double(*fn)(double*, int, void*), double* xk, double* gradient, int nparams, void* args){
 	double stepsize = 1.0E-10;
 	int i;
