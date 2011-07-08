@@ -46,5 +46,7 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
 													int *nmodelpts_in, int* nthetas_in, double* thetas_in, \
 												double* answer);
 
+void fill_sample_scales(modelstruct* the_model, optstruct* options);
+
 
 #endif
