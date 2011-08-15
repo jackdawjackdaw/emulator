@@ -92,7 +92,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 		ntries = nthreads;
 	}
 
-	fprintf(stderr, "nthreads = %d\tntries = %d\n", nthreads, ntries);
+	//fprintf(stderr, "nthreads = %d\tntries = %d\n", nthreads, ntries);
 
 	/* how many attempts to maximise should we make */
 	/* each thread will make this number of tries and then compare its best values 
@@ -174,14 +174,14 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	#endif
 
 	// check the local best values from the threads
-	printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
-	for(i = 0; i < nthreads; i++)
-		printf("%d\t%lf\n", i, params[i].my_best);
-	printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
+	/* printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"); */
+	/* for(i = 0; i < nthreads; i++) */
+	/* 	printf("%d\t%lf\n", i, params[i].my_best); */
+	/* printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"); */
 
-	fprintf(stderr, "final best L: %g\n", best_likelyhood_val);
-	fprintf(stderr, "THETAS WE WILL USE: \t");
-	print_vector_quiet(best_thetas, options->nthetas);
+	/* fprintf(stderr, "final best L: %g\n", best_likelyhood_val); */
+	/* fprintf(stderr, "THETAS WE WILL USE: \t"); */
+	/* print_vector_quiet(best_thetas, options->nthetas); */
 
 	
 
@@ -227,11 +227,11 @@ void* estimate_thread_function(void* args){
 		} else {
 			next_job = jobnumber;
 			jobnumber++;
-			printf("job: %d by ", next_job); 
-			fprintPt(stdout, my_id);
-			printf("\n");
+			/* printf("job: %d by ", next_job);  */
+			/* fprintPt(stdout, my_id); */
+			/* printf("\n"); */
 		}
-		printf("jobnumber = %d\tnext_job = %d\tntries = %d\n", jobnumber, next_job, ntries);
+		//printf("jobnumber = %d\tnext_job = %d\tntries = %d\n", jobnumber, next_job, ntries);
 		/* now we can unlock the job counter */
 		#ifdef USEMUTEX		
 		pthread_mutex_unlock(&job_counter_mutex);
@@ -259,32 +259,32 @@ void* estimate_thread_function(void* args){
 		#else 
 		pthread_spin_lock(&results_spin);
 		#endif
-		printf("results locked: ");
-		fprintPt(stdout, my_id);
-		printf("\n");
+		/* printf("results locked: "); */
+		/* fprintPt(stdout, my_id); */
+		/* printf("\n"); */
 
 		if(my_theta_val > best_likelyhood_val){
 			// this thread has produced better thetas than previously there
 			gsl_vector_memcpy(best_thetas, params->the_model->thetas); // save them
 			// save the new best too
 			best_likelyhood_val = my_theta_val;
-			fprintPt(stdout, my_id);
-			printf(" won with %g\n",  my_theta_val);
+			/* fprintPt(stdout, my_id); */
+			/* printf(" won with %g\n",  my_theta_val); */
 		}
 		#ifdef USEMUTEX
 		pthread_mutex_unlock(&results_mutex);
 		#else 
 		pthread_spin_unlock(&results_spin);
 		#endif
-		printf("results unlocked by:");
-		fprintPt(stdout, my_id);
-		printf("\n");
+		/* printf("results unlocked by:"); */
+		/* fprintPt(stdout, my_id); */
+		/* printf("\n"); */
 
 	}
 	// and relax...
-	printf("thread: ");
-	fprintPt(stdout, my_id); 
-	printf(" is done\n");
+	/* printf("thread: "); */
+	/* fprintPt(stdout, my_id);  */
+	/* printf(" is done\n"); */
 	return NULL;
 }
 

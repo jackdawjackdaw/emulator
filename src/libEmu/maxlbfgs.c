@@ -41,7 +41,7 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 	gsl_vector_set_zero(xFinal);
 	set_random_initial_value(params->random_number, xInit, params->options->grad_ranges, params->options->nthetas);
 	
-	printf("max_tries = %d\n", params->max_tries);
+	/* printf("max_tries = %d\n", params->max_tries); */
 	while(tries < params->max_tries) {
 		// ccs, shouldn't we be doing getGradientExactGauss here?
 		// holy-craperal! We are doing the exact gradient, but we still pass in this
@@ -60,8 +60,8 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 			bestLikelyHood = likelyHood;
 			gsl_vector_memcpy(xBest, xFinal);
 
-			fprintPt(stdout, self);
-			printf(":best = %g\n", bestLikelyHood);
+			/* fprintPt(stdout, self); */
+			/* printf(":best = %g\n", bestLikelyHood); */
 		}
 		tries++;
 		set_random_initial_value(params->random_number, xInit, params->options->grad_ranges, params->options->nthetas);
