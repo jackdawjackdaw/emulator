@@ -246,7 +246,7 @@ void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate
 	/* 	fprintf(stderr, "%lf ", gradient[i]); */
 	/* } */
 	/* fprintf(stderr, "\n"); */
-
+	gsl_vector_free(xk);
 	gsl_matrix_free(covariance_matrix);
 	gsl_matrix_free(cinverse);
 	gsl_matrix_free(temp_matrix);

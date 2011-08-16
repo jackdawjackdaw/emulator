@@ -174,18 +174,16 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	#endif
 
 	// check the local best values from the threads
-	/* printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"); */
-	/* for(i = 0; i < nthreads; i++) */
-	/* 	printf("%d\t%lf\n", i, params[i].my_best); */
-	/* printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"); */
+	printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
+	for(i = 0; i < nthreads; i++)
+		printf("%d\t%lf\n", i, params[i].my_best);
+	printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
 
 	/* fprintf(stderr, "final best L: %g\n", best_likelyhood_val); */
 	/* fprintf(stderr, "THETAS WE WILL USE: \t"); */
 	/* print_vector_quiet(best_thetas, options->nthetas); */
 
 	
-
-
 	// tear down the thread params
 	for(i = 0; i < nthreads; i++){
 		gsl_rng_free(params[i].random_number);
