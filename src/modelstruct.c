@@ -52,7 +52,7 @@ void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_d
 	for(i = 0; i < options->nmodel_points; i++){
 		split_string = strtok(input_data[i], "\t ");		
 		for(j=0; j < options->nparams; j++){
-			printf("%s\n", split_string);
+			//printf("%s\n", split_string);
 			// split string into tab or space tokens
 			// each time you do it split_string is pointed to the next block
 			// it will come up null when you're done
@@ -84,12 +84,12 @@ void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_d
 		fprintf(stderr, "# param %d min-value %lf average %lf\n", i, min_value, average_value);
 	}
 
-
-	fprintf(stderr, "read the following input matrix: %d x %d\n", options->nmodel_points, options->nparams);
-	message(buffer, 2);
-	print_matrix(the_model->xmodel, options->nmodel_points, options->nparams);
-	fprintf(stderr, "the training data is:\n");
-	print_vector_quiet(the_model->training_vector, options->nmodel_points);
+	/* turn this off */
+	/* fprintf(stderr, "read the following input matrix: %d x %d\n", options->nmodel_points, options->nparams); */
+	/* message(buffer, 2); */
+	/* print_matrix(the_model->xmodel, options->nmodel_points, options->nparams); */
+	/* fprintf(stderr, "the training data is:\n"); */
+	/* print_vector_quiet(the_model->training_vector, options->nmodel_points); */
 
 
 	gsl_vector_free(differences);
