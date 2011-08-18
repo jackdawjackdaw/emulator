@@ -137,10 +137,10 @@ stepPlotDimensionImplaus <- function(obsIndex, plotDimA, plotDimB, stepDim, fixe
 computeImplaus <- function(obsIndex, emu.data, expData){
   num <- (emu.data$mean - expData$obsValue[obsIndex])**2
 
-  if(is.null(expData$varModel) == TRUE ){
+  if(is.null(expData$errModel) == TRUE && is.null(expData$errModel.sys)== TRUE){ 
     denom <- (emu.data$var + (expData$obsError[obsIndex])**2)
   } else {
-    denom <- (emu.data$var + (expData$obsError[obsIndex])**2 + expData$varModel[obsIndex])
+    denom <- (emu.data$var + (expData$obsError[obsIndex])**2 + (expData$errModel[obsIndex]**2))
   }
 
   # scalar matrix divide i hope?

@@ -30,11 +30,10 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	options.emulate_max = EMULATEMAXDEFAULT;
 	options.grad_ranges = gsl_matrix_alloc(options.nthetas, 2);
 	options.nregression_fns = 1 + options.nparams;		// simple constant regression
+	options.use_data_scales = 1; // use scales set by the data
 	setup_cov_fn(&options);
 
-
 	alloc_modelstruct(&the_model, &options);
-
 
 	// fill in xmodel, this is the right way!
 	// note that xmodel has to be transposd in EmuRbind.R or else disaster
@@ -378,6 +377,9 @@ void fill_sample_scales(modelstruct* the_model, optstruct* options)
 		min_value = gsl_vector_min(differences);
 		// compute the average difference
 		average_value /= (options->nmodel_points-1);
+		if(min_value < 1E-5){
+			min_value = 0.00001;
+		}
 		gsl_vector_set(the_model->sample_scales, i, min_value);
 		fprintf(stderr, "# param %d min-value %lf average %lf\n", i, min_value, average_value);
 	}

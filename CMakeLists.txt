@@ -65,7 +65,8 @@ add_subdirectory(src)
 INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/lbfgs.h src/libEmu/maxlbfgs.h src/libEmu/regression.h)
 # # ccs: added the R files we need to use rbind
 # we have moved the contents of multivar.R into EmuRbind.R
-INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h src/libRbind/EmuRbind.R )
+INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h src/libRbind/EmuRbind.R 
+																	 src/libRbind/emuOverDesign.R src/libRbind/implausOverDesign.R)
 
 
 

@@ -61,6 +61,9 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
   mean <- matrix(0, nrow=nEmuPts, ncol=nEmuPts)
   var <- matrix(0, nrow=nEmuPts, ncol=nEmuPts)
   pointList <- matrix(0, nrow=nEmuPts**2, ncol=nparams)
+
+  browser()
+  
   for(i in 1:nEmuPts){
     for(j in 1:nEmuPts){
       pointList[j+nEmuPts*(i-1),] = rbind(rangeA[1]+i*stepSizeA, rangeB[1]+j*stepSizeB, fixedValVec)

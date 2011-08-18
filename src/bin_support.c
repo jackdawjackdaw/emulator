@@ -173,7 +173,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 		for(i = 0; i < options->nthetas; i++){
 			
 			if(options->covariance_fn == covariance_fn_gaussian && i > 1){
-				rangeMax = 5.0;
+				rangeMax = 10.0;
 				// need to get the fucking xmodel too, poop
 				rangeMin = 0.5*log(gsl_vector_get(the_model->sample_scales, i-2));
 				if(rangeMin > rangeMax){
@@ -186,7 +186,16 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 				rangeMin = 0.00001;
 				rangeMax = 5.0;
 			}
-			printf("# %d ranges: %lf %lf\n", i, rangeMin, rangeMax);
+			if(i == 0){
+				printf("# %d ranges: %lf %lf (scale)\n", i, rangeMin, rangeMax); 
+			} if (i == 1){
+				printf("# %d ranges: %lf %lf (nugget)\n", i, rangeMin, rangeMax); 
+			} else if (i > 1) {
+				printf("# %d ranges: %lf %lf\n", i, rangeMin, rangeMax);
+			}
+			if(isinf(rangeMin) == -1){
+				rangeMin = 0.00001;
+			}
 			gsl_matrix_set(options->grad_ranges, i, 0, rangeMin);
 			gsl_matrix_set(options->grad_ranges, i, 1, rangeMax);
 		}
