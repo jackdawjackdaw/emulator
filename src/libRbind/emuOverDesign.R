@@ -62,15 +62,16 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
   var <- matrix(0, nrow=nEmuPts, ncol=nEmuPts)
   pointList <- matrix(0, nrow=nEmuPts**2, ncol=nparams)
 
-  browser()
+  
   
   for(i in 1:nEmuPts){
     for(j in 1:nEmuPts){
-      pointList[j+nEmuPts*(i-1),] = rbind(rangeA[1]+i*stepSizeA, rangeB[1]+j*stepSizeB, fixedValVec)
+      # this was for some reason rbind(rangeA.., rangeB..., fixedValVec) which magically worked for fixedValVec being
+      # a single number, otherwise we need to cons the values together
+      pointList[j+nEmuPts*(i-1),] = c(rangeA[1]+i*stepSizeA, rangeB[1]+j*stepSizeB, fixedValVec)
     }
   }
 
- # browser()
   
   # now we can emulate all these points at once
   emuRes <- callEmulateAtList(list(xmodel=fullDesign, training=observable),
