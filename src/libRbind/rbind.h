@@ -38,7 +38,8 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 void callEmulator(double* xmodel_in, int *nparams_in, double* training_in, int *nmodelpts, int *nthetas, double* final_x, int* nemupts, \
 									double* finaly, double* finalvar, double* rangemin, double* rangemax);
 
-void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *nmodelpts, int *nthetas_in, double* final_thetas);
+void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *nmodelpts, int *nthetas_in, double* final_thetas, 
+									int* use_fixed_nugget, double* fixed_nugget_in);
 
 void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* nmodelpts, double* thetas_in, int* nthetas_in, double* final_emulated_x, int *nemupts_in, double* final_emulated_y, double* final_emulated_variance, double* range_min_in, double*range_max_in);
 

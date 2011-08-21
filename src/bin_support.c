@@ -162,6 +162,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	int i;
 	char buffer[128];
 	double rangeMin, rangeMax;
+	double fixedNuggetLeeWay;
 	/** 
 	 * alloc the grad_ranges matrix in the options and 
 	 * put in some sensible defaults 
@@ -214,9 +215,18 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	
 	}
 
+	if(options->fixed_nugget_mode == 0){
 	// and force the nugget to be small (this is still done by hand...)
-	gsl_matrix_set(options->grad_ranges, 1, 0, 0.00001);
-	gsl_matrix_set(options->grad_ranges, 1, 1, 0.005);
+		gsl_matrix_set(options->grad_ranges, 1, 0, 0.00001);
+		gsl_matrix_set(options->grad_ranges, 1, 1, 0.005);
+	} else {
+		// force the nugget to be fixed_nugget +- 5%
+		fixedNuggetLeeWay = 0.05*(options->fixed_nugget);
+		gsl_matrix_set(options->grad_ranges, 1, 0, options->fixed_nugget - fixedNuggetLeeWay);
+		gsl_matrix_set(options->grad_ranges, 1, 1, options->fixed_nugget + fixedNuggetLeeWay);
+		printf("# %d ranges: %lf %lf (nugget)\n", i,options->fixed_nugget - fixedNuggetLeeWay
+					 ,options->fixed_nugget + fixedNuggetLeeWay);
+	}		
 
 	/* for(i = 0; i < options->nthetas;i++){ */
 	/* 	sprintf(buffer, "%d %g %g\n", i, gsl_matrix_get(options->grad_ranges, i, 0), gsl_matrix_get(options->grad_ranges, i, 1)); */

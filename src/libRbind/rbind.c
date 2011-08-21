@@ -3,9 +3,10 @@
 void callEmulator(double* xmodel_in, int *nparams_in, double* training_in, int *nmodelpts, int *nthetas, double* final_x, int* nemupts, \
 									double* finaly, double* finalvar, double* rangemin, double* rangemax){
 	double *thetas_vec;
+	int no_nugget  = 0;
 	thetas_vec = MallocChecked(sizeof(double)*(*nthetas));
 	// this will run the estimator and fill in the thetas vector with the best ones
-	callEstimate(xmodel_in, nparams_in, training_in, nmodelpts, nthetas, thetas_vec);
+	callEstimate(xmodel_in, nparams_in, training_in, nmodelpts, nthetas, thetas_vec, &no_nugget, NULL);
 	callEmulate(xmodel_in, nparams_in, training_in, nmodelpts, thetas_vec, nthetas, final_x, nemupts, finaly, finalvar, rangemin, rangemax);
 	free(thetas_vec);
 }
@@ -15,8 +16,13 @@ void callEmulator(double* xmodel_in, int *nparams_in, double* training_in, int *
  * calculate the thetas for a model
  * 
  * post-refactoring this is wonderfully simple
+ * 
+ * the user can force the nugget to be fixed, in this case its value will not be optimized
+ * 
  */
-void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *nmodelpts, int *nthetas_in, double* final_thetas){
+void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *nmodelpts, int *nthetas_in, double* final_thetas,
+									int* use_fixed_nugget, 
+									double* fixed_nugget_in){
 	int i;
 	optstruct options;
 	modelstruct the_model;
@@ -31,6 +37,15 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	options.grad_ranges = gsl_matrix_alloc(options.nthetas, 2);
 	options.nregression_fns = 1 + options.nparams;		// simple constant regression
 	options.use_data_scales = 1; // use scales set by the data
+
+	if(*use_fixed_nugget == 1){
+		options.fixed_nugget_mode = 1;
+		options.fixed_nugget = *fixed_nugget_in;
+	} else {
+		options.fixed_nugget_mode = 0;
+		options.fixed_nugget = 0;
+	}
+
 	setup_cov_fn(&options);
 
 	alloc_modelstruct(&the_model, &options);

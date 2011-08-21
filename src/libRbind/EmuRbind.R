@@ -4,64 +4,79 @@ library("lhs")
 # frame i should check on this.
 # note that the rangemin/max create a square domain in 2d.
 # not sure how to grab the results?
-callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemin=0.0, rangemax=4.0){
+## callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemin=0.0, rangemax=4.0){
 
-  if(nparams==1){
+##   if(nparams==1){
   
-    res<-  .C("callEmulator",
-     as.double((model$xmodel)),
-     as.integer(nparams),
-     as.double(model$training),
-     as.integer(nmodelpts),
-     as.integer(nthetas),
-     finalx = double(nparams*nemupts),
-     as.integer(nemupts),
-     finaly = double(nemupts),
-     finalvar = double(nemupts),
-     as.double(rangemin),
-     as.double(rangemax))
-  }else if(nparams==2){
-    newmodel <- rep(NA, 2*nmodelpts)
-    print(model)
-    # interleave the xmodel array
-    for(i in 1:nmodelpts)
-      newmodel[2*i-1] <- model$xmodel.1[i]
-    for(i in 1:nmodelpts)
-      newmodel[2*i] <- model$xmodel.2[i]
-    print(newmodel)
+##     res<-  .C("callEmulator",
+##      as.double((model$xmodel)),
+##      as.integer(nparams),
+##      as.double(model$training),
+##      as.integer(nmodelpts),
+##      as.integer(nthetas),
+##      finalx = double(nparams*nemupts),
+##      as.integer(nemupts),
+##      finaly = double(nemupts),
+##      finalvar = double(nemupts),
+##      as.double(rangemin),
+##      as.double(rangemax))
+##   }else if(nparams==2){
+##     newmodel <- rep(NA, 2*nmodelpts)
+##     print(model)
+##     # interleave the xmodel array
+##     for(i in 1:nmodelpts)
+##       newmodel[2*i-1] <- model$xmodel.1[i]
+##     for(i in 1:nmodelpts)
+##       newmodel[2*i] <- model$xmodel.2[i]
+##     print(newmodel)
     
-    res<-  .C("callEmulator",
-     as.double(newmodel),
-     as.integer(nparams),
-     as.double(model$training),
-     as.integer(nmodelpts),
-     as.integer(nthetas),
-     finalx = double(nparams*nemupts),
-     as.integer(nemupts),
-     finaly = double(nemupts),
-     finalvar = double(nemupts),
-     as.double(rangemin),
-     as.double(rangemax))
+##     res<-  .C("callEmulator",
+##      as.double(newmodel),
+##      as.integer(nparams),
+##      as.double(model$training),
+##      as.integer(nmodelpts),
+##      as.integer(nthetas),
+##      finalx = double(nparams*nemupts),
+##      as.integer(nemupts),
+##      finaly = double(nemupts),
+##      finalvar = double(nemupts),
+##      as.double(rangemin),
+##      as.double(rangemax))
 
-  } else {
-    ## \todo fix emulator to work with n >> 2
-    print("sorry, won't work with nparams > 2")
-  }
-  #browser()
-  results <- data.frame(emulatedx=res$finalx[1:nemupts], emulatedy=res$finaly, emulatedvar=res$finalvar)
-  results
-} 
+##   } else {
+##     ## \todo fix emulator to work with n >> 2
+##     print("sorry, won't work with nparams > 2")
+##   }
+##   #browser()
+##   results <- data.frame(emulatedx=res$finalx[1:nemupts], emulatedy=res$finaly, emulatedvar=res$finalvar)
+##   results
+## } 
 
 ## just estimates the thetas for a model (this is the slow ass part)
-callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3){
+# if fixedNugget is not set to NULL the supplied value is used to fix the nugget
+# for the estimation process. This can be used to force some uncertainty in the training points
+# also it can just fuck things up majorly
+callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3, fixedNugget=NULL){
   #browser()
-  res <- .C("callEstimate",
-            as.double((model$xmodel)),
-            as.integer(nparams),
-            as.double(model$training),
-            as.integer(nmodelpts),
-            as.integer(nthetas),
-            thetas = double(nthetas))
+  if(is.null(fixedNugget)){
+    res <- .C("callEstimate",
+              as.double((model$xmodel)),
+              as.integer(nparams),
+              as.double(model$training),
+              as.integer(nmodelpts),
+              as.integer(nthetas),
+              thetas = double(nthetas),
+              as.integer(0), as.double(0))
+  } else {
+    res <- .C("callEstimate",
+              as.double((model$xmodel)),
+              as.integer(nparams),
+              as.double(model$training),
+              as.integer(nmodelpts),
+              as.integer(nthetas),
+              thetas = double(nthetas),
+              as.integer(1), as.double(fixedNugget))
+  }
   res$thetas
 }
 
@@ -185,18 +200,20 @@ callInterpolate <- function(xvec, yvec, xinterp){
 # training -> matrix of the y-values for each separate dimension
 # model-> the parameter space over which we've evaluated all of the training vectors
 # nmodelpts -> the length of each training vector, the number of points at which the model was evaluated
-multidim <-  function(model, nmodelpts, training, nydims){
+multidim <-  function(model, nmodelpts, training, nydims, fixedNugget=NULL){
   nparams <- ncol(as.matrix(model))
   nthetas <- nparams+2 # this is the correct number for the gaussian cov fn
   bigthetas <- array(0, dim=c(nydims, nthetas)) # store all the thetas
+
+  
   for(i in 1:nydims){ # estimate the thetas for each sub-model
     # we have to craft a custom frame for each call
     if(nydims > 1){
       bigthetas[i,] <-callEstimate(list(xmodel=model, training=training[,i]) 
-                                   , nmodelpts, nparams, nthetas)
+                                   , nmodelpts, nparams, nthetas, fixedNugget[i])
     } else {
       bigthetas[i,] <- callEstimate(list(xmodel=model, training) 
-                                    , nmodelpts, nparams, nthetas)
+                                    , nmodelpts, nparams, nthetas, fixedNugget[i])
     }
   }
   bigthetas

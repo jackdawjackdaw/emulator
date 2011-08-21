@@ -28,7 +28,11 @@
 ## train.scaled -> the scaled and centered training points (code output)
 ## 
 ## 
-doCombEstimation <- function(doNotScale=NULL){
+doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL){
+
+  nobs <- dim(modelData)[2]
+  
+  
 # now we want to scale the design onto a unit cube, otherwise the estimation etc is not going to work well
   if(is.null(doNotScale)){
     scaledDesign <- scale(designData)
@@ -36,9 +40,24 @@ doCombEstimation <- function(doNotScale=NULL){
     scaledDesign <- scale(designData[,-doNotScale])
     scaledDesign <- cbind(scaledDesign, designData[,doNotScale])
   }
+  
 # do we want to scale the output too?
   scaledModelData <- scale(modelData) # well this does make things nicer
-  combinedThetas <- multidim(scaledDesign, nmodelpts=nruns, training=scaledModelData, nydims=nbins)
+
+  if(fixNugget != 0){
+                                        # need to scale the nuggets too
+                                        # v(a*y) = a**2 v(y)
+    sdVec <- rep(NA, nobs)
+    for(i in 1:nobs){
+      scale <- attr(scaledModelData, "scaled:scale")[i]
+      sdVec[i] <- sqrt(sum(expData$errModel.stat[,i]**2)) / scale**2 
+    }
+    combinedThetas <- multidim(scaledDesign, nmodelpts=nruns, training=scaledModelData, nydims=nbins, fixedNugget=sdVec)
+  }
+  else {
+    combinedThetas <- multidim(scaledDesign, nmodelpts=nruns, training=scaledModelData, nydims=nbins)
+  }
+
   result <- list(thetas=combinedThetas, des.scaled=scaledDesign, train.scaled=scaledModelData)
   invisible(result)
 }

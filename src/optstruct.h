@@ -46,6 +46,15 @@ typedef struct optstruct{
 	 * there should be an ENUM or something explaining the choice of regression scheme
 	 */
 	int nregression_fns;
+
+
+	/** 
+	 * fixed nugget?
+	 * allow the user to try and supply a nugget which will not be optimized over, but fixed 
+	 */
+	int fixed_nugget_mode;
+	double fixed_nugget;
+
 	/**
 	 * sets the min position of the "hyper-cube" over which we evaluted the estimated mode;
 	 */
