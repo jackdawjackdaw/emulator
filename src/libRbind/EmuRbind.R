@@ -1,8 +1,4 @@
-#dyn.load("~/local/lib/libRBIND.so")
-#source("emulator-test-data.R")
 library("lhs")
-#library("scatterplot3d")
-
 
 # i don't quite understand how to push the results together into a data
 # frame i should check on this.
@@ -13,7 +9,7 @@ callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemi
   if(nparams==1){
   
     res<-  .C("callEmulator",
-     as.double(model$xmodel),
+     as.double((model$xmodel)),
      as.integer(nparams),
      as.double(model$training),
      as.integer(nmodelpts),
@@ -60,7 +56,7 @@ callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemi
 callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3){
   #browser()
   res <- .C("callEstimate",
-            as.double(model$xmodel),
+            as.double((model$xmodel)),
             as.integer(nparams),
             as.double(model$training),
             as.integer(nmodelpts),
@@ -86,7 +82,7 @@ testCallEm <- function(){
 callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=20, rangemin=0.0, rangemax=1.0){
   #browser()
   res <- .C("callEmulate",
-            as.double(model$xmodel),
+            as.double((model$xmodel)),
             as.integer(nparams),
             as.double(model$training),
             as.integer(nmodelpts),
@@ -107,7 +103,7 @@ callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=
 callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthetas=3){
   #browser()
   res <- .C("callEmulateAtPt",
-            as.double(model$xmodel),
+            as.double((model$xmodel)),
             as.integer(nparams),
             as.double(point),
             as.double(model$training),
@@ -120,11 +116,39 @@ callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthet
   results <- list(des=point, mean=res$finaly, var=res$finalvar)
 }
 
+callEmulateAtList <- function(model, thetas, pointList,nemupts, nmodelpoints, nparams=1, nthetas=3){
+  #browser()
+
+  ## if(nemupts != dim(pointList)[1]){
+  ##   cat("nemupts ", nemupts, "\n")
+  ##   print("error not enough emulate points")
+  ## }
+
+  ## cat("calling Emulate at list\n")
+  ## cat("nmodelpoints: ", nmodelpoints, "\n")
+  ## cat("nemupts: ", nemupts, "\n")
+  ## cat("nparams: ", nparams, "\n")
+  
+  res <- .C("callEmulateAtList",
+            as.double((model$xmodel)),
+            as.integer(nparams),
+            as.double(pointList),
+            as.integer(nemupts),
+            as.double(model$training),
+            as.integer(nmodelpoints),
+            as.double(thetas),
+            as.integer(nthetas),
+            finaly = double(nemupts),
+            finalvar = double(nemupts)
+            )
+  results <- list(des=pointList, mean=res$finaly, var=res$finalvar)
+}
+
 
 callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=4){
   answer <- 0.0
   likely <- .C("callEvalLikelyhood",
-               as.double(model$xmodel),
+               as.double((model$xmodel)),
                as.integer(nparams),
                as.double(model$training),
                as.integer(nmodelpoints),
@@ -152,3 +176,39 @@ callInterpolate <- function(xvec, yvec, xinterp){
   yinterp[[4]][1]
 }
                                               
+
+
+## the idea is to take a model in a few (ideally-inde) y-dimensions (factored into principle cpts or whatever in another fn)
+## and emulate/estimate each dimension as if it was a single scalar field over the parameters.
+
+# nydims -> the number of separate training dimensions
+# training -> matrix of the y-values for each separate dimension
+# model-> the parameter space over which we've evaluated all of the training vectors
+# nmodelpts -> the length of each training vector, the number of points at which the model was evaluated
+multidim <-  function(model, nmodelpts, training, nydims){
+  nparams <- ncol(as.matrix(model))
+  nthetas <- nparams+2 # this is the correct number for the gaussian cov fn
+  bigthetas <- array(0, dim=c(nydims, nthetas)) # store all the thetas
+  for(i in 1:nydims){ # estimate the thetas for each sub-model
+    # we have to craft a custom frame for each call
+    if(nydims > 1){
+      bigthetas[i,] <-callEstimate(list(xmodel=model, training=training[,i]) 
+                                   , nmodelpts, nparams, nthetas)
+    } else {
+      bigthetas[i,] <- callEstimate(list(xmodel=model, training) 
+                                    , nmodelpts, nparams, nthetas)
+    }
+  }
+  bigthetas
+}
+
+
+# passes the same set of training data twice, just to test that multidim makes some
+# kind of sense
+testMultiDim <- function(){
+  source("~/Projects/Emulator/src/libRbind/testRbind.R")
+  npts <- 10
+  modelcomb <- demoModel(npts)
+  thetas <- multidim(modelcomb$xmodel, npts, cbind(modelcomb$training, modelcomb$training), 2)
+  thetas
+}

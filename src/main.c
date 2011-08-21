@@ -66,7 +66,7 @@ int main (int argc, char ** argv){
 	/* after this the optstruct should be totally filled out */
 	parse_arguments(argc, argv, &options);	
 	setup_cov_fn(&options);
-	setup_optimization_ranges(&options);
+
 	
 	/* now we can allocate the modelstruct */
 	message("using lbfgs", 1);
@@ -104,6 +104,8 @@ int main (int argc, char ** argv){
 
 	/* push the input_data into the model structure */
 	fill_modelstruct(&the_model, &options, input_data, number_lines);
+
+	setup_optimization_ranges(&options, &the_model);
 	
 	sprintf(buffer, "nthetas = %d\n", options.nthetas);
 	message(buffer, 2);
@@ -127,9 +129,9 @@ int main (int argc, char ** argv){
 			// we've not log scaled the nugget
 			fprintf(stderr, " %g", gsl_vector_get(the_model.thetas, i));
 		}
-		fprintf(stderr, "\n");
 	}
-
+	fprintf(stderr, "\n");
+		
 	// write the optimum thetas to a text file  ./thetas.txt 
 	// perhaps seralising the_model and everything else so that it can be 
 	// passed to the emulator would be more efficient

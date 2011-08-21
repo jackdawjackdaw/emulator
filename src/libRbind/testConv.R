@@ -1,8 +1,10 @@
-dyn.load("~/Projects/Emulator/build/src/libRbind/libRBIND.dylib")
+#dyn.load("~/Projects/Emulator/build/src/libRbind/libRBIND.dylib")
+dyn.load("~/Projects/Emulator/build/src/libRbind/libRBIND.so")
+
 
 
 nr <- 3
-nc <- 3
+nc <- 4
 
 mat <- matrix(0, nrow=nr, ncol=nc)
 mat[,1] <- seq(1,3)

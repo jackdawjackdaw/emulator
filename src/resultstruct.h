@@ -3,8 +3,11 @@
 
 #include "optstruct.h"
 #include "modelstruct.h"
+#include "libEmu/emulator.h" // because print_matrix lives here?
+#include "useful.h"
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
+
 
 /**
  * \file resultstruct.h
@@ -31,7 +34,7 @@ typedef struct resultstruct{
 void free_resultstruct(resultstruct *res);
 void alloc_resultstruct(resultstruct *res, optstruct *opts);
 void copy_resultstruct(resultstruct *dst, resultstruct *src);
-
+void fill_resultstruct(resultstruct* res, optstruct* options, char** input_data, int number_lines);
 
 
 #endif

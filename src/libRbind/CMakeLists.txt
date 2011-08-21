@@ -7,3 +7,7 @@ include_directories("../libEmu" "..")
 add_library(RBIND SHARED rbind ../bin_support)
 target_link_libraries(RBIND Emu LBFGS ${libs})									
 add_dependencies(RBIND Emu LBFGS)
+
+install (TARGETS RBIND
+ 				RUNTIME DESTINATION bin
+ 				LIBRARY DESTINATION lib)

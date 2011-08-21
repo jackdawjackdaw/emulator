@@ -43,6 +43,9 @@ double fPowers( double *x, int nparams, void *args){
 
 
 // adpated from the bfgs.c version
+// this is not efficient, and it's not smart, dont do this if you dont need to
+// it causes the estimator to bounce all over the place!
+// 
 void getGradientNumericLBFGS(double(*fn)(double*, int, void*), double* xk, double* gradient, int nparams, void* args){
 	double stepsize = 1.0E-10;
 	int i;
@@ -75,6 +78,12 @@ void getGradientNumericLBFGS(double(*fn)(double*, int, void*), double* xk, doubl
 
 
 
+/**
+ * do the LBFGS maximisation 
+ *
+ * don't fuck with any of this!
+ * it's entirely deep magic
+ */
 void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 										void(*gradientFn)(double(*fn)(double*, int, void*), double*, double*, int, void*), \
 										gsl_matrix* ranges, 
@@ -138,6 +147,7 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 
 
 	set_bounds(lower, ranges, 0, nparams);
+	// \todo has this been tested properly?
 	set_bounds(upper, ranges, 1, nparams);
 	set_nbd(nbd, nparams, nparams); // we have upper and lower so this just sets nbd[i] == 2
 
@@ -191,13 +201,21 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 			/* 	break; */
 			/* } */
 			//fprintf(stderr,"fnval = %g\n", fnval);
+			
+			/* try the other version first*/
+			getGradientExactGauss(xvalue, grad, nparams, args);
+
 			/* evaluate the gradient here */
-			gradientFn(fn, xvalue, grad, nparams, args);
-			/* fprintf(stderr,"grad = "); */
+			//gradientFn(fn, xvalue, grad, nparams, args);
+
+			/* fprintf(stderr,"Numeric grad = "); */
 			/* for(i = 0; i < nparams; i++){ */
 			/* 	fprintf(stderr,"%f\t", grad[i]); */
 			/* } */
 			/* fprintf(stderr,"\n"); */
+			
+			//exit(1);
+
 
 			// done
 		}  else if(strncmp(task,"NEW_X",5) == 0){

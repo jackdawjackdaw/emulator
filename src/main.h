@@ -6,6 +6,7 @@
 #include "getopt.h"
 #include "libEmu/estimator.h"
 #include "libEmu/emulator.h"
+#include "libEmu/emulate-fns.h"
 #include "libEmu/estimate_threaded.h"
 #include "libEmu/regression.h"
 #include "ioread.h"

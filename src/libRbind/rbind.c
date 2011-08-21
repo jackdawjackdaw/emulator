@@ -30,15 +30,20 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	options.emulate_max = EMULATEMAXDEFAULT;
 	options.grad_ranges = gsl_matrix_alloc(options.nthetas, 2);
 	options.nregression_fns = 1 + options.nparams;		// simple constant regression
+	options.use_data_scales = 1; // use scales set by the data
 	setup_cov_fn(&options);
-	setup_optimization_ranges(&options);
 
 	alloc_modelstruct(&the_model, &options);
 
-	// fill in xmodel 
+	// fill in xmodel, this is the right way!
+	// note that xmodel has to be transposd in EmuRbind.R or else disaster
+	printf("nx = %d, ny = %d\n", options.nparams, options.nmodel_points);
 	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	// fill in the training vec
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
+
+	fill_sample_scales(&the_model, &options);
+	setup_optimization_ranges(&options, &the_model);
 
 	// actually do the estimation using libEmu
 	estimate_thetas_threaded(&the_model, &options);
@@ -47,6 +52,74 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	for(i = 0; i < options.nthetas; i++)
 		final_thetas[i] = gsl_vector_get(the_model.thetas, i);
 
+	// tidy up
+	free_modelstruct(&the_model);
+	free_optstruct(&options);
+}
+
+/**
+ * compute the mean and variance at a set of points
+ * @return final_emulated_y is a vector of the mean at each point
+ * @return final_emulated_variance is a vector of the variance at each point
+ * @param nemupoints is a list of how many points to emulate
+ * @param points_in is a double array of nparams x nemupoints 
+ */
+void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, int *nemupoints, double* training_in,
+											 int *nmodelpts, double* thetas_in, int *nthetas_in, double* final_emulated_y, 
+											 double* final_emulated_variance){
+	optstruct options;
+	modelstruct the_model; 
+	//double the_mean, the_variance;
+	gsl_matrix *the_point_array;
+	int i, j;
+
+	options.nmodel_points = *nmodelpts;
+	options.nparams = *nparams_in;
+	options.nemulate_points = *nemupoints;
+	// eep
+	options.nregression_fns = 1 + options.nparams;
+	options.emulate_min = 0; // again unused
+	options.emulate_max = 1; 
+	setup_cov_fn(&options);
+
+
+	fprintf(stderr, "#callEmulate at list, nparams %d, nemulate_points %d\n", *nparams_in, *nemupoints);
+
+	alloc_modelstruct(&the_model, &options);
+	setup_optimization_ranges(&options, &the_model); // not used
+
+	//the_point_array = gsl_matrix_alloc(options.nparams, options.nemulate_points);
+	the_point_array = gsl_matrix_alloc(options.nemulate_points, options.nparams);
+
+
+	// fill in the point array
+	convertDoubleToMatrix(the_point_array, points_in, options.nparams, options.nemulate_points);
+	//convertDoubleToMatrix(the_point_array, points_in, options.nemulate_points, options.nparams);
+	
+
+	/* for(i = 0; i < *nemupoints; i++){ */
+	/* 	for(j = 0; j < *nparams_in; j++){ */
+	/* 		fprintf(stderr, "%lf ", gsl_matrix_get(the_point_array, i, j)); */
+	/* 	} */
+	/* 	fprintf(stderr,"\n"); */
+	/* } */
+							
+
+
+	// fill in thetas
+	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
+	// fill in xmodel 
+	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
+	// fill in the training vec
+	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
+
+	
+	// now do emulate at point list
+	// need to implement this ... 
+	emulateAtPointList(&the_model, the_point_array, &options, final_emulated_y, final_emulated_variance);	
+
+	
+	gsl_matrix_free(the_point_array);
 	// tidy up
 	free_modelstruct(&the_model);
 	free_optstruct(&options);
@@ -64,6 +137,7 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	modelstruct the_model;
 	double the_mean, the_variance;
 	gsl_vector *the_point;
+	int i;
 	
 	options.nmodel_points = *nmodelpts;
 	options.nparams = *nparams_in;
@@ -74,28 +148,46 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	options.emulate_min = 0; // won't be used
 	options.emulate_max = 1;
 	setup_cov_fn(&options);
-	setup_optimization_ranges(&options);	// this strictly isn't needed for emulator
 
-	
-	//printf("nparams:%d\tnmodel_pts:%d\tnthetas:%d\n", options.nparams, options.nmodel_points, options.nthetas);
+
+	// noisy
+	/* fprintf(stderr, "nparams:%d\tnmodel_pts:%d\tnthetas:%d\n", options.nparams, options.nmodel_points, options.nthetas); */
+	/* fprintf(stderr,"point:"); */
+	/* for(i = 0; i < options.nparams; i++)	  */
+	/* 	fprintf(stderr,"\t%lf", point_in[i]); */
+	/* fprintf(stderr,"\n"); */
 
 	alloc_modelstruct(&the_model, &options);
-
+	
+	
 	the_point = gsl_vector_alloc(options.nparams);
+	
+	/* checking convertDoubleToVector
+	 * 	fprintf(stderr, "point pre-alloc: ");
+	 * print_vector_quiet(the_point, options.nparams);
+	 */
 
 	convertDoubleToVector(the_point, point_in, options.nparams);
 
+	/* check tht convertDoubleToVector works 
+	 * fprintf(stderr, "point post-alloc: ");
+	 * print_vector_quiet(the_point, options.nparams);
+	 */
+	
 	// fill in thetas
 	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
 	// fill in xmodel 
 	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	// fill in the training vec
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
-	
+
+	fill_sample_scales(&the_model, &options);
+	setup_optimization_ranges(&options, &the_model);	// this strictly isn't needed for emulator
+
 	emulateAtPoint(&the_model, the_point, &options, &the_mean, &the_variance);
 
 	//print_vector_quiet(the_point,options.nparams);
-	printf("mean:%lf\tvar:%lf\n", the_mean, the_variance);
+	fprintf(stderr, "#mean:%lf\tvar:%lf\n", the_mean, the_variance);
 	*final_emulated_y  = the_mean;
 	*final_emulated_variance = the_variance;
 
@@ -124,7 +216,7 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 	options.emulate_min = *range_min_in;
 	options.emulate_max = *range_max_in;
 	setup_cov_fn(&options);
-	setup_optimization_ranges(&options);	// this strictly isn't needed for emulator
+
 
 	alloc_modelstruct(&the_model, &options);
 
@@ -136,6 +228,11 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	// fill in the training vec
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
+
+	// first we have to fill the sample ranges
+	fill_sample_scales(&the_model, &options);
+	setup_optimization_ranges(&options, &the_model);	// this strictly isn't needed for emulator
+
 
 	/* for(i = 0; i < options.nmodel_points; i++){ */
 	/* 	printf("%lf\n", gsl_vector_get(the_model.training_vector, i)); */
@@ -221,12 +318,17 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
 	options.nthetas = *nthetas_in;
 	options.nregression_fns = options.nparams+1;
 	setup_cov_fn(&options);
-	setup_optimization_ranges(&options);
+
 	
 	alloc_modelstruct(&the_model, &options);
+	
 	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
 	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
+	
+	// have to set the sample length scales first
+	fill_sample_scales(&the_model, &options);
+	setup_optimization_ranges(&options, &the_model);
 
 	// copy in the structures we just created
 	copy_optstruct(params.options, &options);
@@ -254,6 +356,38 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
 	
 
 }
+
+
+
+void fill_sample_scales(modelstruct* the_model, optstruct* options)
+{
+	int i, j; 
+	double average_value, min_value;
+	gsl_vector* differences = gsl_vector_alloc(options->nmodel_points-1);
+	
+	// compute the average separations
+	for(i = 0; i < options->nparams; i++){
+		average_value = 0;
+		for(j = 0; j < (options->nmodel_points-1); j++){
+			gsl_vector_set(differences, j, fabs(gsl_matrix_get(the_model->xmodel, j+1, i) - 
+																					gsl_matrix_get(the_model->xmodel, j, i))) ;
+			average_value += gsl_vector_get(differences, j);
+		}
+		// compute the min difference
+		min_value = gsl_vector_min(differences);
+		// compute the average difference
+		average_value /= (options->nmodel_points-1);
+		if(min_value < 1E-5){
+			min_value = 0.00001;
+		}
+		gsl_vector_set(the_model->sample_scales, i, min_value);
+		fprintf(stderr, "# param %d min-value %lf average %lf\n", i, min_value, average_value);
+	}
+	
+	gsl_vector_free(differences);
+
+}
+
 
 //! creates the coeffs for a lagrange poly interpolation
 /**
@@ -290,7 +424,7 @@ void testConvert(double* matrix, int *nx_in, int *ny_in){
 	int nx = *nx_in;
 	int ny = *ny_in;
 	printf("nx = %d\tny= %d\n", nx, ny);
-	gsl_matrix *test = gsl_matrix_alloc(nx, ny);
+	gsl_matrix *test = gsl_matrix_alloc(ny, nx);
 	convertDoubleToMatrix(test, matrix, nx, ny);
 	gsl_matrix_free(test);
 }
@@ -298,18 +432,48 @@ void testConvert(double* matrix, int *nx_in, int *ny_in){
 
 
 /*
- * driving to atlanta: fixed bug in this
- * 
  * takes an ALLOCATED gsl_matrix and copies the input vector into it, 
  * doesn't check anything
+ * 
+ * matrices in R are stored like this
+ *      [,1] [,2] [,3] [,4]
+ * [1,]    1    4    7    0
+ * [2,]    2    5    8    0
+ * [3,]    3    6    9    0
+ * 
+ * the input vector will look like this:
+ * nx = 4	ny= 3
+ * IN:0 = 1.000000
+ * IN:1 = 2.000000
+ * IN:2 = 3.000000
+ * IN:3 = 4.000000
+ * IN:4 = 5.000000
+ * IN:5 = 6.000000
+ * IN:6 = 7.000000
+ * IN:7 = 8.000000
+ * IN:8 = 9.000000
+ * IN:9 = 0.000000
+ * IN:10 = 0.000000
+ * IN:11 = 0.000000
+ *
+ * as far as c is concerned matrices are going to be indexed by y and then x, i.e
+ * a faithful copy of the input matrix should have:
+ * 
+ * m[1,1] = 1, m[2,1] = , m[3,2] =6 etc
+ * does this work?
  */
-/** dimensions are interleaved! */
 void convertDoubleToMatrix(gsl_matrix* the_matrix, double* input, int nx, int ny){
 	int i, j;
-	for(j = 0; j < ny; j++){
-		for(i =0; i < nx; i++){
+	/* for(i = 0; i < nx*ny; i++){ */
+	/* 	printf("IN:%d = %lf\n", i, input[i]); */
+	/* } */
+	/* printf("\n"); */
+	/* printf("nx = %d\tny=%d\n", nx, ny); */
+	for(i = 0; i < nx; i++){
+		for(j =0; j < ny; j++){
 			gsl_matrix_set(the_matrix, j, i, input[j+ny*i]);
-			printf("%d,%d=%lf\n", j, i, gsl_matrix_get(the_matrix,j,i));
+			/* printf("j+ny*i = %d\n", j+ny*i); */
+			/* printf("MAT(%d,%d)=%lf\n", j+1, i+1, gsl_matrix_get(the_matrix,j,i)); */
 		}
 	}
 
