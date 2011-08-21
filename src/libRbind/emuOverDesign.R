@@ -28,9 +28,14 @@
 ## train.scaled -> the scaled and centered training points (code output)
 ## 
 ## 
-doCombEstimation <- function(){
+doCombEstimation <- function(doNotScale=NULL){
 # now we want to scale the design onto a unit cube, otherwise the estimation etc is not going to work well
-  scaledDesign <- scale(designData)
+  if(is.null(doNotScale)){
+    scaledDesign <- scale(designData)
+  }  else {
+    scaledDesign <- scale(designData[,-doNotScale])
+    scaledDesign <- cbind(scaledDesign, designData[,doNotScale])
+  }
 # do we want to scale the output too?
   scaledModelData <- scale(modelData) # well this does make things nicer
   combinedThetas <- multidim(scaledDesign, nmodelpts=nruns, training=scaledModelData, nydims=nbins)
@@ -73,6 +78,7 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
   }
 
   
+  
   # now we can emulate all these points at once
   emuRes <- callEmulateAtList(list(xmodel=fullDesign, training=observable),
                               thetas, pointList,
@@ -95,6 +101,8 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
 ## obsIndex -> index of the observable we care about in fullReslut
 ## dAIndex, dBIndex -> index of the two design variables we'll span
 ## fixedVal -> vector of the remaining (nparams - 2) values which are held fixed while we vary the A and B
+## - these should be scaled variables right now (annoyingly)
+## 
 ## xlabel, ylabel -> human-readable names of dA and dB. (goes on the plot)
 ## plotDes -> if true plots the design points projected onto A,B
 ## unscale -> if true undoes scaling and centering (plot values should be back in reasonable range)
@@ -105,7 +113,7 @@ plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
   npts <- 32
   print(estim.result$thetas[obsIndex,])
 
-  #browser()
+  #
   designA <- estim.result$des.scaled[,dAIndex]
   designB <- estim.result$des.scaled[,dBIndex]
   
@@ -113,7 +121,7 @@ plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
                                      estim.result$des.scaled, designA,
                                      designB, fixedVal, npts)
 
-  
+   
   mean <- matrix(emu.result$mean, nrow=npts, ncol=npts)
   var <- matrix(emu.result$var, nrow=npts, ncol=npts)
 
@@ -137,18 +145,24 @@ plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
 
     range1 <- range1 * desAScale + desACenter
     range2 <- range2 * desBScale + desBCenter
-        
-  }
 
+    designA <- designA * desAScale + desACenter
+    designB <- designB * desBScale + desBCenter
+  }
   
   image(range1, range2, t(mean), axes=FALSE, col=heat.colors(16), xlab=xlabel, ylab=ylabel)
   contour(range1, range2, t(mean), nlevels=10, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
-  title(main=titleIn)
   if(plotDes==TRUE){
     points(designA, designB, pch=3)
+    title(xlab=xlabel, ylab=ylabel, outer=TRUE, cex.lab=2.0)
+    axis(1, cex.axis=1.0)
+    axis(2, cex.axis=1.0)
+    legend("topright", titleIn, bg="white")
+    print(xlabel)
+    print(ylabel)
+  } else {
+    legend("topright", titleIn, bg="white")
   }
-  axis(1, cex.axis=2)
-  axis(2, cex.axis=2)
 }
 
 ## midPoint <- mean(estimResult$des.scaled[,3])
@@ -166,7 +180,7 @@ stepPlotDimension <- function(estim.result=estimResult, obsIndex, plotDimA, plot
   
   stepSize <- (maxVal - minVal) / nsteps
 
-  par(mfrow=c(3,3))
+  par(mfrow=c(3,3), mar=c(1,1,0,0), oma=c(4,5,0,0))
 
   for(i in 0:(nsteps-1)){
     fixV <- minVal + stepSize * i
@@ -176,15 +190,21 @@ stepPlotDimension <- function(estim.result=estimResult, obsIndex, plotDimA, plot
     fixCenter <- attr(estim.result$des.scaled, "scaled:center")[stepDim]
     fixVUnscaled <- fixV * fixScale + fixCenter
     
-    buffer <- paste(desNames[stepDim], " fixed at: ", round(fixVUnscaled,2), sep="")
-    if(i == 0){
+    buffer <- paste(desNames[stepDim], ": ", round(fixVUnscaled,2), sep="")
+
+    if(i == 6){
       desPlot <- TRUE
+      plotEmuOverDesign(obsIndex, plotDimA ,plotDimB, c(fixV, fixedVals),
+                        xlabel=desNames[plotDimA], ylabel=desNames[plotDimB], titleIn=buffer,
+                        desPlot, unscale=TRUE, estim.result)
+      
     } else {
       desPlot <- FALSE
+      plotEmuOverDesign(obsIndex, plotDimA ,plotDimB, c(fixV, fixedVals),
+                        xlabel="", ylabel="", titleIn=buffer,
+                        desPlot, unscale=TRUE, estim.result)
+      
     }
-    plotEmuOverDesign(obsIndex, plotDimA ,plotDimB, c(fixV, fixedVals),
-                      xlabel=desNames[plotDimA], ylabel=desNames[plotDimB], titleIn=buffer,
-                      desPlot, unscale=TRUE, estim.result)
   }
 }
 
@@ -270,8 +290,6 @@ gridEmulatorSweep <- function(estim.result=estimResult, obsIndex, dimA, dimB, di
     var <- emuRes$var
   }
 
-  browser()
-  
   finalTable <- cbind(pointList, mean, var)
 
   # we write the table out to a csv file for vis
