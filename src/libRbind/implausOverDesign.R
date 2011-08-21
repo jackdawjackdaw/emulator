@@ -45,6 +45,7 @@ implausObsOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal, estim.res
                        attr(estim.result$des.scaled, "scaled:scale")[dAIndex])
   desBCenterScale <- c( attr(estim.result$des.scaled, "scaled:center")[dBIndex],
                        attr(estim.result$des.scaled, "scaled:scale")[dBIndex])
+  
   range1 <- range1 * desACenterScale[2] + desACenterScale[1]
   range2 <- range2 * desBCenterScale[2] + desBCenterScale[1]
   
@@ -83,14 +84,14 @@ plotImplausOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
 
   image(r1, r2, t(implaus.result$feas), axes=FALSE, col=cm.colors(16), xlab=xlabel, ylab=ylabel)
   contour(r1, r2, t(implaus.result$feas), nlevels=10, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
-  title(main=titleIn)
-
   if(plotDes==TRUE){
     points(desA, desB, pch=3)
+    title(xlab=xlabel, ylab=ylabel, outer=TRUE, cex.lab=2.0)
+    axis(1, cex.axis=1.0)
+    axis(2, cex.axis=1.0)
   }
-
-  axis(1, cex.axis=2)
-  axis(2, cex.axis=2)
+  legend("topright", titleIn, bg="white")
+  
 
 }
 
@@ -106,7 +107,7 @@ stepPlotDimensionImplaus <- function(obsIndex, plotDimA, plotDimB, stepDim, fixe
   
   stepSize <- (maxVal - minVal) / nsteps
 
-  par(mfrow=c(3,3))
+  par(mfrow=c(3,3), mar=c(1,1,0,0), oma=c(4,5,0,0))
 
   for(i in 0:(nsteps-1)){
     fixV <- minVal + stepSize * i
@@ -116,15 +117,19 @@ stepPlotDimensionImplaus <- function(obsIndex, plotDimA, plotDimB, stepDim, fixe
     fixCenter <- attr(estim.result$des.scaled, "scaled:center")[stepDim]
     fixVUnscaled <- fixV * fixScale + fixCenter
     
-    buffer <- paste(desNames[stepDim], " fixed at: ", round(fixVUnscaled,2), sep="")
-    if(i == 0){
+    buffer <- paste(desNames[stepDim], " : ", round(fixVUnscaled,2), sep="")
+    if(i == 6){
       desPlot <- TRUE
-    } else {
-      desPlot <- FALSE
-    }
-    plotImplausOverDesign(obsIndex, plotDimA ,plotDimB, c(fixV, fixedVals),
+      plotImplausOverDesign(obsIndex, plotDimA ,plotDimB, c(fixV, fixedVals),
                       xlabel=desNames[plotDimA], ylabel=desNames[plotDimB], titleIn=buffer,
                       desPlot,  estim.result, exp.data)
+    } else {
+      desPlot <- FALSE
+      plotImplausOverDesign(obsIndex, plotDimA ,plotDimB, c(fixV, fixedVals),
+                      xlabel="", ylabel="", titleIn=buffer,
+                      desPlot,  estim.result, exp.data)
+      
+    }
   }
 }
 
@@ -137,11 +142,31 @@ stepPlotDimensionImplaus <- function(obsIndex, plotDimA, plotDimB, stepDim, fixe
 computeImplaus <- function(obsIndex, emu.data, expData){
   num <- (emu.data$mean - expData$obsValue[obsIndex])**2
 
-  if(is.null(expData$errModel) == TRUE && is.null(expData$errModel.sys)== TRUE){ 
-    denom <- (emu.data$var + (expData$obsError[obsIndex])**2)
-  } else {
-    denom <- (emu.data$var + (expData$obsError[obsIndex])**2 + (expData$errModel[obsIndex]**2))
+  denom <- (emu.data$var + (expData$obsError[obsIndex])**2)
+
+#  browser()
+  
+  if(is.null(expData$errModel.sys) == FALSE){
+    #we'll model the sys error as normally distributed noise with mean zero
+    #the value given in the expData list is taken as a confidence interval (%) around
+    #anything we get from the model
+    
+    sig <- expData$errModel.sys
+
+    # compute the "nvalue" for a confidence interval
+    # from the inverse error function (see help(pnorm))
+    erfinv <- function(x) { qnorm((1+x)/2)/sqrt(2)}
+    nvalue = sqrt(2)*erfinv((1-sig))
+    
+    sigmaSys = (sig*emu.data$mean) / nvalue
+    denom <- denom + (sigmaSys**2)
+
+
   }
+
+  # it is not clear how to include the spread or statistical errors in the model output yet
+  # this should probably be pushed into the nugget and then the uncertainty will be automatically
+  # propagated by the emulator
 
   # scalar matrix divide i hope?
   I <- num / denom
@@ -195,7 +220,7 @@ gridImplausSweep <- function(estim.result=estimResult, exp.data, obsIndex, dimA,
   pointGrid <- expand.grid(A=axes[,1], B=axes[,2], C=axes[,3])
 
   if(is.null(fixedVals) != TRUE){
-    fixedValsSeq <- matrix(0, nrow=nEmuPts, ncol=dim(fixedVals))
+    fixedValSeq <- matrix(0, nrow=nEmuPts, ncol=length(fixedVals))
     for(i in 1:nEmuPts){
       fixedValSeq[i,] <- fixedVals
     }
