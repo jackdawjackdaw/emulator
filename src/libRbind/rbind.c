@@ -98,9 +98,11 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	setup_cov_fn(&options);
 
 
-	fprintf(stderr, "#callEmulate at list, nparams %d, nemulate_points %d\n", *nparams_in, *nemupoints);
+	//fprintf(stderr, "#callEmulate at list, nparams %d, nemulate_points %d\n", *nparams_in, *nemupoints);
 
 	alloc_modelstruct(&the_model, &options);
+	
+	fill_sample_scales(&the_model, &options);
 	setup_optimization_ranges(&options, &the_model); // not used
 
 	//the_point_array = gsl_matrix_alloc(options.nparams, options.nemulate_points);
@@ -112,27 +114,15 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	//convertDoubleToMatrix(the_point_array, points_in, options.nemulate_points, options.nparams);
 	
 
-	/* for(i = 0; i < *nemupoints; i++){ */
-	/* 	for(j = 0; j < *nparams_in; j++){ */
-	/* 		fprintf(stderr, "%lf ", gsl_matrix_get(the_point_array, i, j)); */
-	/* 	} */
-	/* 	fprintf(stderr,"\n"); */
-	/* } */
-							
-
-
 	// fill in thetas
 	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
 	// fill in xmodel 
 	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	// fill in the training vec
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
-
 	
-	// now do emulate at point list
-	// need to implement this ... 
-	emulateAtPointList(&the_model, the_point_array, &options, final_emulated_y, final_emulated_variance);	
 
+	emulateAtPointList(&the_model, the_point_array, &options, final_emulated_y, final_emulated_variance);	
 	
 	gsl_matrix_free(the_point_array);
 	// tidy up
@@ -164,31 +154,13 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	options.emulate_max = 1;
 	setup_cov_fn(&options);
 
-
-	// noisy
-	/* fprintf(stderr, "nparams:%d\tnmodel_pts:%d\tnthetas:%d\n", options.nparams, options.nmodel_points, options.nthetas); */
-	/* fprintf(stderr,"point:"); */
-	/* for(i = 0; i < options.nparams; i++)	  */
-	/* 	fprintf(stderr,"\t%lf", point_in[i]); */
-	/* fprintf(stderr,"\n"); */
-
 	alloc_modelstruct(&the_model, &options);
 	
 	
 	the_point = gsl_vector_alloc(options.nparams);
-	
-	/* checking convertDoubleToVector
-	 * 	fprintf(stderr, "point pre-alloc: ");
-	 * print_vector_quiet(the_point, options.nparams);
-	 */
 
 	convertDoubleToVector(the_point, point_in, options.nparams);
 
-	/* check tht convertDoubleToVector works 
-	 * fprintf(stderr, "point post-alloc: ");
-	 * print_vector_quiet(the_point, options.nparams);
-	 */
-	
 	// fill in thetas
 	convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas);
 	// fill in xmodel 
@@ -248,19 +220,6 @@ void callEmulate(double* xmodel_in, int* nparams_in, double* training_in, int* n
 	fill_sample_scales(&the_model, &options);
 	setup_optimization_ranges(&options, &the_model);	// this strictly isn't needed for emulator
 
-
-	/* for(i = 0; i < options.nmodel_points; i++){ */
-	/* 	printf("%lf\n", gsl_vector_get(the_model.training_vector, i)); */
-	/* } */
-
-	/* printf("nparams:%d\n", options.nparams); */
-	/* for(i = 0; i < options.nparams; i++){ */
-	/* 	for(j = 0; j < options.nmodel_points; j++){ */
-	/* 		printf("%lf\t", gsl_matrix_get(the_model.xmodel, j, i)); */
-	/* 	} */
-	/* 	printf("\n"); */
-	/* } */
-						 
 
 	// and call out to libEmu
 	emulate_model_results(&the_model, &options, &results);
@@ -322,60 +281,7 @@ void callEvalLikelyhood(double * xmodel_in, int* nparams_in, double* training_in
 
 	fprintf(stderr, "callEvalLikelyhood is deprecated, used callEvalLhoodList\n");
 	exit(EXIT_FAILURE);
-
-	/* optstruct options; */
-	/* modelstruct the_model; */
-	/* double the_likelyhood = 0.0; */
-	/* struct estimate_thetas_params params; */
-	/* const gsl_rng_type *T; */
-	
-	/* T = gsl_rng_default; */
-
-	/* params.the_model = MallocChecked(sizeof(modelstruct)); */
-	/* params.options = MallocChecked(sizeof(optstruct)); */
-
-	
-	/* options.nmodel_points = *nmodelpts_in; */
-	/* options.nparams = *nparams_in; */
-	/* options.nthetas = *nthetas_in; */
-	/* options.nregression_fns = options.nparams+1; */
-	/* setup_cov_fn(&options); */
-	
-	/* alloc_modelstruct(&the_model, &options); */
-	
-	/* convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points); */
-	/* convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points); */
-	/* convertDoubleToVector(the_model.thetas, thetas_in, options.nthetas); */
-	
-	/* // have to set the sample length scales first */
-	/* fill_sample_scales(&the_model, &options); */
-	/* setup_optimization_ranges(&options, &the_model); */
-
-	/* // copy in the structures we just created */
-	/* copy_optstruct(params.options, &options); */
-	/* alloc_modelstruct(params.the_model, &options); */
-	/* copy_modelstruct(params.the_model, &the_model); */
-	
-	/* params.random_number = gsl_rng_alloc(T); */
-	/* gsl_rng_set(params.random_number, get_seed_noblock()); */
-
-	/* // this calls the log likelyhood */
-	/* the_likelyhood = evalLikelyhoodLBFGS_struct(&params); */
-
-	/* *answer = the_likelyhood; */
-	
-	/* // tidy up */
-	/* gsl_rng_free(params.random_number); */
-	/* free_modelstruct(params.the_model); */
-	/* free_modelstruct(&the_model); */
-	/* gsl_matrix_free(options.grad_ranges); */
-	/* gsl_matrix_free(params.options->grad_ranges); */
-	/* gsl_matrix_free(params.h_matrix); */
-	/* free(params.the_model); */
-	/* free(params.options); */
 	 
-	
-
 }
 
 
@@ -404,8 +310,8 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 	params.the_model = MallocChecked(sizeof(modelstruct));
 	params.options = MallocChecked(sizeof(optstruct));
 
-	printf("callEvalLhoodList called:\nnparams %d\nnevalPoints %d\nnmodelPoints %d\nnthetas %d\n",
-				 *nparams_in, *nevalPoints_in, *nmodelPoints_in, *nthetas_in);
+	/* printf("# callEvalLhoodList called:\nnparams %d\nnevalPoints %d\nnmodelPoints %d\nnthetas %d\n", */
+	/* 			 *nparams_in, *nevalPoints_in, *nmodelPoints_in, *nthetas_in); */
 
 	options.nmodel_points = *nmodelPoints_in;
 	options.nparams = *nparams_in;
@@ -458,9 +364,7 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 		the_likelyhood = evalFnLBFGS(xinput, options.nthetas, &params);
 		answer[i] = the_likelyhood;
 	}
-
-	printf("done\n");
-
+	
 	// free params
 	gsl_rng_free(params.random_number);
 	free_modelstruct(params.the_model);
@@ -497,7 +401,7 @@ void fill_sample_scales(modelstruct* the_model, optstruct* options)
 			min_value = 0.00001;
 		}
 		gsl_vector_set(the_model->sample_scales, i, min_value);
-		fprintf(stderr, "# param %d min-value %lf average %lf\n", i, min_value, average_value);
+		//fprintf(stderr, "# param %d min-value %lf average %lf\n", i, min_value, average_value);
 	}
 	
 	gsl_vector_free(differences);
