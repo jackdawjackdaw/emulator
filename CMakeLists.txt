@@ -39,10 +39,6 @@ INCLUDE_DIRECTORIES(${GSL_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/libEmu)
 MESSAGE("include dirs: ${CMAKE_include_directories}")
 SET(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 
-if(APPLE)
-# use clang
-SET(CMAKE_C_COMPILER /usr/bin/clang)
-endif(APPLE)
 
 # make a debug release
 #set(CMAKE_BUILD_TYPE debug)
