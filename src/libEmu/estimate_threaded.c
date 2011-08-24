@@ -243,7 +243,7 @@ void* estimate_thread_function(void* args){
 		maxWithLBFGS(params);
 		
 		/* this returns the likelihood of the final set of thetas from maxWithLBFGS */
-		my_theta_val = -1*evalLikelyhoodLBFGS_struct(params);
+		my_theta_val = evalLikelyhoodLBFGS_struct(params);
 
 		/* store you local best value too */
 		if(my_theta_val > params->my_best)

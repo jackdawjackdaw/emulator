@@ -414,7 +414,7 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 	setup_cov_fn(&options);
 
 	alloc_modelstruct(&the_model, &options);
-	setup_optimization_ranges(&options, &the_model); // not actually used
+	
 
 	the_point_array = gsl_matrix_alloc(nevalPts, options.nthetas);
 	convertDoubleToMatrix(the_point_array, pointList_in, options.nthetas, nevalPts);
@@ -423,6 +423,12 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 
 	convertDoubleToMatrix(the_model.xmodel, xmodel_in, options.nparams, options.nmodel_points);
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
+
+
+	fill_sample_scales(&the_model, &options);
+	setup_optimization_ranges(&options, &the_model); // not actually used
+
+
 
 	for(i = 0; i < options.nthetas; i++){
 		gsl_vector_set(the_model.thetas, i, 0.0);
