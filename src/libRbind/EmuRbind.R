@@ -4,53 +4,9 @@ library("lhs")
 # frame i should check on this.
 # note that the rangemin/max create a square domain in 2d.
 # not sure how to grab the results?
-## callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemin=0.0, rangemax=4.0){
-
-##   if(nparams==1){
-  
-##     res<-  .C("callEmulator",
-##      as.double((model$xmodel)),
-##      as.integer(nparams),
-##      as.double(model$training),
-##      as.integer(nmodelpts),
-##      as.integer(nthetas),
-##      finalx = double(nparams*nemupts),
-##      as.integer(nemupts),
-##      finaly = double(nemupts),
-##      finalvar = double(nemupts),
-##      as.double(rangemin),
-##      as.double(rangemax))
-##   }else if(nparams==2){
-##     newmodel <- rep(NA, 2*nmodelpts)
-##     print(model)
-##     # interleave the xmodel array
-##     for(i in 1:nmodelpts)
-##       newmodel[2*i-1] <- model$xmodel.1[i]
-##     for(i in 1:nmodelpts)
-##       newmodel[2*i] <- model$xmodel.2[i]
-##     print(newmodel)
-    
-##     res<-  .C("callEmulator",
-##      as.double(newmodel),
-##      as.integer(nparams),
-##      as.double(model$training),
-##      as.integer(nmodelpts),
-##      as.integer(nthetas),
-##      finalx = double(nparams*nemupts),
-##      as.integer(nemupts),
-##      finaly = double(nemupts),
-##      finalvar = double(nemupts),
-##      as.double(rangemin),
-##      as.double(rangemax))
-
-##   } else {
-##     ## \todo fix emulator to work with n >> 2
-##     print("sorry, won't work with nparams > 2")
-##   }
-##   #browser()
-##   results <- data.frame(emulatedx=res$finalx[1:nemupts], emulatedy=res$finaly, emulatedvar=res$finalvar)
-##   results
-## } 
+callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemin=0.0, rangemax=4.0){
+  stop("callcode is deprecated, use callEstimate and callEmulateAtList")
+}
  
 ## just estimates the thetas for a model (this is the slow ass part)
 # if fixedNugget is not set to NULL the supplied value is used to fix the nugget
@@ -80,38 +36,9 @@ callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3, fixedNugget=NULL
   res$thetas
 }
 
-## test this, its not working right
-testCallEm <- function(){
-  m <- 6
-  model <- demoModel(6, 0)
-  # just made up but about right for matern
-  ans <- c(0.89, 0.54, 0.334, 0.64)
-  f1<-callEmulate(model, ans, m, nemupts=10)
-  plot(f1$emulatedx, f1$emulatedy)
-  print(f1)
-  f2<-callEmulate(model, ans,m, nemupts=10)
-  print(f2)
-}
-
 ## use a given set of thetas to emulate the code
 callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=20, rangemin=0.0, rangemax=1.0){
-  #browser()
-  res <- .C("callEmulate",
-            as.double((model$xmodel)),
-            as.integer(nparams),
-            as.double(model$training),
-            as.integer(nmodelpts),
-            as.double(thetas),
-            as.integer(nthetas),
-            finalx = double(nemupts),
-            as.integer(nemupts),
-            finaly = double(nemupts),
-            finalvar = double(nemupts),
-            as.double(rangemin),
-            as.double(rangemax))
-            
-   results <- list(emulatedx=res$finalx, emulatedy=res$finaly, emulatedvar=res$finalvar)           
-  results
+  stop("deprecated, use callEmulateAtPoint or callEmulateAtList")
 }
 
 
@@ -132,17 +59,6 @@ callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthet
 }
 
 callEmulateAtList <- function(model, thetas, pointList,nemupts, nmodelpoints, nparams=1, nthetas=3){
-  #browser()
-
-  ## if(nemupts != dim(pointList)[1]){
-  ##   cat("nemupts ", nemupts, "\n")
-  ##   print("error not enough emulate points")
-  ## }
-
-  ## cat("calling Emulate at list\n")
-  ## cat("nmodelpoints: ", nmodelpoints, "\n")
-  ## cat("nemupts: ", nemupts, "\n")
-  ## cat("nparams: ", nparams, "\n")
   
   res <- .C("callEmulateAtList",
             as.double((model$xmodel)),
@@ -179,16 +95,8 @@ callEvalLhoodList <- function(model, pointList, nevalPoints, nmodelPoints, npara
 
   
 callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=3){
-  answer <- 0.0
-  likely <- .C("callEvalLikelyhood",
-               as.double((model$xmodel)),
-               as.integer(nparams),
-               as.double(model$training),
-               as.integer(nmodelpoints),
-               as.integer(nthetas),
-               as.double(vertex),
-               as.double(answer))
-  likely[[7]]
+
+  stop("callEvalLikelyhood is deprecated, use callEvalLhoodList")
 }
 
 ## interpolate the data given by xvec and yvec at the point
