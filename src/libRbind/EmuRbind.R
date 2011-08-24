@@ -1,14 +1,7 @@
 library("lhs")
 
-# i don't quite understand how to push the results together into a data
-# frame i should check on this.
-# note that the rangemin/max create a square domain in 2d.
-# not sure how to grab the results?
-callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemin=0.0, rangemax=4.0){
-  stop("callcode is deprecated, use callEstimate and callEmulateAtList")
-}
  
-## just estimates the thetas for a model (this is the slow ass part)
+## estimates the thetas for a model 
 # if fixedNugget is not set to NULL the supplied value is used to fix the nugget
 # for the estimation process. This can be used to force some uncertainty in the training points
 # also it can just fuck things up majorly
@@ -36,92 +29,9 @@ callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3, fixedNugget=NULL
   res$thetas
 }
 
-## use a given set of thetas to emulate the code
-callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=20, rangemin=0.0, rangemax=1.0){
-  stop("deprecated, use callEmulateAtPoint or callEmulateAtList")
-}
-
-
-callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthetas=3){
-  #browser()
-  res <- .C("callEmulateAtPt",
-            as.double((model$xmodel)),
-            as.integer(nparams),
-            as.double(point),
-            as.double(model$training),
-            as.integer(nmodelpts),
-            as.double(thetas),
-            as.integer(nthetas),
-            finaly = double(1),
-            finalvar = double(1)
-            )
-  results <- list(des=point, mean=res$finaly, var=res$finalvar)
-}
-
-callEmulateAtList <- function(model, thetas, pointList,nemupts, nmodelpoints, nparams=1, nthetas=3){
-  
-  res <- .C("callEmulateAtList",
-            as.double((model$xmodel)),
-            as.integer(nparams),
-            as.double(pointList),
-            as.integer(nemupts),
-            as.double(model$training),
-            as.integer(nmodelpoints),
-            as.double(thetas),
-            as.integer(nthetas),
-            finaly = double(nemupts),
-            finalvar = double(nemupts)
-            )
-  results <- list(des=pointList, mean=res$finaly, var=res$finalvar)
-}
-
-callEvalLhoodList <- function(model, pointList, nevalPoints, nmodelPoints, nparams=1, nthetas=3){
-  answer <- 0.0
-  
-  res <- .C("callEvalLhoodList",
-            as.double(model$xmodel),
-            as.integer(nparams),
-            as.double(pointList),
-            as.integer(nevalPoints),
-            as.double(model$training),
-            as.integer(nmodelPoints),
-            as.integer(nthetas),
-            finalLhood = double(nevalPoints)
-            )
-
-  results <- list(des=pointList, lhood=res$finalLhood)
-}
-
-
-  
-callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=3){
-
-  stop("callEvalLikelyhood is deprecated, use callEvalLhoodList")
-}
-
-## interpolate the data given by xvec and yvec at the point
-## xinterp, we need xvec and yvec to be the same length 
-##
-callInterpolate <- function(xvec, yvec, xinterp){
-  if(length(xvec) == length(yvec)){
-    yinterp <- .C("lagrange_interp",
-                as.double(xvec),
-                as.double(yvec),
-                as.integer(length(xvec)),
-                as.double(xinterp))
-                
-  } else {
-    print("error xvec not same length as yvec")
-    yinterp <- 0.0
-  }
-  yinterp[[4]][1]
-}
-                                              
-
-
+## 
 ## the idea is to take a model in a few (ideally-inde) y-dimensions (factored into principle cpts or whatever in another fn)
 ## and emulate/estimate each dimension as if it was a single scalar field over the parameters.
-
 # nydims -> the number of separate training dimensions
 # training -> matrix of the y-values for each separate dimension
 # model-> the parameter space over which we've evaluated all of the training vectors
@@ -146,12 +56,92 @@ multidim <-  function(model, nmodelpts, training, nydims, fixedNugget=NULL){
 }
 
 
-# passes the same set of training data twice, just to test that multidim makes some
-# kind of sense
-testMultiDim <- function(){
-  source("~/Projects/Emulator/src/libRbind/testRbind.R")
-  npts <- 10
-  modelcomb <- demoModel(npts)
-  thetas <- multidim(modelcomb$xmodel, npts, cbind(modelcomb$training, modelcomb$training), 2)
-  thetas
+
+
+## return the emulated mean and var at point
+## N calls of this are substantially slower than using callEmulateAtList,
+## the AtList function is much more efficient.
+callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthetas=3){
+  #browser()
+  res <- .C("callEmulateAtPt",
+            as.double((model$xmodel)),
+            as.integer(nparams),
+            as.double(point),
+            as.double(model$training),
+            as.integer(nmodelpts),
+            as.double(thetas),
+            as.integer(nthetas),
+            finaly = double(1),
+            finalvar = double(1)
+            )
+  results <- list(des=point, mean=res$finaly, var=res$finalvar)
 }
+
+
+## the preferred way to compue the emulated mean and variance at a set of points given by pointList
+callEmulateAtList <- function(model, thetas, pointList,nemupts, nmodelpoints, nparams=1, nthetas=3){
+  
+  res <- .C("callEmulateAtList",
+            as.double((model$xmodel)),
+            as.integer(nparams),
+            as.double(pointList),
+            as.integer(nemupts),
+            as.double(model$training),
+            as.integer(nmodelpoints),
+            as.double(thetas),
+            as.integer(nthetas),
+            finaly = double(nemupts),
+            finalvar = double(nemupts)
+            )
+  results <- list(des=pointList, mean=res$finaly, var=res$finalvar)
+}
+
+## compute the lhood of a set of points in hyper-param space
+callEvalLhoodList <- function(model, pointList, nevalPoints, nmodelPoints, nparams=1, nthetas=3){
+  answer <- 0.0
+  
+  res <- .C("callEvalLhoodList",
+            as.double(model$xmodel),
+            as.integer(nparams),
+            as.double(pointList),
+            as.integer(nevalPoints),
+            as.double(model$training),
+            as.integer(nmodelPoints),
+            as.integer(nthetas),
+            finalLhood = double(nevalPoints)
+            )
+
+  results <- list(des=pointList, lhood=res$finalLhood)
+}
+
+## deprecated fns here
+callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=20, rangemin=0.0, rangemax=1.0){
+  stop("deprecated, use callEmulateAtPoint or callEmulateAtList")
+}
+
+callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemin=0.0, rangemax=4.0){
+  stop("callcode is deprecated, use callEstimate and callEmulateAtList")
+}
+  
+callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=3){
+  stop("callEvalLikelyhood is deprecated, use callEvalLhoodList")
+}
+
+## interpolate the data given by xvec and yvec at the point
+## xinterp, we need xvec and yvec to be the same length 
+##
+callInterpolate <- function(xvec, yvec, xinterp){
+  if(length(xvec) == length(yvec)){
+    yinterp <- .C("lagrange_interp",
+                as.double(xvec),
+                as.double(yvec),
+                as.integer(length(xvec)),
+                as.double(xinterp))
+                
+  } else {
+    print("error xvec not same length as yvec")
+    yinterp <- 0.0
+  }
+  yinterp[[4]][1]
+}
+
