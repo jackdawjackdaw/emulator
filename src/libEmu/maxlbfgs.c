@@ -49,7 +49,7 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 		doBoundedBFGS(&evalFnLBFGS, NULL, params->options->grad_ranges, xInit, xFinal, params->options->nthetas, 500, (void*)params);
 		
 		copy_gslvec_vec(xFinal, tempVec, params->options->nthetas);
-		likelyHood = -1*evalFnLBFGS(tempVec, params->options->nthetas, (void*)params);
+		likelyHood = evalFnLBFGS(tempVec, params->options->nthetas, (void*)params);
 		
 		/*annoying!
 		 *fprintPt(stdout, self);
@@ -98,7 +98,7 @@ double evalLikelyhoodLBFGS_struct(struct estimate_thetas_params *params){
 	for(i = 0; i < params->options->nthetas; i++) 	/* setup xinput*/
 		xinput[i] = gsl_vector_get(params->the_model->thetas, i);
 	
-	likelihood = evalFnLBFGS(xinput, params->options->nthetas, params);;
+	likelihood = evalFnLBFGS(xinput, params->options->nthetas, params);
 
 	free(xinput);
 	return(likelihood);
@@ -135,6 +135,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	// using the random initial conditions! (xold not thetas)
 	makeCovMatrix(covariance_matrix, params->the_model->xmodel, xk, params->options->nmodel_points, nthetas, params->options->nparams, params->options->covariance_fn);
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
+	
 	//print_matrix(temp_matrix, params->options->nmodel_points, params->options->nmodel_points);
 
 	// do a cholesky decomp of the cov matrix, LU is not stable for ill conditioned matrices
@@ -143,6 +144,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
 		exit(1);
 	}
+
 	// find the determinant and then invert 
 	// the determinant is just the trace squared
 	determinant_c = 1.0;
@@ -157,14 +159,14 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	// temp_val is now the likelyhood for this answer
 	temp_val = getLogLikelyhood(cinverse, determinant_c, params->the_model->xmodel, params->the_model->training_vector, xk, params->h_matrix, params->options->nmodel_points, params->options->nthetas, params->options->nparams, params->options->nregression_fns);
 		
-	/* fprintf(stderr,"L:%f\n", temp_val);					 */
+	/* fprintf(stderr,"L:%f\n", temp_val); */
 	/* print_vector_quiet(xk, nthetas); */
 		
 	gsl_matrix_free(covariance_matrix);
 	gsl_matrix_free(cinverse);
 	gsl_matrix_free(temp_matrix);
 	gsl_vector_free(xk);
-	return(-1*temp_val);
+	return(temp_val);
 }
 
 /**

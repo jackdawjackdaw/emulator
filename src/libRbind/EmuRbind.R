@@ -51,7 +51,7 @@ library("lhs")
 ##   results <- data.frame(emulatedx=res$finalx[1:nemupts], emulatedy=res$finaly, emulatedvar=res$finalvar)
 ##   results
 ## } 
-
+ 
 ## just estimates the thetas for a model (this is the slow ass part)
 # if fixedNugget is not set to NULL the supplied value is used to fix the nugget
 # for the estimation process. This can be used to force some uncertainty in the training points
@@ -159,8 +159,26 @@ callEmulateAtList <- function(model, thetas, pointList,nemupts, nmodelpoints, np
   results <- list(des=pointList, mean=res$finaly, var=res$finalvar)
 }
 
+callEvalLhoodList <- function(model, pointList, nevalPoints, nmodelPoints, nparams=1, nthetas=3){
+  answer <- 0.0
+  
+  res <- .C("callEvalLhoodList",
+            as.double(model$xmodel),
+            as.integer(nparams),
+            as.double(pointList),
+            as.integer(nevalPoints),
+            as.double(model$training),
+            as.integer(nmodelPoints),
+            as.integer(nthetas),
+            finalLhood = double(nevalPoints)
+            )
 
-callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=4){
+  results <- list(des=pointList, lhood=res$finalLhood)
+}
+
+
+  
+callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=3){
   answer <- 0.0
   likely <- .C("callEvalLikelyhood",
                as.double((model$xmodel)),
