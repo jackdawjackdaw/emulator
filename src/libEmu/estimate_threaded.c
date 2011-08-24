@@ -21,7 +21,7 @@ pthread_spinlock_t results_spin;
  */
 
 /* how many lots of thread_level_tries to do */
-int ntries = 4; 
+int ntries = 8; 
 /* mutex protected counter to keep track of completed jobs */
 int jobnumber = 0; 
 /* global spot for the best thetas to be kept in */
@@ -85,7 +85,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * 
 	 * it's slower with 4 threads on the MBP than it is with 2
 	 */
-	int nthreads = 2; //get_number_cpus();
+	int nthreads = get_number_cpus();
 	
 	/* force each thread to do at least one of the tries */
 	if(ntries < nthreads){
@@ -100,7 +100,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * we only care about the *best* so it doesn't matter if we just throw 
 	 * the rest out the window... 
 	 */
-	int thread_level_tries = 10; 
+	int thread_level_tries = 25; 
 
 	pthread_t *threads;
 	struct estimate_thetas_params *params;
@@ -108,7 +108,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 
 	threads = MallocChecked(sizeof(pthread_t)*nthreads);
 	params = MallocChecked(sizeof(struct estimate_thetas_params)*nthreads);
-
+	
 	for(i=0; i < nthreads; i++){
 		params[i].my_best = SCREWUPVALUE;
 		params[i].the_model = MallocChecked(sizeof(modelstruct));
@@ -124,16 +124,14 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	best_thetas = gsl_vector_alloc(options->nthetas);
 	gsl_vector_set_zero(best_thetas);
 
-
 	// set the jobnumber back to zero otherwise running twice will kill ya
 	jobnumber = 0;
 	best_likelyhood_val = SCREWUPVALUE;
 
 	/* regular stuff */
 	const gsl_rng_type *T;
+	int number_steps = 20;
 
-	/* optimum value for this seems to be 32, for 1d testing using model-cut.dat */
-	int number_steps = 32;
 	T = gsl_rng_default;
 
 	/* 

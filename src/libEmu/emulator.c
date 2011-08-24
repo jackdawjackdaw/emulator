@@ -64,8 +64,7 @@ inline double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
  * the hyperparameters are used in this function, 
  * theta0 -> amplitude of the covariance gaussian
  * theta1 -> the nugget (only for diagonal terms) 
- * theta2 -> a confusing offset without which this doens't work at all
- * theta3 (and higher) -> scale parameter for the gaussian
+ * theta2 (and higher) -> scale parameter for the gaussian
  *
  * @param thetas -> hyperparameters 
  * @param nparams -> the legnth of xm and xn
