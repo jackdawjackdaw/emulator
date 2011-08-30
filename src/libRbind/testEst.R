@@ -154,7 +154,6 @@ HoldBackTest <- function(des.scaled, train.scaled, nSets=7, fixNuggetOption=NULL
   if(nmodelPts.tot %% nSets != 0){
     nSets <- nSets + 1 # add an additional set to hold the remainder
   }
-
   
   model.list <- vector("list", nSets)
   partial.des <- vector("list", nSets)
