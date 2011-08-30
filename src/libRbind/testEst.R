@@ -54,7 +54,8 @@ lhoodOverRange <- function(thetaA, thetaB, rangeMatrix, thetaVec, nthetas, nEval
 lhoodCompare <- function(estim.result=estimResult, obsIndex=1, ngridPts=32, titleAdditional=NULL){
   namesfirst <- c("scale", "nugget")
   nthetas <- length(estim.result$thetas[obsIndex,])
-  par(mfrow=c(nthetas,nthetas), mar=c(2,2,0,0), oma=c(2,2,2,2))
+  par(mfrow=c(nthetas,nthetas), mar=c(2,2,0,0), oma=c(2,2,2,2), cex.axis=0.8,
+      cex.lab=0.8, cex.main=0.8)
 
   # compute the lhood of the initial theta set
   model <- list(xmodel=estim.result$des.scaled, training=estim.result$train.scaled)
