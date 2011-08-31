@@ -44,7 +44,7 @@ doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL){
 # do we want to scale the output too?
   scaledModelData <- scale(modelData) # well this does make things nicer
 
-  if(fixNugget != 0){
+  if(is.null(fixNugget) != TRUE){
                                         # need to scale the nuggets too
     ## the model data are currently errors or sd's so we should sum them as squares to get the
     ## combined variance
