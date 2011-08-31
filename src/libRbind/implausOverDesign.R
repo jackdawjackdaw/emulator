@@ -60,12 +60,23 @@ implausObsOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal, estim.res
 
 
 
+
+
 # plot a 2d implausibility matrix with all nice things
 # implausResult is the mega list obtained from implausObsOverDesign
 plotImplausOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
-                        xlabel="", ylabel="", titleIn="", plotDes=FALSE, estim.result, exp.data){
-  
-  implaus.result <- implausObsOverDesign(obsIndex, dAIndex, dBIndex, fixedVal, estim.result, exp.data, npts=32)
+                        xlabel="", ylabel="", titleIn="", plotDes=FALSE, estim.result, exp.data, feasCut=4){
+  npts.side <- 32
+  implaus.result <- implausObsOverDesign(obsIndex, dAIndex, dBIndex, fixedVal, estim.result, exp.data, npts=npts.side)
+  # cut on some scale (say 5)
+
+  for(i in 1:npts.side){
+    for(j in 1:npts.side){
+      if(implaus.result$feas[i,j] > feasCut){
+        implaus.result$feas[i,j] <- feasCut
+      }
+    }
+  }
     
   r1 <- implaus.result$emu.data$rA
   r2 <- implaus.result$emu.data$rB
@@ -82,8 +93,68 @@ plotImplausOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
   desA <- desA * desACenterScale[2] + desACenterScale[1]
   desB <- desB * desBCenterScale[2] + desBCenterScale[1]
 
-  image(r1, r2, t(implaus.result$feas), axes=FALSE, col=cm.colors(16), xlab=xlabel, ylab=ylabel)
-  contour(r1, r2, t(implaus.result$feas), nlevels=10, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
+  breaks <- seq(from=0, to=feasCut, length.out=13)
+  image(r1, r2, t(implaus.result$feas), axes=FALSE, col=rev(heat.colors(12)), xlab=xlabel, ylab=ylabel)
+  contour(r1, r2, t(implaus.result$feas), nlevels=12, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
+  if(plotDes==TRUE){
+    points(desA, desB, pch=3)
+    title(xlab=xlabel, ylab=ylabel, outer=TRUE, cex.lab=2.0)
+    axis(1, cex.axis=1.0)
+    axis(2, cex.axis=1.0)
+  }
+  legend("topright", titleIn, bg="white")
+}
+
+##
+## like plotImplausOverDesign but we combine all obsIndex and only plot regions where
+## the worst  implaus is < feasCut
+plotImplausOverDesignCombined <- function(dAIndex, dBIndex, fixedVal, xlabel="", ylabel="",
+                                          titleIn="", plotDes=FALSE,
+                                          estim.result, exp.data, feasCut=1.8){
+  npts.side <- 32
+  #browser()
+  nobs <- dim(estim.result$train.scaled)[2]
+  implaus.list <- vector("list", nobs)
+
+  for(obsIndex in 1:nobs){
+    implaus.list[[obsIndex]] <- implausObsOverDesign(obsIndex, dAIndex, dBIndex, fixedVal, estim.result, exp.data, npts=npts.side)
+  }
+
+  maxfeas.mat <- matrix(0, nrow=npts.side, ncol=npts.side)
+  for(i in 1:npts.side){
+    for(j in 1:npts.side){
+      maxVal <- 0
+      for(obsIndex in 1:nobs){
+        if(implaus.list[[obsIndex]]$feas[i,j] > maxVal){
+          maxVal <- implaus.list[[obsIndex]]$feas[i,j]
+        }
+      }
+      if(maxVal < feasCut){ 
+        maxfeas.mat[i,j] <-  maxVal
+      } else {
+        maxfeas.mat[i,j] <-  feasCut
+      }
+    }
+  }
+
+  r1 <- implaus.list[[1]]$emu.data$rA
+  r2 <- implaus.list[[1]]$emu.data$rB
+
+  desA <- estim.result$des.scaled[,dAIndex]
+  desB <- estim.result$des.scaled[,dBIndex]
+
+  desACenterScale <- c(attr(estim.result$des.scaled, "scaled:center")[dAIndex],
+                       attr(estim.result$des.scaled, "scaled:scale")[dAIndex])
+  
+  desBCenterScale <-c(attr(estim.result$des.scaled, "scaled:center")[dBIndex],
+                      attr(estim.result$des.scaled, "scaled:scale")[dBIndex])
+
+  desA <- desA * desACenterScale[2] + desACenterScale[1]
+  desB <- desB * desBCenterScale[2] + desBCenterScale[1]
+
+  breaks <- seq(from=0, to=feasCut, length.out=13)
+  image(r1, r2, t(maxfeas.mat), axes=FALSE, col=rev(heat.colors(12)), xlab=xlabel, ylab=ylabel)
+  contour(r1, r2, t(maxfeas.mat), nlevels=8, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
   if(plotDes==TRUE){
     points(desA, desB, pch=3)
     title(xlab=xlabel, ylab=ylabel, outer=TRUE, cex.lab=2.0)
@@ -92,7 +163,6 @@ plotImplausOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
   }
   legend("topright", titleIn, bg="white")
   
-
 }
 
 ##
@@ -134,6 +204,51 @@ stepPlotDimensionImplaus <- function(obsIndex, plotDimA, plotDimB, stepDim, fixe
 }
 
 
+##
+## repeatedly calls plotImplausOverDesignCombined creating a set of 9 plots of obsIndex which span the stepping dimension stepDim
+##
+## fixedVals -> a vector of additional fixed values (empty unless nparams > 3)
+stepPlotDimensionImplausComb <- function(plotDimA, plotDimB, stepDim, fixedVals=NULL, nsteps=9,
+                                     estim.result, exp.data){
+
+  minVal <- min(estim.result$des.scaled[,stepDim])
+  maxVal <- max(estim.result$des.scaled[,stepDim])
+  
+  stepSize <- (maxVal - minVal) / nsteps
+
+  par(mfrow=c(3,3), mar=c(1,1,0,0), oma=c(4,5,4,1))
+
+  for(i in 0:(nsteps-1)){
+    fixV <- minVal + stepSize * i
+
+    # now if we're unscaling we need to unscale the fixed value also
+    fixScale <- attr(estim.result$des.scaled, "scaled:scale")[stepDim]
+    fixCenter <- attr(estim.result$des.scaled, "scaled:center")[stepDim]
+    fixVUnscaled <- fixV * fixScale + fixCenter
+    
+    buffer <- paste(desNames[stepDim], " : ", round(fixVUnscaled,2), sep="")
+    if(i == 6){
+
+      desPlot <- TRUE
+      plotImplausOverDesignCombined(plotDimA ,plotDimB, c(fixV, fixedVals),
+                      xlabel=desNames[plotDimA], ylabel=desNames[plotDimB], titleIn=buffer,
+                      desPlot,  estim.result, exp.data)
+    } else {
+      desPlot <- FALSE
+      plotImplausOverDesignCombined(plotDimA ,plotDimB, c(fixV, fixedVals),
+                      xlabel="", ylabel="", titleIn=buffer,
+                      desPlot,  estim.result, exp.data)
+      
+    }
+  }
+  par(mfrow=c(1,1))
+  title(main="max implausibility < 1.8", outer=TRUE)
+
+}
+
+
+
+
 # I = (EmuMean  - ExpValue)**2 / (Var_Model + Var_Emulator + Var_Data)
 # for facundos data we have no var_model
 # 
@@ -173,6 +288,7 @@ computeImplaus <- function(obsIndex, emu.data, expData){
 
   I
 }
+
 
 
 ##
@@ -271,4 +387,52 @@ gridImplausSweep <- function(estim.result=estimResult, exp.data, obsIndex, dimA,
 
   invisible(finalTable) # returns final table if you want it
   
+}
+
+## compute the implaus over variables A,B,C for each observable in a set of  grids spanning the space
+## compute the max of the set of implausibilities for each point in the grid
+##
+## profit?
+gridImplausComb <- function(estim.result=estimResult, exp.data, thresh=1.8, dimA, dimB, dimC, fixedVals=NULL, nGridPts=32,
+                            unscale = TRUE, fname="grid-sweep-comb.csv")
+{
+  nobs <- dim(estim.result$train.scaled)[2]
+  ndim <- 3
+  imp.list <- vector("list", nobs)
+  # this will create temp.csv
+  for(obsIndex in 1:nobs){
+    # gridImplausSweep produces a matrix which is : pointList, emu.mean, emu.var, implaus
+    imp.list[[obsIndex]] <- gridImplausSweep(estim.result=estim.result, exp.data, obsIndex, dimA, dimB, dimC, fixedVals, nGridPts,
+                                              unscale=TRUE, fname="temp.csv")
+  }
+
+  nparams <- dim(estim.result$des.scaled)[2]
+  imp.col <- 3+nparams
+
+  feas.mat <- matrix(0, nrow=nGridPts**ndim, ncol=(nparams+1))
+  
+  for(i in 1:nGridPts**3){
+    maxVal <- 0
+    for(obsIndex in 1:nobs){
+      if(imp.list[[obsIndex]][i, imp.col] > maxVal){
+        maxVal <- imp.list[[obsIndex]][i, imp.col]
+      }
+    }
+    # we do the thresholding in paraview for now
+    feas.mat[i,nparams+1] <- maxVal
+    feas.mat[i, 1:nparams] <- imp.list[[1]][i, 1:nparams]
+  }
+
+  
+  dimList <- c(dimA, dimB, dimC)
+  axisNames <- rep(NA, ndim)
+  dimnames <- attr(estim.result$des.scaled, "dimnames")[[2]]
+  for(i in 1:ndim){
+    axisNames[i] <- dimnames[dimList[i]]
+  }
+  
+  # we write the table out to a csv file for vis
+  write.table(feas.mat, file=fname, row.names=FALSE, col.names=c(axisNames, "max-implaus"),
+              sep=",", qmethod="double", dec=".")
+
 }

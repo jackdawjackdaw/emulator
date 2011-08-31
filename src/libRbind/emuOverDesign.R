@@ -44,7 +44,7 @@ doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL){
 # do we want to scale the output too?
   scaledModelData <- scale(modelData) # well this does make things nicer
 
-  if(fixNugget != 0){
+  if(is.null(fixNugget) != TRUE){
                                         # need to scale the nuggets too
                                         # v(a*y) = a**2 v(y)
     sdVec <- rep(NA, nobs)
