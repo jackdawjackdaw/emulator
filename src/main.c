@@ -66,6 +66,7 @@ int main (int argc, char ** argv){
 	/* after this the optstruct should be totally filled out */
 	parse_arguments(argc, argv, &options);	
 	setup_cov_fn(&options);
+	setup_regression(&options);
 
 	
 	/* now we can allocate the modelstruct */
