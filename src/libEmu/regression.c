@@ -1,21 +1,9 @@
 #include "regression.h"
 
-/**
- * \brief creates a vector of regression coefficients at x_location
- * 
- * create a h_vector evaluated at given x_location., 
- * this currently only creates a set of linear basis fns, you could add another loop which 
- * would add squares etc 
- * 
- * on calling h_vector should be initliased to a vector of length nregression_fns which 
- * in the default case nregression_fns = nparams + 1 
- * 
- * the value of options->nregression_fns is going to be very important for this
- * 
- */
-void makeHVector(gsl_vector *h_vector, gsl_vector *x_location, int nparams){
-	makeHVector_linear(h_vector, x_location, nparams);
-}
+
+/* { */
+/* 	makeHVector_linear(h_vector, x_location, nparams); */
+/* } */
 
 void makeHVector_trivial(gsl_vector *h_vector, gsl_vector *x_location, int nparams){
 	gsl_vector_set_zero(h_vector);
@@ -27,7 +15,7 @@ void makeHVector_linear(	gsl_vector *h_vector, gsl_vector *x_location, int npara
 	int offset = nparams + 1;
 	double temp_val;
 	gsl_vector_set(h_vector, 0, 1); // the first element is always a constant
-	for(i = 0; i < nparams; i++) {
+p	for(i = 0; i < nparams; i++) {
 		temp_val = gsl_vector_get(x_location, i);
 		gsl_vector_set(h_vector, i+1, temp_val);
 	}
