@@ -1,5 +1,17 @@
 library("lhs")
 
+## ccs, cec24@phy.duke.edu
+##
+## functions for creating and sampling the mean and var of an emulator over a data set
+##
+## 
+##
+## note: we can somewhat debug the running code by starting r with gdb underneath it as
+## R -d gdb --vanilla
+## this will launch gdb, you can then run R from gdb, load the source file containing the
+## offensive code and when things go screwy you'll have gdb underneath to give some clues
+## 
+
  
 ## estimates the thetas for a model 
 # if fixedNugget is not set to NULL the supplied value is used to fix the nugget
@@ -7,9 +19,10 @@ library("lhs")
 # also it can just fuck things up majorly
 callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3, fixedNugget=NULL){
   #browser()
+  
   if(is.null(fixedNugget)){
     res <- .C("callEstimate",
-              as.double((model$xmodel)),
+              as.double(model$xmodel),
               as.integer(nparams),
               as.double(model$training),
               as.integer(nmodelpts),
@@ -18,7 +31,7 @@ callEstimate <- function(model, nmodelpts,nparams=1, nthetas=3, fixedNugget=NULL
               as.integer(0), as.double(0))
   } else {
     res <- .C("callEstimate",
-              as.double((model$xmodel)),
+              as.double(model$xmodel),
               as.integer(nparams),
               as.double(model$training),
               as.integer(nmodelpts),
