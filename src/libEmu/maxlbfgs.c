@@ -133,7 +133,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 
 	// make the covariance matrix 
 	// using the random initial conditions! (xold not thetas)
-	makeCovMatrix(covariance_matrix, params->the_model->xmodel, xk, params->options->nmodel_points, nthetas, params->options->nparams, params->options->covariance_fn);
+	makeCovMatrix(covariance_matrix, params->the_model->xmodel, xk, params->options->nmodel_points, nthetas, params->options->nparams);
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 	
 	//print_matrix(temp_matrix, params->options->nmodel_points, params->options->nmodel_points);
@@ -203,7 +203,7 @@ void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate
 	copy_vec_gslvec(xinput, xk, nthetas);
 
 	// using the random initial conditions! (xold not thetas)
-	makeCovMatrix(covariance_matrix, params->the_model->xmodel, xk, nmpoints, nthetas, nparams, params->options->covariance_fn);
+	makeCovMatrix(covariance_matrix, params->the_model->xmodel, xk, nmpoints, nthetas, nparams);
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 
 	//print_matrix(temp_matrix, nmpoints, nmpoints);

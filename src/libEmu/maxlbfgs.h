@@ -4,6 +4,9 @@
 #include "estimate_threaded.h"
 #include "pthread.h" // for debug info
 #include "lbfgs.h"
+#include "regression.h"
+#include "emulator.h"
+#include "estimator.h"
 #include "../useful.h"
 
 

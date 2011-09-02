@@ -49,6 +49,7 @@ int main (int argc, char **argv){
 
 	parse_arguments(argc, argv, &options);	
 	setup_cov_fn(&options);
+	setup_regression(&options);
 
 
 	sprintf(input_file, "%s", "stdin");

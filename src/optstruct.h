@@ -2,13 +2,19 @@
 #define __INC_OPTSTRUCT__
 
 #include <gsl/gsl_matrix.h>
+#include "modelstruct.h"
+#include "libEmu/regression.h"
+#include "libEmu/emulator.h"
 #include <string.h>
 
 /**
  * @file optstruct.h
- * \brief defins the optstruct which holds all the mundane options and dimensions etc
+ * \brief defines the optstruct which holds all the mundane options and dimensions etc
  */
 
+#define POWEREXPCOVFN 1
+#define MATERN32 2
+#define MATERN52 3
 
 
 /**
@@ -40,10 +46,21 @@ typedef struct optstruct{
 	 * how many points to evaluate the emulated model at
 	 */
 	int nemulate_points;
+
+
+	/**
+	 * what order (if any) should the regression model be
+	 * 0 -> a single constant value (a0) 
+	 * 1 -> a constant plus a slope vector (a0 + a1*x)
+	 * 2 -> (a0 + a1*x + a2*x^2)
+	 * 3 -> (a0 + a1*x + a2*x^2 + a3*x^3)
+	 * >3 (not supported) 
+	 */
+	int regression_order;
+
 	/**
 	 * indirectly controls the shape of the regression model, be very careful with this one
-	 * 
-	 * there should be an ENUM or something explaining the choice of regression scheme
+	 * this is set correctly by calling setup_regression
 	 */
 	int nregression_fns;
 
@@ -67,15 +84,16 @@ typedef struct optstruct{
 	char outputfile[128];
 	/** this holds the ranges for the optimisation routine*/
 	gsl_matrix* grad_ranges;
-	/** sets the smoothness of the gaussian covaraince fn  */
-	double cov_fn_alpha;
-	/**
-	 * the fn ptr to the covariance function, this is the most called function in libEmu
-	 * you can change this when you setup the optstruct
-	 * WARNING: changing this will probably break the code as there is perhaps a final 
-	 * argument to the gaussian cov fn and not the others
+	
+	/** 
+	 * set which cov fn to use, can be one of 
+	 * POWEREXPCOVFN
+	 * MATERN32
+	 * MATERN52
+	 * 
+	 * this is determined by setup_cov_fn
 	 */
-	double (*covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double);
+	int cov_fn_index; 
 	
 	// set this to not zero if you want to use the length scales set by the data
 	int use_data_scales;
@@ -84,6 +102,11 @@ typedef struct optstruct{
 
 void free_optstruct(optstruct *opts);
 void copy_optstruct(optstruct *dst, optstruct* src);
+void setup_cov_fn(optstruct *opts);
+void setup_regression(optstruct *opts);
+
+void setup_optimization_ranges(optstruct* options, modelstruct* the_model);
+
 
 
 #endif

@@ -2,14 +2,17 @@
 /** 
  * @file 
  * @author Chris Coleman-Smith cec24@phy.duke.edu
- * @version 0.1
+ * @version 1.1
  * @section DESCRIPTION
  * 
  * This file contains the main functions needed to run the emulator, given a set of 
  * correct hyperparameters (theta) then the makeEmulatedMean and makeEmulatedVariance
  * functions can be used  
+ *
+ * sep-1 2011
+ * updated cov fns to remove spurious double argument and allow for selection of 
+ * covaraince fn from optstruct
  */
-
 
 //! print the given matrix to the stdout
 /**
@@ -28,28 +31,6 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
 		fprintf(stderr, "\n");
  	}
 }
-
-
-//! wrapper fn, calls the appropriate covariance. Change this by hand!
-/** 
- * this is now just a wrapper which calls the appropriate covariance function
- * it seems that the matern version doesn't work very well compared to the 
- * gaussian covariance function, at least not on the ising model.
- */
-/*
- * have to fix the other fns in this file to work with this fn ptr defn
- */
-inline double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams, double(*the_covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double)){
-	fprintf(stderr, "this shouldn't be called\n");
-	exit(1);
-	return(0);
-}
-
-/** 
- * and you'll kneel in the market place and draw your vast mandala
- *
- */
- 
 
 
 //! calculate the covariance between a set of input points
@@ -101,7 +82,7 @@ inline double covariance_fn(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
  * -100 is too small
  */
 #define CLAMPVALUE -15
-double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams, double alpha){
+double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
 	// calc the covariance for a given set of input points
 	int i, truecount  = 0;
 	double covariance = 0.0;
@@ -161,7 +142,7 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
  * doesn't seem to work because this covariance matrix is not symmetric.
  * doh
  */
-double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*thetas, int nthetas, int nparams, double alpha){
+double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*thetas, int nthetas, int nparams ){
 	double the_covariance = 0.0;  
 	double nugget = gsl_vector_get(thetas, 1);
 	double amplitude = gsl_vector_get(thetas,0);
@@ -170,6 +151,8 @@ double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*
 	double r_temp = 0.0;
 	double small_no = 1E-10;
 	int i, j, diagcount = 0; 
+
+	double alpha = 1.90;
 
 	assert((int)thetas->size == (nparams*nparams) + 2);
 
@@ -194,7 +177,7 @@ double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*
 
 
 
-// this only works with exactly 4 thetas! irregardless of how many params there are
+// this only works with exactly 4 thetas! no matter how many params there are
 //! calculates the covariance function using the matern metric. http://en.wikipedia.org/wiki/Mat%C3%A9rn_covariance_function
 /**
  * you can switch which covariance function is called in covariance_fn
@@ -272,16 +255,13 @@ double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, 
 
 //! the matern cov fn but with nu set to 3/2
 /**
- * uses 3 thetas only, 0 and 1 are for the vert scale and the length scale and 
- * 3 is the nugget 
+ * uses 3 thetas only, 0 and 1 are for the vert scale and the nugget and 
+ * 3 is the actual length scale 
  * 
- * this doesn't use quite the same normalisation as the other matern function
- * i don't think this will make much difference although you can't directly 
- * compare the "best" hyperparams
- * 
- * added fake argument (foo) to make intereface compatible with gaussian (duummmb)
+ * this is a radially symmetric covariance fn so we only care about the distance
+ * r between point pairs
  */
-double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams, double foo){
+double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
 	double covariance = 0.0;
 	int i, truecount = 0;
 	double xm_temp = 0.0;
@@ -292,9 +272,10 @@ double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* th
 	assert(nthetas >= 3); // can throw away the upper ones no problem
 
 	// map the thetas onto some local variables so the formula is more transparent
-	double sigsquared = gsl_vector_get(thetas, 0);
-	double rho = gsl_vector_get(thetas, 1);
-	double nugget = gsl_vector_get(thetas,2);
+	double amp = gsl_vector_get(thetas, 0);
+	double nugget = gsl_vector_get(thetas,1); 
+	double rho = gsl_vector_get(thetas, 2);
+
 	double tempx = 0.0;
 	double root3 = 1.732050808;
 
@@ -313,9 +294,9 @@ double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* th
 	distance = sqrt(distance);
 
 	if(distance > 0.0){
-		covariance = sigsquared*(1 + root3*(distance/rho))*exp(-root3*(distance/rho));
+		covariance = amp*(1 + root3*(distance/rho))*exp(-root3*(distance/rho));
 	} else {
-		covariance = sigsquared;
+		covariance = amp;
 	}
 
 	// this means we're on a diagonal term, golly but i write bad code :(
@@ -327,16 +308,7 @@ double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* th
 
 	
 //! the matern cov fn but with nu set to 5/2
-/**
- * uses 3 thetas only, 0 and 1 are for the vert scale and the length scale and 
- * 3 is the nugget 
- * 
- * 
- * same hyperparam normalisation as covariance_fn_matern_three,
- * 
- * added fake argument (foo) to make interface compatible with gaussian
- */
-double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams, double foo){
+double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
 	double covariance = 0.0;
 	int i, truecount = 0;
 	double xm_temp = 0.0;
@@ -346,12 +318,15 @@ double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* the
 	assert(nthetas >= 3); // can throw away the upper ones no problem
 
 	// map the thetas onto some local variables so the formula is more transparent
-	double sigsquared = gsl_vector_get(thetas, 0);
-	double rho = gsl_vector_get(thetas, 1);
-	double nugget = gsl_vector_get(thetas,2);
+	double amp = gsl_vector_get(thetas, 0);
+	double nugget = gsl_vector_get(thetas,1);
+	double rho = gsl_vector_get(thetas, 2);
+
 	double tempx = 0.0;
 	double root5 = 2.236067978;
 
+	double d_over_r = 0.0;
+		
 	// calculate the euclidean distance between the two points;
 	for(i = 0; i < nparams; i++){
 		xm_temp = gsl_vector_get(xm, i);
@@ -364,11 +339,11 @@ double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* the
 	}
 	// reduce back to the right dimensions
 	distance = sqrt(distance);
-
+	d_over_r = distance / rho;
 	if(distance > 0.0){
-		covariance = sigsquared*(1+root5*(distance/rho)+(5.0/3.0)*pow((distance/rho),2.0))*exp(-root5*(distance/rho));
+		covariance = amp*(1+root5*(d_over_r)+(5.0/3.0)*(d_over_r)*(d_over_r))*exp(-root5*(d_over_r));
 	} else if(distance == 0){
-		covariance = sigsquared;
+		covariance = amp;
 	}
 	
 	// this means we're on a diagonal term, golly but i write bad code :(
@@ -391,14 +366,14 @@ double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* the
  * @param thetas -> the hyperparams of the gp used in the estimation.
  * @return kvector is set to the result
  */
-void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams, double(*the_covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double)){
+void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams){
 	int i = 0; 
 	gsl_vector_view  xmodel_row;
 	double cov;
 	for (i = 0; i < nmodel_points; i++){
 		xmodel_row = gsl_matrix_row(xmodel, i);
 		// send the rows from the xmodel matrix to the kvector, these have nparams width
-		cov = the_covariance_fn(&xmodel_row.vector, xnew, thetas, nthetas, nparams, 1.9);
+		cov = covariance_fn(&xmodel_row.vector, xnew, thetas, nthetas, nparams);
 		if(cov < 1E-10){
 			cov = 0.0;
 		}
@@ -417,7 +392,7 @@ void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_
  * @param xmodel matrix of the model points (nmodel_points x nparams)
  * @param thetas hyperparameters
  */
-void makeCovMatrix(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams, double(*the_covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int, double)){
+void makeCovMatrix(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams){
 	int i,j;
 	double covariance; 
 	gsl_vector_view xmodel_row_i;
@@ -427,7 +402,7 @@ void makeCovMatrix(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* theta
 		for(j = 0; j < nmodel_points; j++){
 			xmodel_row_i = gsl_matrix_row(xmodel, i);
 			xmodel_row_j = gsl_matrix_row(xmodel, j);
-			covariance = the_covariance_fn(&xmodel_row_i.vector, &xmodel_row_j.vector, thetas, nthetas,nparams, 1.9);
+			covariance = covariance_fn(&xmodel_row_i.vector, &xmodel_row_j.vector, thetas, nthetas,nparams);
 			//printf("(%d,%d) cov: %g\n", i, j, covariance);
 			gsl_matrix_set(cov_matrix, i,j, covariance);
 		}
