@@ -31,7 +31,7 @@
  * 
  * this pointer is set to one of the fns in this file by optstruct.c:setup_regression
  */
-void *makeHVector(gsl_vector *h_vector, gsl_vector *x_location, int nparams);
+void (*makeHVector)(gsl_vector *h_vector, gsl_vector *x_location, int nparams);
 
 
 //void makeHVector(gsl_vector *h_vector, gsl_vector *x_location, int nparams);

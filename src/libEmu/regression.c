@@ -15,7 +15,7 @@ void makeHVector_linear(	gsl_vector *h_vector, gsl_vector *x_location, int npara
 	int offset = nparams + 1;
 	double temp_val;
 	gsl_vector_set(h_vector, 0, 1); // the first element is always a constant
-p	for(i = 0; i < nparams; i++) {
+	for(i = 0; i < nparams; i++) {
 		temp_val = gsl_vector_get(x_location, i);
 		gsl_vector_set(h_vector, i+1, temp_val);
 	}
