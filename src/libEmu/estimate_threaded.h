@@ -7,10 +7,10 @@
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
 
-#include "../main.h"
+//#include "../main.h"
 /* common data block for most options to be passed around */
-#include "../optstruct.h"
-#include "../modelstruct.h"
+#include "../optstruct.h" 
+//#include "../modelstruct.h" 
 
 
 //! used to pass the args into estimate_thread_function
