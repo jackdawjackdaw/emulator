@@ -1,8 +1,8 @@
 #ifndef __INC_MODELSTRUCT__
 #define __INC_MODELSTRUCT__
 
-#include "optstruct.h"
 #include "assert.h"
+
 #include "stdlib.h"
 #include "useful.h"
 #include <gsl/gsl_matrix.h>
@@ -56,13 +56,15 @@ typedef struct modelstruct{
 	/**
 	 * a pointer back to the options struct used to init this structure, just for fun really
 	 */
-	optstruct*  options;
+	struct optstruct* options;
 } modelstruct;
 
+#include "optstruct.h"
 
-void alloc_modelstruct(modelstruct* the_model, optstruct* options);
+
+void alloc_modelstruct(modelstruct* the_model, struct optstruct* options);
 void free_modelstruct(modelstruct* the_model);
-void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_data, int number_lines);	
+void fill_modelstruct(modelstruct* the_model, struct optstruct* options, char** input_data, int number_lines);	
 void copy_modelstruct(modelstruct* dst, modelstruct* src);
 
 #endif
