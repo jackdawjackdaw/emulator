@@ -10,8 +10,8 @@
 #include <gsl/gsl_sf.h>
 
 #include "regression.h"
-#include "../optstruct.h"
-#include "../modelstruct.h"
+//#include "../optstruct.h"
+//#include "../modelstruct.h"
 
 /**
  * the fn ptr to the covariance function, this is the most called function in libEmu

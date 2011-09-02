@@ -152,6 +152,8 @@ double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*
 	double small_no = 1E-10;
 	int i, j, diagcount = 0; 
 
+	double alpha = 1.90;
+
 	assert((int)thetas->size == (nparams*nparams) + 2);
 
 	for(i = 0; i < nparams; i++){
@@ -371,7 +373,7 @@ void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_
 	for (i = 0; i < nmodel_points; i++){
 		xmodel_row = gsl_matrix_row(xmodel, i);
 		// send the rows from the xmodel matrix to the kvector, these have nparams width
-		cov = the_covariance_fn(&xmodel_row.vector, xnew, thetas, nthetas, nparams);
+		cov = covariance_fn(&xmodel_row.vector, xnew, thetas, nthetas, nparams);
 		if(cov < 1E-10){
 			cov = 0.0;
 		}
@@ -400,7 +402,7 @@ void makeCovMatrix(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* theta
 		for(j = 0; j < nmodel_points; j++){
 			xmodel_row_i = gsl_matrix_row(xmodel, i);
 			xmodel_row_j = gsl_matrix_row(xmodel, j);
-			covariance = the_covariance_fn(&xmodel_row_i.vector, &xmodel_row_j.vector, thetas, nthetas,nparams);
+			covariance = covariance_fn(&xmodel_row_i.vector, &xmodel_row_j.vector, thetas, nthetas,nparams);
 			//printf("(%d,%d) cov: %g\n", i, j, covariance);
 			gsl_matrix_set(cov_matrix, i,j, covariance);
 		}
