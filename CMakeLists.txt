@@ -43,9 +43,14 @@ SET(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 # make a debug release
 #set(CMAKE_BUILD_TYPE debug)
 
-SET(CMAKE_C_FLAGS "-std=c99 -pg -O4")
-SET(CMAKE_C_FLAGS_DEBUG "-std=c99 -pg -O0 -g -Wall -Wextra -pedantic")
+SET(CMAKE_C_FLAGS "-std=gnu99 -O2 -arch x86_64")
+SET(CMAKE_C_FLAGS_DEBUG "-std=gnu99 -O2 -g -Wall -Wextra -pedantic")
 
+if(APPLE)
+# we need to use the same compiler as R CMD SHLIB would use
+# or we're fucked
+SET(CMAKE_C_COMPILER "gcc-4.2")
+endif(APPLE)
 
 MESSAGE("C Compiler: ${CMAKE_C_COMPILER}")
 
