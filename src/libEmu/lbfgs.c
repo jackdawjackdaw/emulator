@@ -1,5 +1,5 @@
 #include "lbfgs.h"
-
+#include "maxlbfgs.h"
 
 /**
  * function pointers
