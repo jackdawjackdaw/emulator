@@ -91,12 +91,3 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cmatrix,  gsl_matrix *x
 }
 
 
-
-/* ***************************** DEPRECATED **************************************** 
- * 
- * There should be no calls for analytic gradients, this is too confusingly implemented 
- * right now to be useful.
- * 
- * use a getGradientNumeric for this , like in lbfgs.c 
- * 
- */
