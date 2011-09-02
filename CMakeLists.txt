@@ -46,7 +46,6 @@ SET(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 SET(CMAKE_C_FLAGS "-std=c99 -pg -O4")
 SET(CMAKE_C_FLAGS_DEBUG "-std=c99 -pg -O0 -g -Wall -Wextra -pedantic")
 
-
 MESSAGE("C Compiler: ${CMAKE_C_COMPILER}")
 
 if(${CMAKE_BUILD_TYPE} MATCHES "debug")

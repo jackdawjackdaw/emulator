@@ -2,11 +2,14 @@
 #define __INC_OPTSTRUCT__
 
 #include <gsl/gsl_matrix.h>
+#include "modelstruct.h"
+#include "libEmu/regression.h"
+#include "libEmu/emulator.h"
 #include <string.h>
 
 /**
  * @file optstruct.h
- * \brief defins the optstruct which holds all the mundane options and dimensions etc
+ * \brief defines the optstruct which holds all the mundane options and dimensions etc
  */
 
 #define POWEREXPCOVFN 1
@@ -44,6 +47,7 @@ typedef struct optstruct{
 	 */
 	int nemulate_points;
 
+
 	/**
 	 * what order (if any) should the regression model be
 	 * 0 -> a single constant value (a0) 
@@ -80,9 +84,16 @@ typedef struct optstruct{
 	char outputfile[128];
 	/** this holds the ranges for the optimisation routine*/
 	gsl_matrix* grad_ranges;
-
-	//double (*covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int);
 	
+	/** 
+	 * set which cov fn to use, can be one of 
+	 * POWEREXPCOVFN
+	 * MATERN32
+	 * MATERN52
+	 * 
+	 * this is determined by setup_cov_fn
+	 */
+	int cov_fn_index; 
 	
 	// set this to not zero if you want to use the length scales set by the data
 	int use_data_scales;
@@ -93,6 +104,9 @@ void free_optstruct(optstruct *opts);
 void copy_optstruct(optstruct *dst, optstruct* src);
 void setup_cov_fn(optstruct *opts);
 void setup_regression(optstruct *opts);
-void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
+
+void setup_optimization_ranges(optstruct* options, modelstruct* the_model);
+
+
 
 #endif

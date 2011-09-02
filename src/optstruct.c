@@ -11,10 +11,12 @@ void copy_optstruct(optstruct *dst, optstruct* src){
 	dst->nmodel_points = src->nmodel_points;
 	dst->nemulate_points = src->nemulate_points;
 	dst->nregression_fns = src->nregression_fns;
-	dst->regresison_order = src->regression_order;
+	dst->regression_order = src->regression_order;
+	dst->cov_fn_index = src->cov_fn_index;
+
 	strcpy(dst->filename, src->filename);
 	strcpy(dst->outputfile, src->outputfile);
-	dst->covariance_fn = src->covariance_fn;
+
 	dst->fixed_nugget = src->fixed_nugget;
 	dst->fixed_nugget_mode = src->fixed_nugget_mode;
 	
@@ -26,11 +28,13 @@ void copy_optstruct(optstruct *dst, optstruct* src){
 /**
  * given the regression model order set the number of regression functions needed 
  * and fix the makeHVector fn called in regression.c
+ * 
  */
 void setup_regression(optstruct *opts)
 {
 	assert(opts->regression_order < 4 && opts->regression_order > -1);
 	assert(opts->nparams > 0);
+	int nparams = opts->nparams;
 	switch(opts->regression_order){
 	case 0:
 		opts->nregression_fns = 1;
@@ -63,22 +67,33 @@ void setup_regression(optstruct *opts)
  * \brief set the covariance_fn pointer to the gaussian covariance fn
  *
  * currently we can pick between MATERN32, MATERN52 or POWEREXP
+ * will freak-out / warn if nthetas are not passed in correctly
  */
 void setup_cov_fn(optstruct *options)
 {
 	if (options->cov_fn_index == MATERN32){
 		covariance_fn = covariance_fn_matern_three;
+		if(options->nthetas != 3)
+			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas, potential memory errors abound\n");
 		options->nthetas = 3;
+		fprintf(stderr, "# cov_fn: MATERN32\n");
 	} else if (options->cov_fn_index == MATERN52){
 		covariance_fn = covariance_fn_matern_five;
+
+		if(options->nthetas != 3)
+			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas to, potential memory errors abound\n");
 		options->nthetas = 3;
+		fprintf(stderr, "# cov_fn: MATERN52\n");
 	} else if(options->cov_fn_index == POWEREXPCOVFN) { 
 		covariance_fn = covariance_fn_gaussian;
-		options->cov_fn_alpha = 2.0;
+		if(options->nthetas != (options->nparams+2))
+			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas from %d, potential memory errors\n", options->nthetas);
+
 		options->nthetas = options->nparams+2;
+		fprintf(stderr, "# cov_fn: POWEREXP\n");
 	} else {
 		// crap out if given a bad argument
-		printf(stderr, "err: cov_fn_index set to unsupported value %d\n", cov_fn_index);
+		printf("err: cov_fn_index set to unsupported value %d\n", options->cov_fn_index);
 		exit(1);
 	}
 }
@@ -124,7 +139,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	if(options->use_data_scales){ // use length scales set by the data
 		for(i = 0; i < options->nthetas; i++){
 			
-			if(options->covariance_fn == covariance_fn_gaussian && i > 1){
+			if(options->cov_fn_index == POWEREXPCOVFN && i > 1){
 				rangeMax = 10.0;
 				// need to get the fucking xmodel too, poop
 				rangeMin = 0.5*log(gsl_vector_get(the_model->sample_scales, i-2));
@@ -154,7 +169,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	} else { // use some default scales
 		/* these are log-scaled ranges, note the negative lower bound */
 		for(i = 0; i < options->nthetas; i++){
-			if(options->covariance_fn == covariance_fn_gaussian){
+			if(options->cov_fn_index == POWEREXPCOVFN){
 				gsl_matrix_set(options->grad_ranges, i, 0, -10.0);
 				gsl_matrix_set(options->grad_ranges, i, 1, 5.0);	
 			} else {
