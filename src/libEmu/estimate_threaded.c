@@ -76,6 +76,7 @@ void setup_params(struct estimate_thetas_params *params_array, modelstruct* the_
  */
 void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	int i;
+	int rc = 0; 
 	/* thread data */
 	/* \bug
 	 * at least on os-x there is some kind of bug where the code gets stuck hanging with
@@ -83,7 +84,9 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * and only if there are >= 4 threads (on my MBP). don't want to spend too much time trying 
 	 * to fix this right now
 	 * 
-	 * it's slower with 4 threads on the MBP than it is with 2
+	 * \bug
+	 * further issues with R hanging after calling estimateThetas a second time
+	 * 
 	 */
 	int nthreads = get_number_cpus();
 	
@@ -155,12 +158,23 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	#endif
 
 	// create the threads
-	for(i = 0; i < nthreads; i++)
-		pthread_create(&threads[i], NULL, &estimate_thread_function, &params[i]);
+	for(i = 0; i < nthreads; i++){
+		rc = pthread_create(&threads[i], NULL, &estimate_thread_function, &params[i]);
+		if(rc){
+			fprintf(stderr, "pthread_create (%d)  err: %d\n", i, rc);
+			perror(NULL);
+			exit(EXIT_FAILURE);
+		}
+	}
 	
 	// wait to rejoin
-	for(i = 0; i < nthreads; i++)
-		pthread_join(threads[i], NULL);
+	for(i = 0; i < nthreads; i++){
+		if( (rc = pthread_join(threads[i], NULL)) != 0){
+			fprintf(stderr, "pthread_join (%d)  err: %d\n", i, rc);
+			perror(NULL);
+			exit(EXIT_FAILURE);
+		}
+	}
 
 	#ifdef USEMUTEX
 	// now kill the mutexs
@@ -209,12 +223,18 @@ void* estimate_thread_function(void* args){
 	// cast the args back
 	struct estimate_thetas_params *params = (struct estimate_thetas_params*) args;
 	int next_job;
+	int rc;
 	pthread_t my_id = pthread_self();
 	double my_theta_val = 0.0; /* this is the goodness of your current evaluation */
 	while(1){
 		/* see if we've done enough */
 		#ifdef USEMUTEX
-		pthread_mutex_lock(&job_counter_mutex);
+		rc = pthread_mutex_lock(&job_counter_mutex);
+		if(rc != 0){
+			fprintf(stderr, "ERR: pthread_mutex_lock(&job_counter_mutex) rc is %d\n", rc); 
+			perror(NULL); 
+			exit(EXIT_FAILURE);
+		}
 		#else 
 		pthread_spin_lock(&job_counter_spin);
 		#endif
@@ -251,7 +271,12 @@ void* estimate_thread_function(void* args){
 		
 		
 		#ifdef USEMUTEX
-		pthread_mutex_lock(&results_mutex);
+		rc =pthread_mutex_lock(&results_mutex);
+		if(rc != 0){
+			fprintf(stderr, "ERR: pthread_mutex_lock(&results_mutex) rc is %d\n", rc); 
+			perror(NULL); 
+			exit(EXIT_FAILURE);
+		}
 		#else 
 		pthread_spin_lock(&results_spin);
 		#endif
@@ -278,9 +303,9 @@ void* estimate_thread_function(void* args){
 
 	}
 	// and relax...
-	/* printf("thread: "); */
-	/* fprintPt(stdout, my_id);  */
-	/* printf(" is done\n"); */
+	printf("thread: ");
+	fprintPt(stdout, my_id);
+	printf(" is done\n");
 	return NULL;
 }
 
