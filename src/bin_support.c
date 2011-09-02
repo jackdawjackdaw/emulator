@@ -97,7 +97,7 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	 * (1+ options->nparams) is correct for the simple linear fit in each dimension plus a constant intercept
 	 * 
 	 */
-	optoins->regression_order = 2;
+	options->regression_order = 2;
 	//options->nregression_fns =  1 + options->nparams;
 	
 	/* 
