@@ -1,0 +1,5 @@
+// Configured options from CMAKE
+// there's space to do a LOT of cool stuff here...
+
+// we use @'s to enclose a variable to be replaced from the CMAKE workspace
+#define VERSION_NUMBER "@VERSION_NUMBER@"
