@@ -369,6 +369,22 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 	free(xinput);
 }
 
+
+/**
+ * print out the version number and some usage info to stdout
+ * to be used in R
+ */
+void callInfo(void){
+	printf("# libRbind build version: VERSION_NUMBER\n");
+	printf("# covFn's:\n");
+	printf("# 1 POWEREXP\n");
+	printf("# 2 MATERN 32\n");
+	printf("# 3 MATERN 52\n");
+	printf("# regression order's supported: 0-3\n");
+
+}
+
+
 void fill_sample_scales(modelstruct* the_model, optstruct* options)
 {
 	int i, j; 
