@@ -1,6 +1,10 @@
 #ifndef _INC_RBIND_
 #define _INC_RBIND_
 
+#include "stdio.h"
+
+
+
 #include "libEmu/emulator.h"
 #include "libEmu/estimator.h"
 #include "libEmu/emulate-fns.h"
@@ -8,13 +12,18 @@
 #include "libEmu/estimate_threaded.h"
 
 #include "useful.h"
-#include "stdio.h"
+
 
 #include "optstruct.h"
 #include "modelstruct.h"
 #include "resultstruct.h"
 
 #include "../defaults.h"
+
+/* some r header information*/
+#include "Rdefines.h" 
+#include "R_ext/Rdynload.h"
+
 
 /**
  * \file rbind.h
@@ -40,6 +49,48 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 											 int *nthetas_in, double *answer, int*cov_fn_index_in, int* regression_order_in);
 
 void fill_sample_scales(modelstruct* the_model, optstruct* options);
+
+
+#ifdef APPLE
+/** 
+ * some boilerlate for registering things with R
+ * 
+ * i'm not sure if adding this or switching to an "is.loaded" then load
+ * setup in testMac made things work, stupid heisenbugs
+ *
+ * currently this is just turned on in the CMAKELISTS file
+ * 
+ */
+
+R_NativePrimitiveArgType callEstArgs[10] = {REALSXP, INTSXP, REALSXP, INTSXP, INTSXP, REALSXP,
+																						INTSXP, REALSXP, INTSXP, INTSXP};
+
+R_NativePrimitiveArgType callEmuAtListArgs[12] = {REALSXP, INTSXP, REALSXP, INTSXP, REALSXP, 
+																									INTSXP, REALSXP, INTSXP, REALSXP, 
+																									REALSXP, INTSXP, INTSXP};
+
+R_NativePrimitiveArgType callEmuAtPtArgs[11] = {REALSXP, INTSXP, REALSXP, REALSXP, INTSXP,
+																								REALSXP, INTSXP, REALSXP, REALSXP, INTSXP, INTSXP};
+
+R_NativePrimitiveArgType callEvalListArgs[10] = {REALSXP, INTSXP, REALSXP, INTSXP, REALSXP, INTSXP,
+																						 INTSXP, REALSXP, INTSXP, INTSXP};
+
+
+R_CMethodDef cMethods[] = {
+	{"callEstimate", (DL_FUNC)&callEstimate, 10, callEstArgs},
+	{"callEmulateAtList", (DL_FUNC)&callEmulateAtList, 12, callEmuAtListArgs},
+	{"callEmulateAtPt", (DL_FUNC)&callEmulateAtPt, 11, callEmuAtPtArgs},
+	{"callEvalLhoodList", (DL_FUNC)&callEvalLhoodList, 10, callEvalListArgs},
+	{NULL, NULL, 0}
+};
+
+
+void R_init_libRBIND(DllInfo *dll){
+	R_registerRoutines(dll, cMethods, NULL, NULL, NULL);
+}
+		
+#endif
+
 
 // conversion from R arrays to C
 

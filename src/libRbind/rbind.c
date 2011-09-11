@@ -1,5 +1,10 @@
 #include "rbind.h"
 
+/* some r header information*/
+#include "Rdefines.h" 
+#include "R_ext/Rdynload.h"
+
+
 
 
 /**
