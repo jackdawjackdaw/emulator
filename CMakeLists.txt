@@ -10,7 +10,7 @@ set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local")
 
 
 SET(${project_name}_major_version 1)
-SET(${project_name}_minor_version 0)
+SET(${project_name}_minor_version 1)
 
 # use, i.e. don't skip the full RPATH for the build tree
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
@@ -43,7 +43,12 @@ SET(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 # make a debug release
 #set(CMAKE_BUILD_TYPE debug)
 
-SET(CMAKE_C_FLAGS "-std=gnu99 -O2 -arch x86_64")
+if(APPLE)
+	SET(CMAKE_C_FLAGS "-std=gnu99 -O2 -arch x86_64")
+else()
+	SET(CMAKE_C_FLAGS "-std=gnu99 -O2")
+endif(APPLE)
+
 SET(CMAKE_C_FLAGS_DEBUG "-std=gnu99 -O2 -g -Wall -Wextra -pedantic")
 
 if(APPLE)
