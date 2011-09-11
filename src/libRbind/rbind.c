@@ -1,12 +1,5 @@
 #include "rbind.h"
 
-/* some r header information*/
-#include "Rdefines.h" 
-#include "R_ext/Rdynload.h"
-
-
-
-
 /**
  * estimate the optimum covariance length scales to reproduce the training data
  * 

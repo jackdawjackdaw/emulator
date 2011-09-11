@@ -13,7 +13,7 @@ IF(APPLE)
 
 	# this is cheating but at the end we export -DAPPLE
 	# which will turn on the lines in the header we need that use the R framework
-	SET(CMAKE_C_FLAGS "-arch x86_64 -std=gnu99 -I/Library/Frameworks/R.framework/Resources/include -I/Library/Frameworks/R.framework/Resources/include/x86_64 -I/usr/local/include -g -O2 -fPIC -DAPPLE")
+	SET(CMAKE_C_FLAGS "-arch x86_64 -std=gnu99 -I/Library/Frameworks/R.framework/Resources/include -I/Library/Frameworks/R.framework/Resources/include/x86_64 -I/usr/local/include -g -O2 -fPIC")
 
 	SET(EXTRA_LIBS "-undefined dynamic_lookup -single_module -multiply_defined suppress -F/Library/Frameworks/R.framework/.. -framework R -Wl,-framework -Wl,CoreFoundation")
 

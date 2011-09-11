@@ -44,7 +44,7 @@ SET(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 #set(CMAKE_BUILD_TYPE debug)
 
 if(APPLE)
-	SET(CMAKE_C_FLAGS "-std=gnu99 -O2 -arch x86_64")
+	SET(CMAKE_C_FLAGS "-std=gnu99 -O2 -arch x86_64 -DAPPLE")
 else()
 	SET(CMAKE_C_FLAGS "-std=gnu99 -O2")
 endif(APPLE)
