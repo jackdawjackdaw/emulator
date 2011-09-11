@@ -3,6 +3,7 @@
 //! print the short-option switches
 void print_usage_estimator(void){
 	printf("estimator\n");
+	printf("build %s\n", VERSION_NUMBER);
 	printf("options are: \n");
 	printf("t->number of thetas should be (2+nparams) for gaussian or 4 for matern\n");
 	printf("p->number of params\n");
@@ -15,6 +16,7 @@ void print_usage_estimator(void){
 //! print the short-option switches
 void print_usage_emulator(void){
 	printf("emulator\n");
+	printf("build %s\n", VERSION_NUMBER);
 	printf("options are: \n");
 	printf("t->number of thetas should be (2+nparams) for gaussian or 4 for matern\n");
 	printf("p->number of params\n");

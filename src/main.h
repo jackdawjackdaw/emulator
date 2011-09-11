@@ -16,7 +16,7 @@
 #include "modelstruct.h"
 #include "defaults.h"
 #include "bin_support.h"
-
+#include "buildConfig.h"
 
 
 /**
