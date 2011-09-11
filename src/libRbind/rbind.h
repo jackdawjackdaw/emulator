@@ -20,9 +20,6 @@
 
 #include "../defaults.h"
 
-/* some r header information*/
-#include "Rdefines.h" 
-#include "R_ext/Rdynload.h"
 
 
 /**
@@ -52,6 +49,13 @@ void fill_sample_scales(modelstruct* the_model, optstruct* options);
 
 
 #ifdef APPLE
+
+/* some r header information
+ * currently things are working in linux so we'll only 
+ * do this linking in apple builds
+ */
+#include "Rdefines.h" 
+#include "R_ext/Rdynload.h"
 /** 
  * some boilerlate for registering things with R
  * 
