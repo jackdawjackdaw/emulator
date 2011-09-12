@@ -132,6 +132,9 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	options.use_data_scales = 1; 
 	options.emulate_min = 0; 
 	options.emulate_max = 1; 
+	options.fixed_nugget_mode = 0;
+	options.fixed_nugget = 0;
+
 	/****************************************/
 
 	setup_cov_fn(&options);
@@ -211,8 +214,11 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 
 	options.cov_fn_index = *cov_fn_index_in;
 	options.regression_order = *regression_order_in;
+
 	/****************************************/
 	/* defaults not used in this process    */
+	options.fixed_nugget_mode = 0;
+	options.fixed_nugget = 0;
 	options.use_data_scales = 1; 
 	options.emulate_min = 0; 
 	options.emulate_max = 1;
@@ -307,6 +313,8 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 	options.use_data_scales = 1; 
 	options.emulate_min = 0; 
 	options.emulate_max = 1;
+	options.fixed_nugget_mode = 0;
+	options.fixed_nugget = 0;
 	/****************************************/
 	setup_cov_fn(&options);
 	setup_regression(&options);
