@@ -125,10 +125,10 @@ void setup_cov_fn(optstruct *options)
  */
 void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 {
-	int i;
+	int i = 0;
 	char buffer[128];
-	double rangeMin, rangeMax;
-	double fixedNuggetLeeWay;
+	double rangeMin = 0.0, rangeMax = 0.0;
+	double fixedNuggetLeeWay = 0.0 ;
 	/** 
 	 * alloc the grad_ranges matrix in the options and 
 	 * put in some sensible defaults 
