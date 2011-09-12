@@ -3,14 +3,33 @@ cmake_minimum_required (VERSION 2.6)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 project (Emulator)
 
+
 ################### 
 # the install prefix is where the bins and libs get dropped. 
 message("Setting Install prefix to Home folder: $ENV{HOME}")
 set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local")
 
 
-SET(${project_name}_major_version 1)
-SET(${project_name}_minor_version 1)
+# lets get a version number from git
+execute_process(
+	#COMMAND git describe --tags --long
+	COMMAND ../version.sh
+	RESULT_VARIABLE v_result_var
+	OUTPUT_VARIABLE v_output_var)
+
+if(${v_result_var} MATCHES "0")
+	SET(VERSION_NUMBER ${v_output_var})
+	message("Building version: ${VERSION_NUMBER}")
+else()
+	SET(VERSION_NUMBER 1)
+endif(${v_result_var} MATCHES "0")
+
+configure_file (
+	"${PROJECT_SOURCE_DIR}/src/buildConfig.h.in"
+	"${PROJECT_SOURCE_DIR}/src/buildConfig.h"
+)
+
+include_directories("${PROJECT_BINARY_DIR}")
 
 # use, i.e. don't skip the full RPATH for the build tree
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)

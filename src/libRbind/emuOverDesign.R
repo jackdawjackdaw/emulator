@@ -26,9 +26,9 @@
 ## thetas  -> a matrix of optimal hyperparams, there are nobservable rows each with nparams columns
 ## des.scaled -> the scaled and centered design
 ## train.scaled -> the scaled and centered training points (code output)
+## cov.fn -> an index 1..3 which fixes which covariance model we use
 ## 
-## 
-doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL){
+doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL, cov.fn.in=1){
 
   nobs <- dim(modelData)[2]
   
@@ -54,10 +54,12 @@ doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL){
       scale <- attr(scaledModelData, "scaled:scale")[i]
       sdVec[i] <- sum(expData$errModel.stat[,i]**2) / scale**2 
     }
-    combinedThetas <- multidim(scaledDesign, nmodelpts=nruns, training=scaledModelData, nydims=nbins, fixedNugget=sdVec)
+    combinedThetas <- multidim(scaledDesign, nmodelpts=nruns,
+                               training=scaledModelData, nydims=nbins, fixedNugget=sdVec, cov.fn=cov.fn.in)
   }
   else {
-    combinedThetas <- multidim(scaledDesign, nmodelpts=nruns, training=scaledModelData, nydims=nbins)
+    combinedThetas <- multidim(scaledDesign, nmodelpts=nruns,
+                               training=scaledModelData, nydims=nbins, cov.fn=cov.fn.in)
   }
 
   result <- list(thetas=combinedThetas, des.scaled=scaledDesign, train.scaled=scaledModelData)

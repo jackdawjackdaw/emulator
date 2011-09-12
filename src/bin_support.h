@@ -12,6 +12,10 @@
 #include "libEmu/emulator.h"
 #include "libEmu/regression.h"
 
+/*
+ * get the version number from the cmake build file
+ */
+#include "buildConfig.h"
 
 /**
  * @file bin_support.h

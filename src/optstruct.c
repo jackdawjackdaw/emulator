@@ -190,7 +190,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 		fixedNuggetLeeWay = 0.05*(options->fixed_nugget);
 		gsl_matrix_set(options->grad_ranges, 1, 0, options->fixed_nugget - fixedNuggetLeeWay);
 		gsl_matrix_set(options->grad_ranges, 1, 1, options->fixed_nugget + fixedNuggetLeeWay);
-		printf("# %d ranges: %lf %lf (nugget)\n", i,options->fixed_nugget - fixedNuggetLeeWay
+		printf("# (reset) %d ranges: %lf %lf (nugget)\n", 1,options->fixed_nugget - fixedNuggetLeeWay
 					 ,options->fixed_nugget + fixedNuggetLeeWay);
 	}		
 
