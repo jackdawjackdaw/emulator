@@ -90,8 +90,9 @@ multidim <-  function(model, nmodelpts, training, nydims, fixedNugget=NULL, cov.
   } else {
     nthetas <- 3
   }
-  
-  bigthetas <- array(0, dim=c(nydims, nthetas)) # store all the thetas
+
+  ## store all the thetas and pass them one row at a time
+  bigthetas <- array(0, dim=c(nydims, nthetas)) 
 
   checkCovFn(nthetas, nparams, cov.fn)
 
@@ -99,10 +100,12 @@ multidim <-  function(model, nmodelpts, training, nydims, fixedNugget=NULL, cov.
     # we have to craft a custom frame for each call
     if(nydims > 1){
       bigthetas[i,] <-callEstimate(list(xmodel=model, training=training[,i]) 
-                                   , nmodelpts, nparams, nthetas, fixedNugget[i])
+                                   , nmodelpts, nparams, nthetas, fixedNugget[i],
+                                   cov.fn=cov.fn, reg.order=reg.order)
     } else {
       bigthetas[i,] <- callEstimate(list(xmodel=model, training) 
-                                    , nmodelpts, nparams, nthetas, fixedNugget[i])
+                                    , nmodelpts, nparams, nthetas, fixedNugget[i],
+                                    cov.fn=cov.fn, reg.oder=reg.order)
     }
   }
   bigthetas
@@ -213,7 +216,8 @@ checkCovFn <- function(nthetas, nparams, cov.fn){
 
   if(cov.fn == 1){ ## power exp
     if(nthetas != nparams + 2){
-      buffer <- paste("power exp with nparams: ", nparams, "needs nthetas: ", nparams+2, sep="")
+      buffer <- paste("power exp called with nthetas: ", nthetas,
+                      "needs nthetas: ", nparams+2, sep="")
       stop(buffer)
     }
   } else { ## matern
