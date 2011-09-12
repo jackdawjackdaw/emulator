@@ -1,6 +1,10 @@
 
 #include "optstruct.h"
 
+// this causes confusion if it's in optstruct.h
+// modules, i do not understand you
+#include "libEmu/maxlbfgs.h"
+
 void free_optstruct(optstruct *opts){
 	gsl_matrix_free(opts->grad_ranges);
 }
@@ -68,17 +72,24 @@ void setup_regression(optstruct *opts)
  *
  * currently we can pick between MATERN32, MATERN52 or POWEREXP
  * will freak-out / warn if nthetas are not passed in correctly
+ * 
+ * also sets the gradient related pointer maxlbfgs.h:(*setupdCdThetaLength)
+ * from the various fns derivative_l_<cov_fn_name>
  */
+
 void setup_cov_fn(optstruct *options)
 {
 	if (options->cov_fn_index == MATERN32){
 		covariance_fn = covariance_fn_matern_three;
+		setupdCdThetaLength = derivative_l_matern_three;
+
 		if(options->nthetas != 3)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas, potential memory errors abound\n");
 		options->nthetas = 3;
 		fprintf(stderr, "# cov_fn: MATERN32\n");
 	} else if (options->cov_fn_index == MATERN52){
 		covariance_fn = covariance_fn_matern_five;
+		setupdCdThetaLength = derivative_l_matern_five;
 
 		if(options->nthetas != 3)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas to, potential memory errors abound\n");
@@ -86,6 +97,8 @@ void setup_cov_fn(optstruct *options)
 		fprintf(stderr, "# cov_fn: MATERN52\n");
 	} else if(options->cov_fn_index == POWEREXPCOVFN) { 
 		covariance_fn = covariance_fn_gaussian;
+		setupdCdThetaLength = derivative_l_gauss;
+
 		if(options->nthetas != (options->nparams+2))
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas from %d, potential memory errors\n", options->nthetas);
 
@@ -114,8 +127,6 @@ void setup_cov_fn(optstruct *options)
  * this fills the options->grad_ranges matrix with lower and upper bounds to be used in the
  * bounded bfgs maximisation routine lbfgs (see libEmu/maxlbfgs.c) for more info on this.
  * 
- * Note that the gaussian covfn uses log scaled thetas and so the range of values is
- * log[0..upper] -> [-infty .. log(uppper)]
  * 
  * this is not the case for the other fns, but the rest of the code may have the assumption
  * frozen into it that the ranges *are* log-scaled.
@@ -127,6 +138,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 {
 	int i = 0;
 	char buffer[128];
+	double bigRANGE = 25.0;
 	double rangeMin = 0.0, rangeMax = 0.0;
 	double fixedNuggetLeeWay = 0.0 ;
 	/** 
@@ -135,23 +147,33 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	 */
 	options->grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
 
+	/* 
+	 * we'll constrain the amplitude of the cov fn to being within 0..1
+	 */
+	gsl_matrix_set(options->grad_ranges, 0, 0, 0.000000001);
+	gsl_matrix_set(options->grad_ranges, 0, 1, 1.0);
+	/*
+	 * fix the nugget too
+	 */
+	gsl_matrix_set(options->grad_ranges, 1, 0, 0.000000001);
+	gsl_matrix_set(options->grad_ranges, 1, 1, 0.005);
+
 
 	if(options->use_data_scales){ // use length scales set by the data
 		for(i = 0; i < options->nthetas; i++){
-			
-			if(options->cov_fn_index == POWEREXPCOVFN && i > 1){
-				rangeMax = 10.0;
+			if(i > 1){
+				rangeMax = bigRANGE;
 				// need to get the fucking xmodel too, poop
-				rangeMin = 0.5*log(gsl_vector_get(the_model->sample_scales, i-2));
+				//rangeMin = 0.5*log(gsl_vector_get(the_model->sample_scales, i-2));
+				rangeMin = 0.5*(gsl_vector_get(the_model->sample_scales, i-2));
 				if(rangeMin > rangeMax){
 					fprintf(stderr, "#ranges failed\n");
 					printf("# %d ranges: %lf %lf\n", i, rangeMin, rangeMax);
 					printf("# sampleScale: %lf\n", gsl_vector_get(the_model->sample_scales, i-2));
 					exit(EXIT_FAILURE);
 				}
-			} else {
-				rangeMin = 0.00001;
-				rangeMax = 5.0;
+				gsl_matrix_set(options->grad_ranges, i, 0, rangeMin);
+				gsl_matrix_set(options->grad_ranges, i, 1, rangeMax);
 			}
 			if(i == 0){
 				printf("# %d ranges: %lf %lf (scale)\n", i, rangeMin, rangeMax); 
@@ -163,29 +185,17 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 			if(isinf(rangeMin) == -1){
 				rangeMin = 0.00001;
 			}
-			gsl_matrix_set(options->grad_ranges, i, 0, rangeMin);
-			gsl_matrix_set(options->grad_ranges, i, 1, rangeMax);
 		}
 	} else { // use some default scales
 		/* these are log-scaled ranges, note the negative lower bound */
 		for(i = 0; i < options->nthetas; i++){
-			if(options->cov_fn_index == POWEREXPCOVFN){
-				gsl_matrix_set(options->grad_ranges, i, 0, -10.0);
-				gsl_matrix_set(options->grad_ranges, i, 1, 5.0);	
-			} else {
-				/* these are the regular ranges */
-				gsl_matrix_set(options->grad_ranges, i, 0, 0.00001);
-				gsl_matrix_set(options->grad_ranges, i, 1, 10.0);
-			}
+			gsl_matrix_set(options->grad_ranges, i, 0, 0.00001);
+			gsl_matrix_set(options->grad_ranges, i, 1, bigRANGE);
 		}
 	
 	}
 
-	if(options->fixed_nugget_mode == 0){
-	// and force the nugget to be small (this is still done by hand...)
-		gsl_matrix_set(options->grad_ranges, 1, 0, 0.00001);
-		gsl_matrix_set(options->grad_ranges, 1, 1, 0.005);
-	} else {
+	if(options->fixed_nugget_mode == 1){
 		// force the nugget to be fixed_nugget +- 5%
 		fixedNuggetLeeWay = 0.05*(options->fixed_nugget);
 		gsl_matrix_set(options->grad_ranges, 1, 0, options->fixed_nugget - fixedNuggetLeeWay);

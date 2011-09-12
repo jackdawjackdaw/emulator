@@ -186,6 +186,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate, void* args){
 	int nmpoints, nthetas, i;
 	int nparams;
+	double amp; 
 
 	struct estimate_thetas_params *params = (struct estimate_thetas_params*)args;
 	nmpoints = params->options->nmodel_points;
@@ -222,32 +223,24 @@ void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate
 
 	// make the first component, here dC/dN_1 = 1/theta1 * C
 	// the second component, dC/dN_2 = 1_delta(ij) (easssy)
-	// the rest: dC/dN_{h} = ((x_i - x_j)^2/(theta_h)) (C - theta_2)
+	// the rest: dC/dN_{h} = amp * dC/d\theta
 	
-	// first, the scale parameter
+	// first, get the scale parameter
+	amp = gsl_vector_get(xk, 0); 
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
-	gsl_matrix_scale(temp_matrix, 1.0/(gsl_vector_get(xk, 0))); //1/theta1* C
-	gradient[0] = -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 
+	gsl_matrix_scale(temp_matrix, 1.0/amp); //1/theta1* C
+	gradient[0] = -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 
 	// next, the nugget
 	gsl_matrix_set_identity(temp_matrix);
 	gradient[1] = -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 	
 	for(i = 2; i < nthetas; i++){
-		// remove the nugget from the cov matrix
-		gsl_matrix_add_constant(covariance_matrix, -1.0*gsl_vector_get(xk, 1));
-		setupdCdThetaLength(temp_matrix, covariance_matrix, params->the_model->xmodel, gsl_vector_get(xk, i) , i, nmpoints);
-		gradient[i] = -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
+		setupdCdThetaLength(temp_matrix, covariance_matrix, gsl_vector_get(xk, i) , i, nmpoints, nparams);
+		gradient[i] = -1.0*amp*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 	}
-
 	
-
-	/* fprintf(stderr, "Exact: "); */
-	/* for(i = 0; i < nthetas; i++){ */
-	/* 	fprintf(stderr, "%lf ", gradient[i]); */
-	/* } */
-	/* fprintf(stderr, "\n"); */
 	gsl_vector_free(xk);
 	gsl_matrix_free(covariance_matrix);
 	gsl_matrix_free(cinverse);
@@ -255,6 +248,20 @@ void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate
 }
 
 /**
+ * 
+ * computes the gradient for a given hyper-parameter direction, the important arguments here are:
+ * we rely on the CONVENTION that all cov-fns are laid out as follows:
+ * C(x,y) = theta_0 * c(x,y, theta_2,theta_3,...) + theta_1 
+ * i.e each cov fn has a scale given by the first hyper param and a nugget term given by the 
+ * second. 
+ * this is important when we compute the gradient
+ * 
+ * 
+ * @param dCdtheta a matrix of the covariance function at each point differentiated wrt to the theta 
+ * that we want the gradient in.
+ * @param cinverse the inverted cov matrix
+ * @return the value of the gradient in this direction
+ * 
  * grad = -1/2*trace( cinverse %*% dCdtheta ) + 1/2 tn^{t} %*% cinverse %*% dCdtheta %*% tn 
  *
  * rays of light shone down on me, and all my sins, were pardoned
@@ -296,36 +303,6 @@ double getGradientCn(gsl_matrix * dCdtheta, gsl_matrix *cinverse,  gsl_vector* t
 	gsl_vector_free(w);
 	return(grad);
 }
-
-/**
- * the gradient matrix for the length setting theta values
- * dC/dTheta = (C-nugget) * (1/2)*(x_i - x_j)^(alpha) * alpha / (thetaLength) 
- * 
- * where, the we only subtract the xmodel components in the direction of index
- * remember xmodel has nparams columns and nmodelpoints rows
- * 
- */
-void setupdCdThetaLength(gsl_matrix *dCdTheta, gsl_matrix *covsub, gsl_matrix* xmodel, double thetaLength, int index, int nmodel_points){
-	int i, j;
-	double scale;
-	double rtemp;
-	const int nthetasConstant = 2;
-	int indexScaled = index - nthetasConstant;
-	
-
-	for(i = 0; i < nmodel_points; i++){
-		for(j = 0; j < nmodel_points; j++){
-			// is this the correct indexing into xmodel?
-			rtemp= gsl_matrix_get(xmodel, i, indexScaled) - gsl_matrix_get(xmodel, j, indexScaled);
-			scale = -1*(rtemp * rtemp) / thetaLength;
-			gsl_matrix_set(dCdTheta, i, j, scale*gsl_matrix_get(covsub, i, j));
-		}
-	}
-	
-}
-	
-
-	
 	
 
 

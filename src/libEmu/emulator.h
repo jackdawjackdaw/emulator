@@ -15,19 +15,27 @@
 
 /**
  * the fn ptr to the covariance function, this is the most called function in libEmu
- * you can change this when you setup the optstruct
- * WARNING: changing this will probably break the code as there is perhaps a final 
- * argument to the gaussian cov fn and not the others
+ * you can change this when you setup the optstruct.
  */
 double (*covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int);
 
 void print_matrix(gsl_matrix* m, int nx, int ny);
 
 double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
-double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*thetas, int nthetas, int nparams);
-double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
+
+void derivative_l_gauss(gsl_matrix *dCdTheta, gsl_matrix* xmodel, 
+												double thetaLength, int index, int nmodel_points, int nparams);
+
 double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
+
+void derivative_l_matern_three(gsl_matrix *dCdTheta, gsl_matrix* xmodel, double thetaLength,
+															  int index, int nmodel_points, int nparams);
+
 double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
+
+void derivative_l_matern_five(gsl_matrix *dCdTheta, gsl_matrix* xmodel, double thetaLength,
+															int index, int nmodel_points, int nparams);
+
 
 void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams);
 
@@ -41,4 +49,9 @@ double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_ve
 
 
 void initialise_new_x(gsl_matrix* new_x, int nparams, int nemulate_points, double emulate_min, double emulate_max);
+
+/* deprecated */
+/* double covariance_fn_gaussian_nondiag(gsl_vector* xm, gsl_vector*xn, gsl_vector*thetas, int nthetas, int nparams); */
+/* double covariance_fn_matern(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams); */
+
 #endif

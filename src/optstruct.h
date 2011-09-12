@@ -5,6 +5,7 @@
 #include "modelstruct.h"
 #include "libEmu/regression.h"
 #include "libEmu/emulator.h"
+
 #include <string.h>
 
 /**
@@ -106,7 +107,6 @@ void setup_cov_fn(optstruct *opts);
 void setup_regression(optstruct *opts);
 
 void setup_optimization_ranges(optstruct* options, modelstruct* the_model);
-
 
 
 #endif

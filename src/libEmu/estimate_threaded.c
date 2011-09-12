@@ -21,7 +21,7 @@ pthread_spinlock_t results_spin;
  */
 
 /* how many lots of thread_level_tries to do */
-int ntries = 8; 
+int ntries = 16; 
 /* mutex protected counter to keep track of completed jobs */
 int jobnumber = 0; 
 /* global spot for the best thetas to be kept in */

@@ -205,9 +205,6 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 			/* try the other version first*/
 			getGradientExactGauss(xvalue, grad, nparams, args);
 
-			/* evaluate the gradient here */
-			//gradientFn(fn, xvalue, grad, nparams, args);
-
 			/* fprintf(stderr,"Numeric grad = "); */
 			/* for(i = 0; i < nparams; i++){ */
 			/* 	fprintf(stderr,"%f\t", grad[i]); */
@@ -231,7 +228,7 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 		//fprintf(stderr, "%s\n", task);
 		if(count > nsteps){ // also stop if we go too long
 			go_flag = 0;
-			fprintf(stderr, "stopping early in lbfgs\n");
+			fprintf(stderr, "stopping early in lbfgs (no converge)\n");
 		}
 	}
 		
