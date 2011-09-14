@@ -138,9 +138,14 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 {
 	int i = 0;
 	char buffer[128];
-	double bigRANGE = 25.0;
+	double low, high;
+	double bigRANGE = 10.0;
 	double rangeMin = 0.0, rangeMax = 0.0;
 	double fixedNuggetLeeWay = 0.0 ;
+	double rangeMinLog = -15;
+
+	double rangeMinNugget = 0.0000001;
+	double rangeMaxNugget = 0.00001; //what's a sensible upper limit here?
 	/** 
 	 * alloc the grad_ranges matrix in the options and 
 	 * put in some sensible defaults 
@@ -148,52 +153,56 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	options->grad_ranges = gsl_matrix_alloc(options->nthetas, 2);
 
 	/* 
-	 * we'll constrain the amplitude of the cov fn to being within 0..1
+	 * setup that we're using a log scale
 	 */
-	gsl_matrix_set(options->grad_ranges, 0, 0, 0.000000001);
-	gsl_matrix_set(options->grad_ranges, 0, 1, 1.0);
-	/*
-	 * fix the nugget too
-	 */
-	gsl_matrix_set(options->grad_ranges, 1, 0, 0.000000001);
-	gsl_matrix_set(options->grad_ranges, 1, 1, 0.005);
+	if(options->cov_fn_index == POWEREXPCOVFN){
+		rangeMin = rangeMinLog;
+		rangeMax = 5;
+	} else {
+		rangeMin = 0;
+		rangeMax = bigRANGE;
+	}
+
+	gsl_matrix_set(options->grad_ranges, 0, 0, 0.0);
+	gsl_matrix_set(options->grad_ranges, 0, 1, rangeMax);
 
 
-	if(options->use_data_scales){ // use length scales set by the data
-		for(i = 0; i < options->nthetas; i++){
-			if(i > 1){
-				rangeMax = bigRANGE;
-				// need to get the fucking xmodel too, poop
-				//rangeMin = 0.5*log(gsl_vector_get(the_model->sample_scales, i-2));
+	gsl_matrix_set(options->grad_ranges, 1, 0, rangeMinNugget);
+	gsl_matrix_set(options->grad_ranges, 1, 1, rangeMaxNugget);
+
+	if(options->use_data_scales){ 
+		// use length scales set by the data
+		for(i = 2; i < options->nthetas; i++){
+
+			if(options->cov_fn_index == POWEREXPCOVFN){
+				rangeMin = 0.5*log(gsl_vector_get(the_model->sample_scales, i-2));
+				} else {
 				rangeMin = 0.5*(gsl_vector_get(the_model->sample_scales, i-2));
-				if(rangeMin > rangeMax){
-					fprintf(stderr, "#ranges failed\n");
-					printf("# %d ranges: %lf %lf\n", i, rangeMin, rangeMax);
-					printf("# sampleScale: %lf\n", gsl_vector_get(the_model->sample_scales, i-2));
-					exit(EXIT_FAILURE);
-				}
-				gsl_matrix_set(options->grad_ranges, i, 0, rangeMin);
-				gsl_matrix_set(options->grad_ranges, i, 1, rangeMax);
 			}
-			if(i == 0){
-				printf("# %d ranges: %lf %lf (scale)\n", i, rangeMin, rangeMax); 
-			} if (i == 1){
-				printf("# %d ranges: %lf %lf (nugget)\n", i, rangeMin, rangeMax); 
-			} else if (i > 1) {
+			
+			if(rangeMin > rangeMax){
+				fprintf(stderr, "#ranges failed\n");
 				printf("# %d ranges: %lf %lf\n", i, rangeMin, rangeMax);
+				printf("# sampleScale: %lf\n", gsl_vector_get(the_model->sample_scales, i-2));
+				exit(EXIT_FAILURE);
 			}
-			if(isinf(rangeMin) == -1){
-				rangeMin = 0.00001;
-			}
+			gsl_matrix_set(options->grad_ranges, i, 0, rangeMin);
+			gsl_matrix_set(options->grad_ranges, i, 1, rangeMax);
+		} 
+
+		if(isinf(rangeMin) == -1){
+			rangeMin = 0.00001;
 		}
+
 	} else { // use some default scales
-		/* these are log-scaled ranges, note the negative lower bound */
-		for(i = 0; i < options->nthetas; i++){
-			gsl_matrix_set(options->grad_ranges, i, 0, 0.00001);
-			gsl_matrix_set(options->grad_ranges, i, 1, bigRANGE);
-		}
+
+		for(i = 2; i < options->nthetas; i++){
+			gsl_matrix_set(options->grad_ranges, i, 0, rangeMin);
+			gsl_matrix_set(options->grad_ranges, i, 1, rangeMax);
+		} 
 	
 	}
+
 
 	if(options->fixed_nugget_mode == 1){
 		// force the nugget to be fixed_nugget +- 5%
@@ -204,10 +213,20 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 					 ,options->fixed_nugget + fixedNuggetLeeWay);
 	}		
 
-	/* for(i = 0; i < options->nthetas;i++){ */
-	/* 	sprintf(buffer, "%d %g %g\n", i, gsl_matrix_get(options->grad_ranges, i, 0), gsl_matrix_get(options->grad_ranges, i, 1)); */
-	/* 	message(buffer, 1); */
-	/* } */
+
+	for(i = 0; i < options->nthetas; i++){
+			low = gsl_matrix_get(options->grad_ranges, i, 0);
+			high = gsl_matrix_get(options->grad_ranges, i, 1);
+		
+		if(i == 0){
+			printf("# %d ranges: %lf %lf (scale)\n", i, low, high); 
+		} if (i == 1){
+			printf("# %d ranges: %lf %lf (nugget)\n", i, low, high); 
+		} else if (i > 1) {
+			printf("# %d ranges: %lf %lf\n", i, low, high);
+		}
+	}
+
 
 }
 
