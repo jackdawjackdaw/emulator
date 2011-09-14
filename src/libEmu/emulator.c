@@ -117,7 +117,9 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
 		xn_temp = gsl_vector_get(xn, i);
 
-		r_temp = gsl_vector_get(thetas, i+2);
+		//r_temp = gsl_vector_get(thetas, i+2);
+    r_temp = exp(gsl_vector_get(thetas, i+2));
+
 		// fix alpha = 2.0
 		//r_temp = pow(r_temp , alpha); 
 		r_temp = r_temp * r_temp;
@@ -147,7 +149,6 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 	 */
 	if(truecount == nparams) {
 		// i.e the two vectors are hopefully the same
-		// add the nugget
 		covariance += gsl_vector_get(thetas,1);
 	}
 
@@ -158,11 +159,15 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 /* 
  * compute a matrix of dC/dtheta-length / theta_0 for 
  * the gaussian covariance function c(x,y) = theta_0 * exp( - 1/2 * (x-y)^2 / theta_L^2 ) + theta_1
- * where theta_L is the scale along one of the nparams dimensions 
+ * where theta_L = exp(theta_2) is the scale along one of the nparams dimensions 
  *  
  * if r^2 = (x-y)^2 then
+ *
+ * dC/dtheta_l / theta_0  = \frac{r^2 } {\theta_L^3}  exp(-1/2 * r^2 / theta_L^2 ) 
  * 
- * dC/theta_l / theta_0  = \frac{r^2 } {\theta_L^3}  exp(-1/2 * r^2 / theta_L^2 ) 
+ * but we really want dC/dtheta
+ * 
+ * dC/dtheta / exp(theta_0) = exp(-0.5 * exp(-2*theta_L) * r^2  - 2*theta_L) * r^2
  * 
  * if alpha is ever modified above, this should also be changed
  */
@@ -173,16 +178,32 @@ void derivative_l_gauss(gsl_matrix *dCdTheta, gsl_matrix* xmodel,
 	double rtemp;
 	const int nthetasConstant = 2;
 	int indexScaled = index - nthetasConstant;
-	double thetaLCubed = thetaLength * thetaLength * thetaLength;
+	double thetaLCubed;
 	double partialCov = 0.0;
+	double expTheta = exp(-2*thetaLength);
+
+	//thetaLCubed = thetaLength * thetaLength * thetaLength;
 
 	for(i = 0; i < nmodel_points; i++){
 		for(j = 0; j < nmodel_points; j++){
+
 			// is this the correct indexing into xmodel?
-			rtemp= gsl_matrix_get(xmodel, i, indexScaled) - gsl_matrix_get(xmodel, j, indexScaled);
-			scale = (rtemp * rtemp) / (thetaLCubed);
-			partialCov = exp(-1.0/2.0*(rtemp*rtemp)/ thetaLength*thetaLength);
-			gsl_matrix_set(dCdTheta, i, j, scale*partialCov);
+			rtemp = gsl_matrix_get(xmodel, i, indexScaled) - gsl_matrix_get(xmodel, j, indexScaled); 
+			/*
+			 * this is the correct form for the un logged thetas 
+			 * dC/dtheta_l
+			 */
+			
+			/* scale = (rtemp * rtemp) / (thetaLCubed); */
+			/* partialCov = exp(-(0.5*rtemp*rtemp)/ thetaLength*thetaLength); */
+			/* gsl_matrix_set(dCdTheta, i, j, scale*partialCov); */
+
+			/*
+			 * if we have defined our thetas on a log scale then
+			 * we need to use the dC/dtheta expression
+			 */
+			partialCov = exp(-0.5*expTheta *rtemp*rtemp - 2*thetaLength)*rtemp*rtemp;
+			gsl_matrix_set(dCdTheta, i, j, partialCov);
 		}
 	}
 	

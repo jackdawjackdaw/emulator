@@ -226,7 +226,9 @@ void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate
 	// the rest: dC/dN_{h} = amp * dC/d\theta
 	
 	// first, get the scale parameter
+
 	amp = gsl_vector_get(xk, 0); 
+
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 
 	gsl_matrix_scale(temp_matrix, 1.0/amp); //1/theta1* C
