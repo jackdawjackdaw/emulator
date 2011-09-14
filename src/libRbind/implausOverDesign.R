@@ -26,7 +26,9 @@ implausObsOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal, estim.res
   nModelPoints <- dim(estim.result$des.scaled)[1]
 
   # run the emulator over the 2d plane of desA, desB
-  emu.result <- emulateObsOverDesign(obs, thetas, estim.result$des.scaled, desA, desB, fixedVal, npts)
+  emu.result <- emulateObsOverDesign(obs, thetas, estim.result$des.scaled,
+                                     desA, desB, fixedVal, npts, cov.fn=estim.result$cov.fn,
+                                     reg.order=estim.result$reg.order)
 
   emu.mean <- matrix(emu.result$mean, nrow=npts, ncol=npts)
   emu.var <- matrix(emu.result$var, nrow=npts, ncol=npts)
@@ -344,11 +346,21 @@ gridImplausSweep <- function(estim.result=estimResult, exp.data, obsIndex, dimA,
   } 
   
   pointList <- as.matrix(pointGrid)
+
+
+  if(estim.result$cov.fn == 1){
+    nthetas <- nParams + 2
+  } else {
+    nthetas <- 3
+  }
+ 
   
   emuRes <- callEmulateAtList( list(xmodel=des, training=obs),
                               estim.result$thetas[obsIndex,], pointList,
                               nemupts = nEmuPts, nmodelpoints = nModelPoints,
-                              nparams = nParams, nthetas = nParams + 2 )
+                              nparams = nParams, nthetas = nthetas,
+                              cov.fn = estim.result$cov.fn,
+                              reg.order = estim.result$reg.order)
 
   # now unscale the data
   # actually because paraview is retarded, we're not going to do this

@@ -28,7 +28,7 @@
 ## train.scaled -> the scaled and centered training points (code output)
 ## cov.fn -> an index 1..3 which fixes which covariance model we use
 ## 
-doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL, cov.fn.in=1){
+doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL, cov.fn.in=1, reg.order.in=1){
 
   nobs <- dim(modelData)[2]
   
@@ -55,14 +55,16 @@ doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL, cov.fn.in=1){
       sdVec[i] <- sum(expData$errModel.stat[,i]**2) / scale**2 
     }
     combinedThetas <- multidim(scaledDesign, nmodelpts=nruns,
-                               training=scaledModelData, nydims=nbins, fixedNugget=sdVec, cov.fn=cov.fn.in)
+                               training=scaledModelData, nydims=nbins, fixedNugget=sdVec,
+                               cov.fn=cov.fn.in, reg.order=reg.order.in)
   }
   else {
     combinedThetas <- multidim(scaledDesign, nmodelpts=nruns,
-                               training=scaledModelData, nydims=nbins, cov.fn=cov.fn.in)
+                               training=scaledModelData, nydims=nbins,
+                               cov.fn=cov.fn.in, reg.order=reg.order.in)
   }
 
-  result <- list(thetas=combinedThetas, des.scaled=scaledDesign, train.scaled=scaledModelData)
+  result <- list(thetas=combinedThetas, des.scaled=scaledDesign, train.scaled=scaledModelData, cov.fn=cov.fn.in, reg.order=reg.order.in)
   invisible(result)
 }
 
@@ -75,7 +77,7 @@ doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL, cov.fn.in=1){
 ## 
 ## fullDesign is there as a kludge
 emulateObsOverDesign <- function(observable, thetas, fullDesign,
-                                 designA, designB, fixedValVec,nEmuPts){
+                                 designA, designB, fixedValVec,nEmuPts, cov.fn=1, reg.order=1){
   rangeA <- c(min(designA), max(designA))
   rangeB <- c(min(designB), max(designB))
   nparams <- 2 + length(fixedValVec)
@@ -100,7 +102,12 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
     }
   }
 
-  
+
+  if(cov.fn == 1){
+    nthetas <- nparams + 2
+  } else {
+    nthetas <- 3
+  }
   
   # now we can emulate all these points at once
   emuRes <- callEmulateAtList(list(xmodel=fullDesign, training=observable),
@@ -108,7 +115,8 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
                               nemupts = dim(pointList)[1],
                               nmodelpoints = nmodelpoints,
                               nparams = nparams, # at least A and B, right?
-                              nthetas = nparams + 2) # for the power exp model
+                              nthetas = nthetas,
+                              cov.fn=cov.fn, reg.order=reg.order) 
   emuRes
 }
 
@@ -142,7 +150,8 @@ plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
   
   emu.result <- emulateObsOverDesign(estim.result$train.scaled[,obsIndex], estim.result$thetas[obsIndex,],
                                      estim.result$des.scaled, designA,
-                                     designB, fixedVal, npts)
+                                     designB, fixedVal, npts,
+                                     estim.result$cov.fn, estim.result$reg.order)
 
    
   mean <- matrix(emu.result$mean, nrow=npts, ncol=npts)
@@ -287,10 +296,17 @@ gridEmulatorSweep <- function(estim.result=estimResult, obsIndex, dimA, dimB, di
   pointList <- as.matrix(pointGrid)
   
   # now we emulate all these points (this will probbaly be slow)
+  if(estim.result$cov.fn == 1){
+    nthetas <- nParams + 2
+  } else{
+    nthetas <- 3
+  }
   emuRes <- callEmulateAtList( list(xmodel=des, training=obs),
                               estim.result$thetas[obsIndex,], pointList,
                               nemupts = nEmuPts, nmodelpoints = nModelPoints,
-                              nparams = nParams, nthetas = nParams + 2 )
+                              nparams = nParams, nthetas = nthetas,
+                              cov.fn=estim.result$cov.fn,
+                              reg.order=estim.result$reg.order)
 
   # now unscale the data
   if(unscale==TRUE){
