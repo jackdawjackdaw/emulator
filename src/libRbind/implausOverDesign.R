@@ -179,7 +179,7 @@ stepPlotDimensionImplaus <- function(obsIndex, plotDimA, plotDimB, stepDim, fixe
   
   stepSize <- (maxVal - minVal) / nsteps
 
-  par(mfrow=c(3,3), mar=c(1,1,0,0), oma=c(4,5,0,0))
+  par(mfrow=c(3,3), mar=c(1,1,0,0), oma=c(4,5,3,0))
 
   for(i in 0:(nsteps-1)){
     fixV <- minVal + stepSize * i
@@ -203,6 +203,13 @@ stepPlotDimensionImplaus <- function(obsIndex, plotDimA, plotDimB, stepDim, fixe
       
     }
   }
+  par(mfrow=c(1,1))
+  if(is.null(fixedVals)==FALSE){
+    buffer <- paste("obs: ", obsIndex, "fixed: ", fixedVals)
+  } else {
+    buffer <- paste("obs: ", obsIndex)
+  }
+  title(main=buffer, outer=TRUE)
 }
 
 
@@ -286,7 +293,7 @@ computeImplaus <- function(obsIndex, emu.data, expData){
   # propagated by the emulator
 
   # scalar matrix divide i hope?
-  I <- num / denom
+  I <- sqrt(num / denom)
 
   I
 }

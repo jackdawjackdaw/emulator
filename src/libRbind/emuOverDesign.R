@@ -212,7 +212,7 @@ stepPlotDimension <- function(estim.result=estimResult, obsIndex, plotDimA, plot
   
   stepSize <- (maxVal - minVal) / nsteps
 
-  par(mfrow=c(3,3), mar=c(1,1,0,0), oma=c(4,5,0,0))
+  par(mfrow=c(3,3), mar=c(1,1,0,0), oma=c(4,5,3,0))
 
   for(i in 0:(nsteps-1)){
     fixV <- minVal + stepSize * i
@@ -238,6 +238,13 @@ stepPlotDimension <- function(estim.result=estimResult, obsIndex, plotDimA, plot
       
     }
   }
+  par(mfrow=c(1,1))
+  if(is.null(fixedVals)==FALSE){
+    buffer <- paste("obs: ", obsIndex, "fixed: ", fixedVals)
+  } else {
+    buffer <- paste("obs: ", obsIndex)
+  }
+  title(buffer, outer=TRUE)
 }
 
 ##
