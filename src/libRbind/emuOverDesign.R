@@ -92,13 +92,25 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
   var <- matrix(0, nrow=nEmuPts, ncol=nEmuPts)
   pointList <- matrix(0, nrow=nEmuPts**2, ncol=nparams)
 
+
   
   
   for(i in 1:nEmuPts){
     for(j in 1:nEmuPts){
       # this was for some reason rbind(rangeA.., rangeB..., fixedValVec) which magically worked for fixedValVec being
       # a single number, otherwise we need to cons the values together
-      pointList[j+nEmuPts*(i-1),] = c(rangeA[1]+i*stepSizeA, rangeB[1]+j*stepSizeB, fixedValVec)
+      pointVec <- rep(NA, nparams)
+      pointVec[designA] <- rangeA[1]+i*stepSizeA
+      pointVec[designB] <- rangeB[1]+j*stepSizeB
+      repCount <- 1
+      
+      for(vecIndex in 1:nparams){
+        if( is.na(pointVec[vecIndex]) == TRUE){
+          pointVec[vecIndex] <- fixedValVec[repCount]
+          repCount <- repCount + 1
+        }
+      }
+      pointList[j+nEmuPts*(i-1),] <- pointVec
     }
   }
 
@@ -142,7 +154,7 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
 plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
                               xlabel, ylabel, titleIn, plotDes=FALSE, unscale=TRUE, estim.result){
   npts <- 32
-  print(estim.result$thetas[obsIndex,])
+  #print(estim.result$thetas[obsIndex,])
 
   #
   designA <- estim.result$des.scaled[,dAIndex]
