@@ -72,10 +72,15 @@ doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL, cov.fn.in=1, reg.o
 ## emulates the given observable over the ranges of design vectors A and B
 ## 
 ## we keep the other observables fixed at the values given in the  "fixedValVec"
+## these values must be supplied in ascending parameter index order, see the construction
+## of pointList
+## 
 ## the thetas should just be the vector of thetas for this observable
 ## nEmuPts is the number of points per design variable (the sqrt of the total)
 ## 
 ## fullDesign is there as a kludge
+##
+
 emulateObsOverDesign <- function(observable, thetas, fullDesign,
                                  designA, designB, fixedValVec,nEmuPts, cov.fn=1, reg.order=1){
   rangeA <- c(min(designA), max(designA))
@@ -92,16 +97,28 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
   var <- matrix(0, nrow=nEmuPts, ncol=nEmuPts)
   pointList <- matrix(0, nrow=nEmuPts**2, ncol=nparams)
 
-
+  # have to figure out which index of the design we're dealing with
+  for(i in 1:nparams){
+    # sum of false false false .. == 0
+    if(sum(fullDesign[,i] == designA) != 0){
+      aIndex <- i
+    }
+    if(sum(fullDesign[,i] == designB) != 0){
+      bIndex <- i
+    }
+  }
+  
   
   
   for(i in 1:nEmuPts){
     for(j in 1:nEmuPts){
       # this was for some reason rbind(rangeA.., rangeB..., fixedValVec) which magically worked for fixedValVec being
       # a single number, otherwise we need to cons the values together
+      # 
+
       pointVec <- rep(NA, nparams)
-      pointVec[designA] <- rangeA[1]+i*stepSizeA
-      pointVec[designB] <- rangeB[1]+j*stepSizeB
+      pointVec[aIndex] <- rangeA[1]+i*stepSizeA
+      pointVec[bIndex] <- rangeB[1]+j*stepSizeB
       repCount <- 1
       
       for(vecIndex in 1:nparams){
