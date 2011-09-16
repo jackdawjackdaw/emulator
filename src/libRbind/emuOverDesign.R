@@ -217,16 +217,14 @@ plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
   
   image(range1, range2, t(mean), axes=FALSE, col=heat.colors(16), xlab=xlabel, ylab=ylabel)
   contour(range1, range2, t(mean), nlevels=10, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
+  legend("topright", titleIn, bg="white")
   if(plotDes==TRUE){
     points(designA, designB, pch=3)
     title(xlab=xlabel, ylab=ylabel, outer=TRUE, cex.lab=2.0)
     axis(1, cex.axis=1.0)
     axis(2, cex.axis=1.0)
-    legend("topright", titleIn, bg="white")
     print(xlabel)
     print(ylabel)
-  } else {
-    legend("topright", titleIn, bg="white")
   }
 }
 
