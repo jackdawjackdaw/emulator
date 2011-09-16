@@ -20,7 +20,7 @@ implausObsOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal, estim.res
   obs <- estim.result$train.scaled[,obsIndex]
   thetas <- estim.result$thetas[obsIndex,]
   desA <- estim.result$des.scaled[,dAIndex]
-  desB <- estim.result$des.scaled[,dAIndex]
+  desB <- estim.result$des.scaled[,dBIndex]
   
   nparams <- dim(estim.result$des.scaled)[2]
   nModelPoints <- dim(estim.result$des.scaled)[1]
@@ -68,6 +68,7 @@ implausObsOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal, estim.res
 # implausResult is the mega list obtained from implausObsOverDesign
 plotImplausOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
                         xlabel="", ylabel="", titleIn="", plotDes=FALSE, estim.result, exp.data, feasCut=4){
+
   npts.side <- 32
   implaus.result <- implausObsOverDesign(obsIndex, dAIndex, dBIndex, fixedVal, estim.result, exp.data, npts=npts.side)
   # cut on some scale (say 5)
@@ -173,6 +174,7 @@ plotImplausOverDesignCombined <- function(dAIndex, dBIndex, fixedVal, xlabel="",
 ## fixedVals -> a vector of additional fixed values (empty unless nparams > 3)
 stepPlotDimensionImplaus <- function(obsIndex, plotDimA, plotDimB, stepDim, fixedVals=NULL, nsteps=9,
                                      estim.result, exp.data){
+
 
   minVal <- min(estim.result$des.scaled[,stepDim])
   maxVal <- max(estim.result$des.scaled[,stepDim])

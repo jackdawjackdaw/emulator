@@ -108,7 +108,9 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
     }
   }
   
-  
+  if(aIndex == bIndex){
+    stop("aindex and bindex are the same!")
+  }
   
   for(i in 1:nEmuPts){
     for(j in 1:nEmuPts){
@@ -145,7 +147,9 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
                               nmodelpoints = nmodelpoints,
                               nparams = nparams, # at least A and B, right?
                               nthetas = nthetas,
-                              cov.fn=cov.fn, reg.order=reg.order) 
+                              cov.fn=cov.fn, reg.order=reg.order)
+
+
   emuRes
 }
 
