@@ -156,6 +156,8 @@ callEmulateAtPoint <- function(model, thetas, point, nmodelpts, nparams=1, nthet
 ## @return res$var emulated var at each location in pointList
 callEmulateAtList <- function(model, thetas, pointList,nemupts, nmodelpoints, nparams=1, nthetas=3,
                               cov.fn=1, reg.order=1){
+
+  checkCovFn(nthetas, nparams, cov.fn)
   
   res <- .C("callEmulateAtList",
             as.double((model$xmodel)),
@@ -171,6 +173,7 @@ callEmulateAtList <- function(model, thetas, pointList,nemupts, nmodelpoints, np
             as.integer(cov.fn),
             as.integer(reg.order)
             )
+
   results <- list(des=pointList, mean=res$finaly, var=res$finalvar)
 }
 

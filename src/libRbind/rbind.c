@@ -152,7 +152,11 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	the_point_array = gsl_matrix_alloc(options.nemulate_points, options.nparams);
 
 
-	// fill in the point array
+	// fill in the_point_array from points_in
+	// for(i, ...)
+	// for(j, ...)
+	// gsl_matrix_set(the_point_array, j, i, points_in[j+ny*i]);
+	// so the points are evaluated in the natural order of the matrix
 	convertDoubleToMatrix(the_point_array, points_in, options.nparams, options.nemulate_points);
 	//convertDoubleToMatrix(the_point_array, points_in, options.nemulate_points, options.nparams);
 	
@@ -164,8 +168,9 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	// fill in the training vec
 	convertDoubleToVector(the_model.training_vector, training_in, options.nmodel_points);
 	
-
 	emulateAtPointList(&the_model, the_point_array, &options, final_emulated_y, final_emulated_variance);	
+	
+	
 	
 	gsl_matrix_free(the_point_array);
 	// tidy up
@@ -173,6 +178,7 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	free_optstruct(&options);
 
 }
+
 
 /**
  * computes the mean and variance at point_in, similar to callEmulateAtList
