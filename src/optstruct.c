@@ -145,7 +145,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	double rangeMinLog = -15;
 
 	double rangeMinNugget = 0.0000001;
-	double rangeMaxNugget = 0.00001; //what's a sensible upper limit here?
+	double rangeMaxNugget = 0.01; //what's a sensible upper limit here?
 	/** 
 	 * alloc the grad_ranges matrix in the options and 
 	 * put in some sensible defaults 
