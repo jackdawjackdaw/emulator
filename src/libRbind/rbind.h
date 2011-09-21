@@ -34,7 +34,21 @@
  * 
  */
 
-
+/**
+ * we'll alloc an instance of this to hold the various data structures
+ * needed by setupEmulateMC, callEmulateMC 
+ * allowing many rapid samples to be generated (hopefully)
+ */
+struct emulateMCData{
+	optstruct* options;
+	modelstruct* model;
+	gsl_matrix* cov_matrix;
+	gsl_matrix* cov_matrix_inverse;
+	gsl_vector* beta_vector;
+	gsl_matrix* h_matrix;
+};
+	
+struct emulateMCData emuMCData;
 
 
 /**
@@ -62,6 +76,16 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 
 void callInfo(void);
 
+
+/** 
+ * functions for quick calls for getting samples of the posterior density
+ * you need to call setupEmulateMC first
+ */
+void setupEmulateMC(double* xmodel_in, int* nparams_in, double* training_in, 
+										 int* nmodelpts, double* thetas_in, int* nthetas_in, 
+										int *cov_fn_index_in, int*regression_order_in);
+void callEmulateMC(double* point_in, double* mean_out, double* var_out);
+void freeEmulateMC(void);
 
 
 /**
@@ -101,12 +125,21 @@ R_NativePrimitiveArgType callEmuAtPtArgs[11] = {REALSXP, INTSXP, REALSXP, REALSX
 R_NativePrimitiveArgType callEvalListArgs[10] = {REALSXP, INTSXP, REALSXP, INTSXP, REALSXP, INTSXP,
 																						 INTSXP, REALSXP, INTSXP, INTSXP};
 
+R_NativePrimitiveArgType setupEmulateMCArgs[8] = {REALSXP, INTSXP, REALSXP,, 
+																									INTSXP, REALSXP, INTSXP,
+																									INTSXP, INTSXP};
+
+R_NativePrimitiveArgType callEmulateMCArgs[3] = {REALSXP, REALSXP, REALSXP};
+
+
 
 R_CMethodDef cMethods[] = {
 	{"callEstimate", (DL_FUNC)&callEstimate, 10, callEstArgs},
 	{"callEmulateAtList", (DL_FUNC)&callEmulateAtList, 12, callEmuAtListArgs},
 	{"callEmulateAtPt", (DL_FUNC)&callEmulateAtPt, 11, callEmuAtPtArgs},
 	{"callEvalLhoodList", (DL_FUNC)&callEvalLhoodList, 10, callEvalListArgs},
+	{"setupEmulateMC", (DL_FUNC)&setupEmulateMC, 9, setupEmulateMCArgs},
+	{"callEmulateMC", (DL_FUNC)&callEmulateMC, 3, callEmulateMCArgs},
 	{NULL, NULL, 0}
 };
 

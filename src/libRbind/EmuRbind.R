@@ -230,7 +230,43 @@ checkCovFn <- function(nthetas, nparams, cov.fn){
     }
   }
 }
-    
+
+##
+## fns for MC calls to the emulator
+
+## first setup the structure in rbind.h with copies of the model, options and
+## inverse cov matrix etc, so we don't have to do the inversion for each
+## evaluation in the MC chain.
+setup.MC <- function(model, thetas, nmodelpoints, nparams=1, nthetas=3, cov.fn=1, reg.order=1){
+  checkCovFn(nthetas, nparams, cov.fn)
+
+  res <- .C("setupEmulateMC",
+            as.double((model$xmodel)),
+            as.integer(nparams),
+            as.double(model$training),
+            as.integer(nmodelpoints),
+            as.double(thetas),
+            as.integer(nthetas),
+            as.integer(cov.fn),
+            as.integer(reg.order)
+            )
+}
+
+## make a quick call to the emulator mean and variance given a previous setup
+##
+emulate.MC <- function(point){
+  res <- .C("callEmulateMC",
+            as.double(point),
+            finalMean = double(1),
+            finalVar = double(1))
+
+  results <- list(des=point, mean=res$finalMean, var=res$finalVar)  
+}
+
+## clear the mc data, have to do this before making another call
+destroy.MC <- function(){
+  .C("freeEmulateMC")
+}
 
   
 

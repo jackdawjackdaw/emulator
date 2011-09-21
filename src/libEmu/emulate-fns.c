@@ -191,6 +191,42 @@ void emulateAtPoint(modelstruct *the_model, gsl_vector* the_point, optstruct* op
 }
 
 /**
+ * emulate the model at the location the_point using the precomputed inverse cov_matrix, beta_vector, h_matrix and 
+ * so forth
+ */
+
+void emulateQuick( modelstruct *the_model, gsl_vector* the_point, optstruct* options, 
+									 double* mean_out, double* var_out, gsl_matrix *h_matrix, gsl_matrix *cinverse, gsl_vector* beta_vector ){
+
+	double kappa;
+	double temp_mean, temp_var;
+	gsl_vector_view new_x_row;
+	gsl_vector *kplus = gsl_vector_alloc(options->nmodel_points);
+	gsl_vector *h_vector = gsl_vector_alloc(options->nregression_fns);
+
+	
+	makeKVector(kplus, the_model->xmodel, the_point, the_model->thetas, options->nmodel_points, options->nthetas, options->nparams);
+
+	makeHVector(h_vector, the_point, options->nparams);
+	
+	temp_mean = makeEmulatedMean(cinverse, the_model->training_vector, kplus, h_vector, h_matrix, beta_vector, options->nmodel_points);
+
+	kappa = covariance_fn(the_point, the_point, the_model->thetas, options->nthetas, options->nparams);
+
+	temp_var = makeEmulatedVariance(cinverse, kplus, h_vector, h_matrix, kappa, options->nmodel_points, options->nregression_fns);
+
+	//fprintf(stderr, "temp_mean %lf\ttemp_var %lf\n", temp_mean, temp_var);
+	// save the results
+	*mean_out = temp_mean;
+	*var_out = temp_var;
+
+	gsl_vector_free(kplus);
+	gsl_vector_free(h_vector);
+
+}
+
+
+/**
  * emulate the model at the ith entry in results->new_x
  */
 void emulate_ith_location(modelstruct *the_model, optstruct *options, resultstruct *results,int i, gsl_matrix* h_matrix, gsl_matrix* cinverse, gsl_vector *beta_vector){
