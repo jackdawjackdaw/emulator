@@ -30,8 +30,8 @@ implausObsOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal, estim.res
                                      desA, desB, fixedVal, npts, cov.fn=estim.result$cov.fn,
                                      reg.order=estim.result$reg.order)
 
-  emu.mean <- matrix(emu.result$mean, nrow=npts, ncol=npts)
-  emu.var <- matrix(emu.result$var, nrow=npts, ncol=npts)
+  emu.mean <- matrix(emu.result$mean, nrow=npts, ncol=npts, byrow=TRUE)
+  emu.var <- matrix(emu.result$var, nrow=npts, ncol=npts, byrow=TRUE)
   range1 <- seq(min(desA), max(desA), length=npts)
   range2 <- seq(min(desB), max(desB), length=npts)
 
@@ -96,9 +96,12 @@ plotImplausOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
   desA <- desA * desACenterScale[2] + desACenterScale[1]
   desB <- desB * desBCenterScale[2] + desBCenterScale[1]
 
-  breaks <- seq(from=0, to=feasCut, length.out=13)
-  image(r1, r2, t(implaus.result$feas), axes=FALSE, col=rev(heat.colors(12)), xlab=xlabel, ylab=ylabel)
-  contour(r1, r2, t(implaus.result$feas), nlevels=12, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
+  ils <- c(0.1, 0.2, 0.5, 1.0, 1.5, 2.0)
+  breaks <- c(0, ils)
+  nlevels <- length(ils)
+
+  image(r1, r2, implaus.result$feas, axes=FALSE, col=rev(cm.colors(nlevels)), breaks=breaks, xlab=xlabel, ylab=ylabel)
+  contour(r1, r2, implaus.result$feas, lebels=ils, labels=ils, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
   if(plotDes==TRUE){
     points(desA, desB, pch=3)
     title(xlab=xlabel, ylab=ylabel, outer=TRUE, cex.lab=2.0)
@@ -155,9 +158,13 @@ plotImplausOverDesignCombined <- function(dAIndex, dBIndex, fixedVal, xlabel="",
   desA <- desA * desACenterScale[2] + desACenterScale[1]
   desB <- desB * desBCenterScale[2] + desBCenterScale[1]
 
-  breaks <- seq(from=0, to=feasCut, length.out=13)
-  image(r1, r2, t(maxfeas.mat), axes=FALSE, col=rev(heat.colors(12)), xlab=xlabel, ylab=ylabel)
-  contour(r1, r2, t(maxfeas.mat), nlevels=8, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
+  ils <- c(0.1, 0.2, 0.5, 1.0, 1.5, 2.0)
+  breaks <- c(0, ils)
+  nlevels <- length(ils)
+  image(r1, r2, maxfeas.mat, axes=FALSE, col=rev(cm.colors(nlevels)), breaks=breaks,
+        xlab=xlabel, ylab=ylabel)
+  contour(r1, r2, maxfeas.mat, nlevels=ils, labels=ils, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
+
   if(plotDes==TRUE){
     points(desA, desB, pch=3)
     title(xlab=xlabel, ylab=ylabel, outer=TRUE, cex.lab=2.0)
@@ -270,7 +277,6 @@ computeImplaus <- function(obsIndex, emu.data, expData){
 
   denom <- (emu.data$var + (expData$obsError[obsIndex])**2)
 
-#  browser()
   
   if(is.null(expData$errModel.sys) == FALSE){
     #we'll model the sys error as normally distributed noise with mean zero
@@ -295,7 +301,7 @@ computeImplaus <- function(obsIndex, emu.data, expData){
   # propagated by the emulator
 
   # scalar matrix divide i hope?
-  I <- sqrt(num / denom)
+  I <- num / denom
 
   I
 }

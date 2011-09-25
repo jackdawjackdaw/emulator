@@ -213,19 +213,22 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 					 ,options->fixed_nugget + fixedNuggetLeeWay);
 	}		
 
-
-	for(i = 0; i < options->nthetas; i++){
-			low = gsl_matrix_get(options->grad_ranges, i, 0);
-			high = gsl_matrix_get(options->grad_ranges, i, 1);
+	
+	/** 
+	 * print the ranges, no this is annoying
+	 */
+	/* for(i = 0; i < options->nthetas; i++){ */
+	/* 		low = gsl_matrix_get(options->grad_ranges, i, 0); */
+	/* 		high = gsl_matrix_get(options->grad_ranges, i, 1); */
 		
-		if(i == 0){
-			printf("# %d ranges: %lf %lf (scale)\n", i, low, high); 
-		} if (i == 1){
-			printf("# %d ranges: %lf %lf (nugget)\n", i, low, high); 
-		} else if (i > 1) {
-			printf("# %d ranges: %lf %lf\n", i, low, high);
-		}
-	}
+	/* 	if(i == 0){ */
+	/* 		printf("# %d ranges: %lf %lf (scale)\n", i, low, high);  */
+	/* 	} if (i == 1){ */
+	/* 		printf("# %d ranges: %lf %lf (nugget)\n", i, low, high);  */
+	/* 	} else if (i > 1) { */
+	/* 		printf("# %d ranges: %lf %lf\n", i, low, high); */
+	/* 	} */
+	/* } */
 
 
 }

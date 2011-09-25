@@ -33,7 +33,9 @@ doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL, cov.fn.in=1, reg.o
   nobs <- dim(modelData)[2]
   
   
-# now we want to scale the design onto a unit cube, otherwise the estimation etc is not going to work well
+  ##  now we want to scale the design onto a unit cube, otherwise the estimation etc is not going to work well
+  ## but using the core scale function we actually subtract the mean and then divide out the sample variance which is
+  ## actually a bit different...
   if(is.null(doNotScale)){
     scaledDesign <- scale(designData)
   }  else {
@@ -133,7 +135,6 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
     }
   }
 
-
   if(cov.fn == 1){
     nthetas <- nparams + 2
   } else {
@@ -187,8 +188,8 @@ plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
                                      estim.result$cov.fn, estim.result$reg.order)
 
    
-  mean <- matrix(emu.result$mean, nrow=npts, ncol=npts)
-  var <- matrix(emu.result$var, nrow=npts, ncol=npts)
+  mean <- matrix(emu.result$mean, nrow=npts, ncol=npts, byrow=TRUE)
+  var <- matrix(emu.result$var, nrow=npts, ncol=npts, byrow=TRUE)
 
   range1 <- seq(min(designA), max(designA), length=npts)
   range2 <- seq(min(designB), max(designB), length=npts)
@@ -215,8 +216,8 @@ plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
     designB <- designB * desBScale + desBCenter
   }
   
-  image(range1, range2, t(mean), axes=FALSE, col=heat.colors(16), xlab=xlabel, ylab=ylabel)
-  contour(range1, range2, t(mean), nlevels=10, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
+  image(range1, range2, mean, axes=FALSE, col=heat.colors(16), xlab=xlabel, ylab=ylabel)
+  contour(range1, range2, mean, nlevels=10, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
   legend("topright", titleIn, bg="white")
   if(plotDes==TRUE){
     points(designA, designB, pch=3)
