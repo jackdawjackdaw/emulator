@@ -273,12 +273,16 @@ void emulate_ith_location(modelstruct *the_model, optstruct *options, resultstru
 void chol_inverse_cov_matrix(optstruct* options, gsl_matrix* temp_matrix, gsl_matrix* result_matrix, double* final_determinant_c){
 	int cholesky_test, i;
 	double determinant_c = 0.0;
+	gsl_error_handler_t *temp_handler; // disable the default handler
 	// do a cholesky decomp of the cov matrix, LU is not stable for ill conditioned matrices
+	temp_handler = gsl_set_error_handler_off();
 	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
 	if(cholesky_test == GSL_EDOM){
-		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
+		fprintf(stderr, "trying to cholesky a non postive def matrix, in emulate-fns.c sorry...\n");
 		exit(1);
 	}
+	gsl_set_error_handler(temp_handler);
+
 	// find the determinant and then invert 
 	// the determinant is just the trace squared
 	determinant_c = 1.0;

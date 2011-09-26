@@ -90,7 +90,8 @@ void makeHMatrix(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, in
  * beta = (h_matrix^{T}.cinverse.hmatrix)^{-1} . (h_matrix^{T}.cinverse.yvector)
  */
 void estimateBeta(gsl_vector *beta_vector, gsl_matrix *h_matrix, gsl_matrix* cinverse, gsl_vector *trainingvector, int nmodel_points, int nregression_fns){
-	int i;
+	int i, j, cholesky_test;
+	gsl_error_handler_t *temp_handler;
 	gsl_matrix *htrans_cinverse = gsl_matrix_alloc(nregression_fns, nmodel_points);
 	gsl_matrix *temp_denominator = gsl_matrix_alloc(nregression_fns, nregression_fns);
 	gsl_vector *temp_numerator = gsl_vector_alloc(nregression_fns);
@@ -100,7 +101,38 @@ void estimateBeta(gsl_vector *beta_vector, gsl_matrix *h_matrix, gsl_matrix* cin
 	// now calculate htrans_cinverse.hmatrix
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, htrans_cinverse, h_matrix, 0.0 ,temp_denominator);
 	
-	gsl_linalg_cholesky_decomp(temp_denominator);
+	temp_handler = gsl_set_error_handler_off();
+	cholesky_test = gsl_linalg_cholesky_decomp(temp_denominator);
+	if(cholesky_test == GSL_EDOM){
+		FILE *fptr;
+		fprintf(stderr, "# err: estimateBeta\n");
+		fprintf(stderr, "# trying to cholesky a non postive def matrix, sorry...\n");
+		fprintf(stderr, "# matrix dumped to chol-err.dat\n");
+		fptr = fopen("chol-err.dat", "w");
+		for(i = 0; i < nregression_fns; ++i){
+			for(j = 0; j < nregression_fns; ++j){
+				fprintf(fptr, "%lf ", gsl_matrix_get(temp_denominator, i, j));				
+			}
+			fprintf(fptr, "\n");
+		}
+		fclose(fptr);
+
+		fptr = fopen("chol-err-cinverse.dat", "w");
+		for(i = 0; i < nmodel_points; ++i){
+			for(j = 0; j < nmodel_points; ++j){
+				fprintf(fptr, "%lf ", gsl_matrix_get(cinverse, i, j));				
+			}
+			fprintf(fptr, "\n");
+		}
+		fclose(fptr);
+
+
+
+		exit(1);
+	}
+	gsl_set_error_handler(temp_handler);
+
+
 	gsl_linalg_cholesky_invert(temp_denominator); // temp_denominator = (h_matrix^{T}.cinverse.hmatrix)^{-1}
 	
 	// temp_numerator = htrans_cinverse.trainingvector

@@ -2,7 +2,7 @@
 
 #define SCREWUPVALUE -20000
 
-//#define NUMBERTHREADS 2
+#define NUMBERTHREADS 1
 
 #ifdef USEMUTEX
 // globals for the threads to use
@@ -89,6 +89,8 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * 
 	 */
 	int nthreads = get_number_cpus();
+
+
 	
 	/* force each thread to do at least one of the tries */
 	if(ntries < nthreads){

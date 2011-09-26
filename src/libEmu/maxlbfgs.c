@@ -1,4 +1,5 @@
 #include "maxlbfgs.h"
+#include "gsl/gsl_errno.h"
 
 #define SCREWUPVALUE -20000
 
@@ -116,7 +117,9 @@ double evalLikelyhoodLBFGS_struct(struct estimate_thetas_params *params){
  */
 double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	struct estimate_thetas_params *params = (struct estimate_thetas_params*) args;
-	
+
+	// need to disable the gsl error handler
+	gsl_error_handler_t *temp_handler;
 	gsl_matrix* covariance_matrix = gsl_matrix_alloc(params->options->nmodel_points, params->options->nmodel_points);
 	gsl_matrix* cinverse = gsl_matrix_alloc(params->options->nmodel_points, params->options->nmodel_points);
 	gsl_matrix* temp_matrix = gsl_matrix_alloc(params->options->nmodel_points, params->options->nmodel_points);
@@ -125,7 +128,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	//gsl_permutation *c_LU_permutation = gsl_permutation_alloc(params->options->nmodel_points);	
 	double determinant_c = 0.0;
 	double temp_val = 0.0;
-	int i;
+	int i, j;
 	int cholesky_test = 0;
 		
 	// copy the given double vector into the gsl vector
@@ -139,11 +142,24 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 	//print_matrix(temp_matrix, params->options->nmodel_points, params->options->nmodel_points);
 
 	// do a cholesky decomp of the cov matrix, LU is not stable for ill conditioned matrices
+	temp_handler = gsl_set_error_handler_off();
 	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
+
 	if(cholesky_test == GSL_EDOM){
+		FILE *fptr;
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
+		fprintf(stderr, "matrix dumped to chol-err.dat\n");
+		fptr = fopen("chol-err.dat", "w");
+		for(i = 0; i < params->options->nmodel_points; ++i){
+			for(j = 0; j < params->options->nmodel_points; ++j){
+				fprintf(fptr, "%lf", gsl_matrix_get(temp_matrix, i, j));				
+			}
+			fprintf(fptr, "\n");
+		}
+		fclose(fptr);
 		exit(1);
 	}
+	gsl_set_error_handler(temp_handler);
 
 	// find the determinant and then invert 
 	// the determinant is just the trace squared
@@ -184,7 +200,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
  * 
  */
 void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate, void* args){
-	int nmpoints, nthetas, i;
+	int nmpoints, nthetas, i, j;
 	int nparams;
 	double amp; 
 
@@ -193,6 +209,7 @@ void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate
 	nthetas = nparamsEstimate;
 	nparams = params->options->nparams;
 	int cholesky_test;
+	gsl_error_handler_t *temp_handler;
 	gsl_matrix* covariance_matrix = gsl_matrix_alloc(nmpoints, nmpoints);
 	gsl_matrix* cinverse = gsl_matrix_alloc(nmpoints, nmpoints);
 	gsl_matrix* temp_matrix = gsl_matrix_alloc(nmpoints, nmpoints);
@@ -210,11 +227,23 @@ void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate
 	//print_matrix(temp_matrix, nmpoints, nmpoints);
 
 	// do a cholesky decomp of the cov matrix, LU is not stable for ill conditioned matrices
+	temp_handler = gsl_set_error_handler_off();
 	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
 	if(cholesky_test == GSL_EDOM){
+		FILE *fptr;
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
+		fprintf(stderr, "matrix dumped to chol-err.dat\n");
+		fptr = fopen("chol-err.dat", "w");
+		for (i = 0; i < params->options->nmodel_points; ++i){
+			for (j = 0; j < params->options->nmodel_points; ++j){
+				fprintf(fptr, "%lf", gsl_matrix_get(temp_matrix, i, j));				
+				}
+			fprintf(fptr, "\n");
+		}
+
 		exit(1);
 	}
+	gsl_set_error_handler(temp_handler);
 
 	gsl_linalg_cholesky_invert(temp_matrix);
 	gsl_matrix_memcpy(cinverse, temp_matrix);

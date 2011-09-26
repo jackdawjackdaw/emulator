@@ -174,7 +174,8 @@ emulateObsOverDesign <- function(observable, thetas, fullDesign,
 ## estim.result -> list of thetas, des.scaled, train.scaled created by doCombEstimation
 ## 
 plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
-                              xlabel, ylabel, titleIn, plotDes=FALSE, unscale=TRUE, estim.result){
+                              xlabel, ylabel, titleIn, plotDes=FALSE, unscale=TRUE, estim.result,
+                              plot.var=FALSE){
   npts <- 32
   #print(estim.result$thetas[obsIndex,])
 
@@ -215,9 +216,13 @@ plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
     designA <- designA * desAScale + desACenter
     designB <- designB * desBScale + desBCenter
   }
-  
-  image(range1, range2, mean, axes=FALSE, col=heat.colors(16), xlab=xlabel, ylab=ylabel)
-  contour(range1, range2, mean, nlevels=10, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
+  if(plot.var==FALSE){
+    image(range1, range2, mean, axes=FALSE, col=heat.colors(16), xlab=xlabel, ylab=ylabel)
+    contour(range1, range2, mean, nlevels=10, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
+  } else {
+    image(range1, range2, var, axes=FALSE, col=heat.colors(16), xlab=xlabel, ylab=ylabel)
+    contour(range1, range2, var, nlevels=10, col="black", add=TRUE, cex.lab=0.5, labcex=0.8)
+  }    
   legend("topright", titleIn, bg="white")
   if(plotDes==TRUE){
     points(designA, designB, pch=3)
@@ -237,7 +242,7 @@ plotEmuOverDesign <- function(obsIndex, dAIndex, dBIndex, fixedVal,
 ## repeatedly calls plotEmuOverDesign creating a set of 9 plots of obsIndex which span the stepping dimension stepDim
 ##
 ## fixedVals -> a vector of additional fixed values (empty unless nparams > 3)
-stepPlotDimension <- function(estim.result=estimResult, obsIndex, plotDimA, plotDimB, stepDim, fixedVals=NULL, nsteps=9){
+stepPlotDimension <- function(estim.result=estimResult, obsIndex, plotDimA, plotDimB, stepDim, fixedVals=NULL, nsteps=9, plot.var=FALSE){
 
   minVal <- min(estim.result$des.scaled[,stepDim])
   maxVal <- max(estim.result$des.scaled[,stepDim])
@@ -260,13 +265,13 @@ stepPlotDimension <- function(estim.result=estimResult, obsIndex, plotDimA, plot
       desPlot <- TRUE
       plotEmuOverDesign(obsIndex, plotDimA ,plotDimB, c(fixV, fixedVals),
                         xlabel=desNames[plotDimA], ylabel=desNames[plotDimB], titleIn=buffer,
-                        desPlot, unscale=TRUE, estim.result)
+                        desPlot, unscale=TRUE, estim.result, plot.var=plot.var)
       
     } else {
       desPlot <- FALSE
       plotEmuOverDesign(obsIndex, plotDimA ,plotDimB, c(fixV, fixedVals),
                         xlabel="", ylabel="", titleIn=buffer,
-                        desPlot, unscale=TRUE, estim.result)
+                        desPlot, unscale=TRUE, estim.result, plot.var=plot.var)
       
     }
   }

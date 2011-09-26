@@ -544,7 +544,8 @@ double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_ve
 	gsl_vector *result_holder = gsl_vector_alloc(nmodel_points);
 	gsl_matrix *result_minverse_dot_h = gsl_matrix_alloc(nmodel_points, nregression_fns);
 	gsl_matrix *result_inverse_h_minverse_h = gsl_matrix_alloc(nregression_fns, nregression_fns);	
-
+	gsl_error_handler_t *temp_handler;
+	int i,j, cholesky_test;
 	
 	// result_nreg = (h(x)^T - t(x)^T A^(-1).H) 
 	// where t -> kplus_
@@ -565,7 +566,25 @@ double makeEmulatedVariance(gsl_matrix *inverse_cov_matrix, gsl_vector *kplus_ve
 	// now result_inverse_h_minverse_h is symmetric and so we can consider it as triangular etc and then
 	// do linear solves etc to get the inverse and all that malarky, but since it's only nreg * nreg its 
 	// probably not worth the pain in the blass (arf)
-	gsl_linalg_cholesky_decomp(result_inverse_h_minverse_h);
+	temp_handler = gsl_set_error_handler_off();
+	cholesky_test = gsl_linalg_cholesky_decomp(result_inverse_h_minverse_h);
+	if(cholesky_test == GSL_EDOM){
+		FILE *fptr;		
+		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
+		fprintf(stderr, "matrix dumped to chol-err.dat\n");
+		fptr = fopen("chol-err.dat", "w");
+		for(i = 0; i < nmodel_points; ++i){
+			for(j = 0; j < nmodel_points; ++j){
+				fprintf(fptr, "%lf", gsl_matrix_get(h_matrix, i, j));				
+			}
+			fprintf(fptr, "\n");
+		}
+		fclose(fptr);
+		exit(1);
+	}
+	gsl_set_error_handler(temp_handler);
+
+
 	gsl_linalg_cholesky_invert(result_inverse_h_minverse_h); // now it really is the inverse
 	
 	// now compute regression_cpt = result_nreg . (result_inverse_h_minverse_h)^{-1} . result_nreg
