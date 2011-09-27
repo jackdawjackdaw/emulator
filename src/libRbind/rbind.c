@@ -10,6 +10,7 @@
 
 /**
  * estimate the optimum covariance length scales to reproduce the training data
+ * do this first
  * 
  * the user can force the nugget to be fixed, in this case its value will not be optimized
  * 
@@ -86,7 +87,9 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 }
 
 /**
- * compute the mean and variance at a set of points, for a certain emulator
+ * compute the mean and variance at a set of points (the list), for a certain emulator. 
+ * this is much faster than repeated calls to callEmulateAtPoint
+ * 
  * the emulator is implicitly specified in terms of the training set (xmodel_in, training_in)
  * the hyper-parameters thetas_in and the choice of cov fn (cov_fn_index) and regression model (regression_order)
  * 
@@ -292,6 +295,20 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 void setupEmulateMC(double* xmodel_in, int* nparams_in,  double* training_in, 
 										 int* nmodelpts, double* thetas_in, int* nthetas_in, 
 										int *cov_fn_index_in, int*regression_order_in){
+
+	// call the helper with the mono-variate emuMCData objet
+	setupEmulateMCHelper(&emuMCData, xmodel_in, nparams_in, training_in, 
+									 nmodelpts, thetas_in, nthetas_in, cov_fn_index_in,
+									 regression_order_in);
+}
+
+/** 
+ * internal: called by setupEmulateMC and setupEmulateMCMulti
+ */
+void setupEmulateMCHelper(struct emulateMCData* emuMCData, double* xmodel_in, 
+													int* nparams_in,  double* training_in, 
+										 int* nmodelpts, double* thetas_in, int* nthetas_in, 
+										int *cov_fn_index_in, int*regression_order_in){
 	// we'll setup these structures first and then copy them to the
 	// ones at the scope of rbind.h
 	optstruct* options;
@@ -303,11 +320,11 @@ void setupEmulateMC(double* xmodel_in, int* nparams_in,  double* training_in,
 	gsl_matrix *h_matrix; 
 	gsl_matrix *temp_matrix;
 
-	emuMCData.options = malloc(sizeof(optstruct));
-	emuMCData.model = malloc(sizeof(modelstruct));
+	emuMCData->options = MallocChecked(sizeof(optstruct));
+	emuMCData->model = MallocChecked(sizeof(modelstruct));
 
-	options = emuMCData.options;
-	the_model = emuMCData.model;
+	options = emuMCData->options;
+	the_model = emuMCData->model;
 
 	
 	options->nmodel_points = *nmodelpts;
@@ -348,15 +365,15 @@ void setupEmulateMC(double* xmodel_in, int* nparams_in,  double* training_in,
 	// now we can also generate the covariance matrix we'll use all the time when computing the 
 	// posterior mean and variance.
 	// specifically: cov_matrix, inverse_cov_matrix, h_matrix, beta_vector
-	emuMCData.cov_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
-	emuMCData.cov_matrix_inverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
-	emuMCData.beta_vector = gsl_vector_alloc(options->nregression_fns);
-	emuMCData.h_matrix = gsl_matrix_alloc(options->nmodel_points, options->nregression_fns);
+	emuMCData->cov_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	emuMCData->cov_matrix_inverse = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
+	emuMCData->beta_vector = gsl_vector_alloc(options->nregression_fns);
+	emuMCData->h_matrix = gsl_matrix_alloc(options->nmodel_points, options->nregression_fns);
 
-	c_matrix = emuMCData.cov_matrix;
-	cinverse = emuMCData.cov_matrix_inverse;
-	beta_vector = emuMCData.beta_vector;
-	h_matrix = emuMCData.h_matrix;
+	c_matrix = emuMCData->cov_matrix;
+	cinverse = emuMCData->cov_matrix_inverse;
+	beta_vector = emuMCData->beta_vector;
+	h_matrix = emuMCData->h_matrix;
 
 	
 	// compute the cov matrix
@@ -425,6 +442,159 @@ void freeEmulateMC(void){
 	gsl_vector_free(emuMCData.beta_vector);
 	gsl_matrix_free(emuMCData.h_matrix);
 }
+
+
+/**
+ ******************************************************************************************
+ * multivariate MC calls.
+ ******************************************************************************************/
+
+
+
+/**
+ * essentially the same as setupEmulateMC but for multidimensional data 
+ *
+ * this function will setup an optstruct, modelstruct and some other useful bits of memory
+ * which can then be used  by callEmulateMCMulti to make fast calls to the emulator without all the setup
+ * and teardown.
+ * 
+ * finally you'll want to call destroyEmulateMCMulti to stop some kind of horrible leakyness
+ * 
+ * @param xmodel_in: an r vector (flattened from a row-major array) of length nmodelpts_in*nparams_in which is converted into a col-major array
+ * by a call to convertDoubleToMatrix. This contains the locations in the design space where the training runs of the model were evaluated 
+ * @param nparams_in: dimensionality of the parameter (design) space
+ * @param nemupoints: is a list of how many points to emulate
+ * @param training_in: flat r matrix of nrows=nmodelpts_in ncols=nydims_in, the output of running
+ * @param nmodelpts: number of training locations in design space 
+ * @param thetas_in: the hyperparameters which partially spec the emulator we're evaluating,  a flattened r matrix of nrows=nydims ncols=nthetas
+ * @param nthetas_in: the number of hyperparameters to be used, this needs to be correct for the specified cov fn, otherwise we'll have 
+ * some kind of memory fault when we try and store the results in final_thetas
+ *
+ * @param cov_fn_index_in takes values: 1 -> POWEREXPCOVFN, 2-> MATERN32, 3->MATERN53 anything else 
+ * will result in a failure
+ * @param regression_order_in fixes the order of the linear regression model applied to the mean 
+ * of the process, values of {0,1,2,3} are acceptable, other values result in using a trivial (order 0 model)
+
+ */
+void setupEmulateMCMulti(double* xmodel_in, int* nparams_in,  
+												 double* training_in, int* nydims_in,
+												 int* nmodelpts_in, double* thetas_in, int* nthetas_in, 
+												 int *cov_fn_index_in, int*regression_order_in){
+
+	int nydims = *nydims_in;
+	int nparams = *nparams_in;
+	int nmodelpts = *nmodelpts_in;
+	int nthetas = *nthetas_in;
+	int index;
+	int i,j;
+	double *training_double_vec = MallocChecked(sizeof(double)*nmodelpts);
+	double *theta_double_vec = MallocChecked(sizeof(double)*nthetas);
+
+	// we want to allocate nydims copies of a emulateMCData structure
+	// i'm worried we haven't done that below
+	emuMCDataMulti = MallocChecked(sizeof(struct emulateMCData)*nydims);
+	
+	// coerce the flattened R data back to the matrix shapes we care about
+	gsl_matrix *training_matrix = gsl_matrix_alloc(nmodelpts, nydims);
+	gsl_matrix *thetas_matrix = gsl_matrix_alloc(nydims, nthetas);
+
+	// annoyingly there's a mix up between nx and ny...
+	convertDoubleToMatrix(training_matrix, training_in, nydims, nmodelpts);
+	convertDoubleToMatrix(thetas_matrix, thetas_in, nthetas, nydims);
+
+	// now we setup each emuMCDataMulti structure
+	for (index = 0; index < nydims; ++index){
+		
+		for (i = 0; i < nthetas; ++i)
+			theta_double_vec[i] = gsl_matrix_get(thetas_matrix, i, index);
+
+		for(i = 0; i < nmodelpts; ++i)
+			training_double_vec[i] = gsl_matrix_get(training_matrix, i, index);
+		
+		assert(&(emuMCDataMulti[index]) != NULL);
+		setupEmulateMCHelper(&(emuMCDataMulti[index]), xmodel_in, nparams_in,
+												 training_double_vec, nmodelpts_in, theta_double_vec, 
+												 nthetas_in, cov_fn_index_in, regression_order_in);
+	}			
+		
+	gsl_matrix_free(training_matrix);
+	gsl_matrix_free(thetas_matrix);
+}
+
+/**
+ * rapidly emulates the a multivariate model  at the location point_in
+ * @param point_in: a nparams array representing the location in parameter space at which we 
+ * wish to sample the emulator. 
+ * @param nydims_in: the dim of our multivar model
+ * @return final_mean: vec of the estimated mean of the emulator at this point 
+ * @return var_out: vec of the estimated variance of the emulator at this point
+ */
+void callEmulateMCMulti(double* point_in, int* nydims_in, double* final_mean, double* final_var){
+	int nydims = *nydims_in;
+	int nparams, index;
+	gsl_vector* the_point;
+	double *temp_mean = MallocChecked(sizeof(double)*nydims);
+	double *temp_var = MallocChecked(sizeof(double)*nydims);
+
+	optstruct* options = emuMCDataMulti[0].options; //this is the same for each dimension
+	modelstruct* the_model;
+	gsl_matrix* cmat;
+	gsl_matrix* cmatrix_inv;
+	gsl_vector* beta_vector;
+	gsl_matrix* h_matrix;
+		
+	nparams = options->nparams;
+
+	the_point = gsl_vector_alloc(nparams);
+	convertDoubleToVector(the_point, point_in, nparams);
+
+	for(index = 0; index <nydims; index++){
+		options = emuMCDataMulti[index].options;
+		the_model = emuMCDataMulti[index].model;
+		cmat = emuMCDataMulti[index].cov_matrix;
+		cmatrix_inv = emuMCDataMulti[index].cov_matrix_inverse;
+		beta_vector = emuMCDataMulti[index].beta_vector;
+		h_matrix = emuMCDataMulti[index].h_matrix;
+
+		assert(cmat != NULL);
+		assert(cmatrix_inv != NULL);
+		assert(beta_vector != NULL);
+		assert(h_matrix != NULL);
+
+		emulateQuick(the_model, the_point, options, &(temp_mean[index]), &(temp_var[index]), 
+								 h_matrix, cmatrix_inv, beta_vector);
+		
+		final_mean[index] = temp_mean[index];
+		final_var[index] = temp_mean[index];
+	}
+
+	free(temp_mean);
+	free(temp_var);
+	gsl_vector_free(the_point);
+} 
+
+/* free all the memory we alloccd 
+ */
+void freeEmulateMCMulti(int *nydims_in){
+	int nydims = *nydims_in;
+	int index;
+	for(index = 0; index < nydims; index++){
+		free_optstruct(emuMCDataMulti[index].options);
+		free_modelstruct(emuMCDataMulti[index].model);
+		free(emuMCDataMulti[index].options);
+		free(emuMCDataMulti[index].model);
+		gsl_matrix_free(emuMCDataMulti[index].cov_matrix);
+		gsl_matrix_free(emuMCDataMulti[index].cov_matrix_inverse);
+		gsl_vector_free(emuMCDataMulti[index].beta_vector);
+		gsl_matrix_free(emuMCDataMulti[index].h_matrix);
+	}
+}
+
+
+/**
+ ******************************************************************************************
+ * likelihood evaluation
+ ******************************************************************************************/
 
 
 /**

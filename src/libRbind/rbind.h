@@ -50,6 +50,8 @@ struct emulateMCData{
 	
 struct emulateMCData emuMCData;
 
+struct emulateMCData *emuMCDataMulti;
+
 
 /**
  * functions with names: call<whatever> are to be called from the external process (R etc)
@@ -84,9 +86,25 @@ void callInfo(void);
 void setupEmulateMC(double* xmodel_in, int* nparams_in, double* training_in, 
 										 int* nmodelpts, double* thetas_in, int* nthetas_in, 
 										int *cov_fn_index_in, int*regression_order_in);
+
+
+
 void callEmulateMC(double* point_in, double* mean_out, double* var_out);
 void freeEmulateMC(void);
 
+void setupEmulateMCHelper(struct emulateMCData* emuMCData, double* xmodel_in, 
+													int* nparams_in,  double* training_in, 
+										 int* nmodelpts, double* thetas_in, int* nthetas_in, 
+													int *cov_fn_index_in, int*regression_order_in);
+
+void setupEmulateMCMulti(double* xmodel_in, int* nparams_in,  
+												 double* training_in, int* nydims_in,
+												 int* nmodelpts_in, double* thetas_in, int* nthetas_in, 
+												 int *cov_fn_index_in, int*regression_order_in);
+
+void callEmulateMCMulti(double* point_in, int* nydims_in, double* final_mean, double* final_var);
+
+void freeEmulateMCMulti(int *nydims_in);
 
 /**
  * these are INTERNAL routines, not to be called from outside 
@@ -125,11 +143,21 @@ R_NativePrimitiveArgType callEmuAtPtArgs[11] = {REALSXP, INTSXP, REALSXP, REALSX
 R_NativePrimitiveArgType callEvalListArgs[10] = {REALSXP, INTSXP, REALSXP, INTSXP, REALSXP, INTSXP,
 																						 INTSXP, REALSXP, INTSXP, INTSXP};
 
-R_NativePrimitiveArgType setupEmulateMCArgs[8] = {REALSXP, INTSXP, REALSXP,, 
+R_NativePrimitiveArgType setupEmulateMCArgs[8] = {REALSXP, INTSXP, REALSXP,
 																									INTSXP, REALSXP, INTSXP,
 																									INTSXP, INTSXP};
 
 R_NativePrimitiveArgType callEmulateMCArgs[3] = {REALSXP, REALSXP, REALSXP};
+
+
+// multidim
+R_NativePrimitiveArgType setupEmulateMCMultiArgs[9] = {REALSXP, INTSXP, REALSXP,
+																											 INTSXP, INTSXP, REALSXP, INTSXP,
+																											 INTSXP, INTSXP};
+
+R_NativePrimitiveArgType callEmulateMCMultiArgs[4] = {REALSXP, INTSXP, REALSXP, REALSXP};
+
+R_NativePrimitiveArgType freeEmulateMCMultiArgs[1] = {INTSXP};
 
 
 
@@ -138,8 +166,13 @@ R_CMethodDef cMethods[] = {
 	{"callEmulateAtList", (DL_FUNC)&callEmulateAtList, 12, callEmuAtListArgs},
 	{"callEmulateAtPt", (DL_FUNC)&callEmulateAtPt, 11, callEmuAtPtArgs},
 	{"callEvalLhoodList", (DL_FUNC)&callEvalLhoodList, 10, callEvalListArgs},
-	{"setupEmulateMC", (DL_FUNC)&setupEmulateMC, 9, setupEmulateMCArgs},
+	{"setupEmulateMC", (DL_FUNC)&setupEmulateMC, 8, setupEmulateMCArgs},
 	{"callEmulateMC", (DL_FUNC)&callEmulateMC, 3, callEmulateMCArgs},
+	{"freeEmulateMC", (DL_FUNC)&freeEmulateMC, 0, NULL},
+	{"setupEmulateMCMulti", (DL_FUNC)&setupEmulateMCMulti, 9, setupEmulateMCMultiArgs},
+	{"callEmulateMC", (DL_FUNC)&callEmulateMCMulti, 4, callEmulateMCMultiArgs},
+	{"freeEmulateMC", (DL_FUNC)&freeEmulateMCMulti, 1, freeEmulateMCMultiArgs},
+
 	{NULL, NULL, 0}
 };
 

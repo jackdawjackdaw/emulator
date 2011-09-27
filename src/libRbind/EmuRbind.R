@@ -268,19 +268,48 @@ destroy.MC <- function(){
   .C("freeEmulateMC")
 }
 
+
+##
+## this sets up the MC for a multi-variate emulator, 
+##
+## follow the same procedure as multi-dim
+setup.MC.multi <- function(model, thetas, nmodelpoints, nydims, nparams, nthetas, cov.fn=1, reg.order=1){
+  checkCovFn(nthetas, nparams, cov.fn)
+
+  res <- .C("setupEmulateMCMulti",
+            as.double((model$xmodel)), ## matrix (nrows=nmodelpts, ncols=nparams)
+            as.integer(nparams),
+            as.double(model$training), ## matrix (nrows=nmodelpts, ncols=nydims)
+            as.integer(nydims),
+            as.integer(nmodelpoints),
+            as.double(thetas), ## matrix (nrows=nydims, ncols=nthetas)
+            as.integer(nthetas),
+            as.integer(cov.fn),
+            as.integer(reg.order))
+
+}
+
+## make a quick call to the emulator mean and variance given a previous setup
+##
+emulate.MC.multi <- function(point){
+  nydims <- length(point)
+  res <- .C("callEmulateMCMulti",
+            as.double(point),
+            as.integer(nydims),
+            finalMean = double(nydims),
+            finalVar = double(nydims))
+
+  results <- list(des=point, mean=res$finalMean, var=res$finalVar)  
+}
+
+
+## delete everything we setup
+destroy.MC.multi <- function(){
+  .C("freeEmulateMCMulti",
+     as.integer(nydims))
+}
+                         
   
 
-## deprecated fns here
-callEmulate <- function(model, thetas, nmodelpts, nparams=1, nthetas=3, nemupts=20, rangemin=0.0, rangemax=1.0){
-  stop("callEmulate is deprecated, use callEmulateAtPoint or callEmulateAtList")
-}
-
-callcode <- function(model, nmodelpts, nparams=1, nthetas=3, nemupts=50, rangemin=0.0, rangemax=4.0){
-  stop("callcode is deprecated, use callEstimate and callEmulateAtList")
-}
-  
-callEvalLikelyhood <- function(model, nmodelpoints, vertex, nparams=1,nthetas=3){
-  stop("callEvalLikelyhood is deprecated, use callEvalLhoodList")
-}
 
 
