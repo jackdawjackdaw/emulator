@@ -96,7 +96,8 @@ void setup_cov_fn(optstruct *options)
 		options->nthetas = 3;
 		fprintf(stderr, "# cov_fn: MATERN52\n");
 	} else if(options->cov_fn_index == POWEREXPCOVFN) { 
-		covariance_fn = covariance_fn_gaussian;
+		// for testing
+		covariance_fn = covariance_fn_gaussian_exact;
 		setupdCdThetaLength = derivative_l_gauss;
 
 		if(options->nthetas != (options->nparams+2))

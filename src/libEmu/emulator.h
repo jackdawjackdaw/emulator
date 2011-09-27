@@ -26,6 +26,9 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 void derivative_l_gauss(gsl_matrix *dCdTheta, gsl_matrix* xmodel, 
 												double thetaLength, int index, int nmodel_points, int nparams);
 
+// same as above but without clamping on small values
+double covariance_fn_gaussian_exact(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
+
 double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
 
 void derivative_l_matern_three(gsl_matrix *dCdTheta, gsl_matrix* xmodel, double thetaLength,

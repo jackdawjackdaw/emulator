@@ -156,6 +156,64 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 	return(covariance);
 }
 
+/**
+ * same as covariance_fn_gaussian but without any clamping of the exponential
+ * 
+ * we can use the same gradient here
+ */
+double covariance_fn_gaussian_exact(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+	// calc the covariance for a given set of input points
+	int i, truecount  = 0;
+	double covariance = 0.0;
+	double exponent = 0.0;
+	double xm_temp = 0.0;
+	double xn_temp = 0.0;
+	double r_temp = 0.0;
+	double dist_temp = 0.0;
+	//double amp = exp(gsl_vector_get(thetas, 0));
+	double amp = gsl_vector_get(thetas, 0);
+	double nug = gsl_vector_get(thetas, 1);
+	
+	for(i = 0; i < nparams; i++){
+		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
+		xn_temp = gsl_vector_get(xn, i);
+
+		//r_temp = gsl_vector_get(thetas, i+2);
+    r_temp = exp(gsl_vector_get(thetas, i+2));
+
+		// fix alpha = 2.0
+		//r_temp = pow(r_temp , alpha); 
+		r_temp = r_temp * r_temp;
+		// gaussian term				
+
+		// change from pow to explicit multiplication, for alpha = 2.0
+		//exponent += (-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp);
+		dist_temp = fabs(xm_temp-xn_temp);
+		exponent += (-1.0/2.0)*dist_temp*dist_temp/(r_temp);
+
+		//DEBUGprintf("%g\n", covariance);
+		if (dist_temp < 0.0000000001){
+			truecount++; 		
+		}
+	}
+
+	covariance = exp(exponent)*amp;
+
+	/** 
+	 * the nugget is only added to the diagonal covariance terms,
+	 * the parts where xm == xn (vectorwise)
+	 */
+	if(truecount == nparams) {
+		// i.e the two vectors are hopefully the same
+		covariance += gsl_vector_get(thetas,1);
+	}
+
+
+	return(covariance);
+}
+
+
+
 /* 
  * compute a matrix of dC/dtheta-length / theta_0 for 
  * the gaussian covariance function c(x,y) = theta_0 * exp( - 1/2 * (x-y)^2 / theta_L^2 ) + theta_1
