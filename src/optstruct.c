@@ -81,7 +81,7 @@ void setup_cov_fn(optstruct *options)
 {
 	if (options->cov_fn_index == MATERN32){
 		covariance_fn = covariance_fn_matern_three;
-		setupdCdThetaLength = derivative_l_matern_three;
+		makeGradMatLength = derivative_l_matern_three;
 
 		if(options->nthetas != 3)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas, potential memory errors abound\n");
@@ -89,7 +89,7 @@ void setup_cov_fn(optstruct *options)
 		fprintf(stderr, "# cov_fn: MATERN32\n");
 	} else if (options->cov_fn_index == MATERN52){
 		covariance_fn = covariance_fn_matern_five;
-		setupdCdThetaLength = derivative_l_matern_five;
+		makeGradMatLength = derivative_l_matern_five;
 
 		if(options->nthetas != 3)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas to, potential memory errors abound\n");
@@ -98,7 +98,7 @@ void setup_cov_fn(optstruct *options)
 	} else if(options->cov_fn_index == POWEREXPCOVFN) { 
 		// for testing
 		covariance_fn = covariance_fn_gaussian_exact;
-		setupdCdThetaLength = derivative_l_gauss;
+		makeGradMatLength = derivative_l_gauss;
 
 		if(options->nthetas != (options->nparams+2))
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas from %d, potential memory errors\n", options->nthetas);

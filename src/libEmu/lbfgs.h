@@ -23,8 +23,8 @@ void set_nbd(int *vec, int nparams, int nmax);
 void set_zero( double *vec, int size);
 void print_vec(gsl_vector* x, int n);
 
-void doBoundedBFGS( double(*fn)(double*, int, void*),													\
-										void(*gradientFn)(double(*fn)(double*, int, void*), double*, double*, int, void*), \
+void doBoundedBFGS( double(*fn)(double*, int, void*),													
+										void(*gradientFn)(double*, double*, int, void*),
 										gsl_matrix* ranges, 
 										gsl_vector *xkInit, gsl_vector* xkFinal, int nparams, int nsteps, void* args);
 

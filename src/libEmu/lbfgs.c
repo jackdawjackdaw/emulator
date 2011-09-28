@@ -55,6 +55,9 @@ void getGradientNumericLBFGS(double(*fn)(double*, int, void*), double* xk, doubl
 	double xtemp = 0.0;
 	double grad = 0.0;
 
+	fprintf(stderr, "# ERROR: getGradientNumericLBFGS is deprecated\n");
+	exit(1);
+
 	for(i = 0;i < nparams; i++){
 		//gsl_vector_memcpy(temp, xk);
 		//temp = memcpy(temp, xk, nparams);
@@ -85,7 +88,7 @@ void getGradientNumericLBFGS(double(*fn)(double*, int, void*), double* xk, doubl
  * it's entirely deep magic
  */
 void doBoundedBFGS( double(*fn)(double*, int, void*),													\
-										void(*gradientFn)(double(*fn)(double*, int, void*), double*, double*, int, void*), \
+										void(*gradientFn)(double*, double*, int, void*),
 										gsl_matrix* ranges, 
 										gsl_vector *xkInit, gsl_vector* xkFinal, int nparams, int nsteps, void* args){
 	int count = 0;
@@ -203,7 +206,7 @@ void doBoundedBFGS( double(*fn)(double*, int, void*),													\
 			//fprintf(stderr,"fnval = %g\n", fnval);
 			
 			/* try the other version first*/
-			getGradientExactGauss(xvalue, grad, nparams, args);
+			gradientFn(xvalue, grad, nparams, args);
 
 			/* fprintf(stderr,"Numeric grad = "); */
 			/* for(i = 0; i < nparams; i++){ */
