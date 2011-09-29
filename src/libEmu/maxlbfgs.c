@@ -47,7 +47,7 @@ void maxWithLBFGS(struct estimate_thetas_params *params){
 		// ccs, shouldn't we be doing getGradientExactGauss here?
 		// holy-craperal! We are doing the exact gradient, but we still pass in this
 		// shitty pointer too. whyyyy? (changed to null)
-		doBoundedBFGS(&evalFnLBFGS, NULL, params->options->grad_ranges, xInit, xFinal, params->options->nthetas, 500, (void*)params);
+		doBoundedBFGS(&evalFnLBFGS, &getGradientExact, params->options->grad_ranges, xInit, xFinal, params->options->nthetas, 500, (void*)params);
 		
 		copy_gslvec_vec(xFinal, tempVec, params->options->nthetas);
 		likelyHood = evalFnLBFGS(tempVec, params->options->nthetas, (void*)params);
@@ -194,12 +194,16 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
  * theta_1 (the nugget)
  * theta_2..theta_n (the directions of the cov-fn)
  *
+ * the gradient in the length directions (theta_3 etc) is computed exactly, by functions 
+ * named derivative_l_<cov_fn_name> in emulator.c. The function pointer  maxlbfgs.h:makeGradMatLength is 
+ * set to the correct derivative function by a call to optstruct.c:setup_cov_fn
+ * 
  * 
  * dL/dTheta = -1/2 tr (Cn^{-1} dCn/dtheta) + 1/2 tn^{t}Cn^{-1} dCn/dtheta Cn^{-1} tn
  *  where t_n are the n training points
  * 
  */
-void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate, void* args){
+void getGradientExact(double *xinput, double* gradient, int nparamsEstimate, void* args){
 	int nmpoints, nthetas, i, j;
 	int nparams;
 	double amp; 
@@ -250,8 +254,9 @@ void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate
 
 
 
-	// make the first component, here dC/dN_1 = 1/theta1 * C
-	// the second component, dC/dN_2 = 1_delta(ij) (easssy)
+	// C(x,y) = theta_0 c(x,y) + theta_1
+	// make the first component, here dC/dN_0 = 1/theta0 * C
+	// the second component, dC/dN_1 = 1_delta(ij) (easssy)
 	// the rest: dC/dN_{h} = amp * dC/d\theta
 	
 	// first, get the scale parameter
@@ -268,7 +273,7 @@ void getGradientExactGauss(double *xinput, double* gradient, int nparamsEstimate
 	gradient[1] = -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 	
 	for(i = 2; i < nthetas; i++){
-		setupdCdThetaLength(temp_matrix, covariance_matrix, gsl_vector_get(xk, i) , i, nmpoints, nparams);
+		makeGradMatLength(temp_matrix, covariance_matrix, gsl_vector_get(xk, i) , i, nmpoints, nparams);
 		gradient[i] = -1.0*amp*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 	}
 	

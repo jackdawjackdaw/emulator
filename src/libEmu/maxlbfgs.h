@@ -23,11 +23,12 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args);
  * @param thetaLength the current value of the length scale we're differentiating wrt
  * @param index, the direction we're looking in
  * @return dCdTheta the matrix of the derivative of C wrt index
+ *
  */
-void (*setupdCdThetaLength)(gsl_matrix *dCdTheta,  gsl_matrix* xmodel, 
+void (*makeGradMatLength)(gsl_matrix *dCdTheta,  gsl_matrix* xmodel, 
 														double thetaLength, int index, int nmodel_points, int nparams);
 
-void getGradientExactGauss(double *xinput, double* gradient, int nparams, void* args);
+void getGradientExact(double *xinput, double* gradient, int nparams, void* args);
 
 double getGradientCn(gsl_matrix * dCdtheta, gsl_matrix *cinvese,  
 										 gsl_vector* training_vector,int nmodel_points, int nthetas);
