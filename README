@@ -1,21 +1,35 @@
 Emulator
 
 C.Coleman-Smith, cec24@phy.duke.edu
-Summer  09
 
-One line: A method to interpolate results from expensive simulations. 
+functions to implement Gaussian Process regression in R and C
 
 Brief:
-This is a project to implement a gaussian process based emulator. An emulator being a statistical model for some process. This code supposes that you wish to emulate the output of some complicated computer code, which takes any number of inputs and produces a single scalar output for each vector of inputs. 
 
-The points in the input-space and the output of the model are used to train a gaussian process to produce points which will interpolate the initial training points. 
+A project to implement scalar gaussian process regression with a variety of covariance functions with an optional (up to 3rd order) linear regression prior mean. Maximum likelihood hyperparameters can be estimated to parameterize a given set of training data. For a given model (estimated hyperparams and training data set) the posterior mean and variance can be sampled at arbitrary locations in the parameter space. 
 
-With some fiddling it should be possible to extrapolate some small distance from the training points.
+The model parameter space can take any dimension (within limits of the optimizer), output must be scalar. 
 
-Things to know:
-			
-Emulator: Supports many inputs, single output models
-multifit: Will only multi-region on 1d input models
+Primary user interface is through R, rbind.c & EmuRbind.R. The heavy lifting takes place in libEmu.
 
-Dependancies:
-The gsl
+Depends:
+
+cmake 
+gsl
+R
+
+Installs: 
+bins, estimatior and emulator to ~/local/bin. 
+libs, libRbind, libEmu, libLBFGS to ~/local/lib
+R<->C bindings, ~/local/include/libRbind: EmuRbind.R, rbind.h
+
+Compiling:
+
+mkdir build
+cd build; 
+cmake ..
+make install;
+
+
+
+
