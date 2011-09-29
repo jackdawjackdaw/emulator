@@ -206,12 +206,13 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 
 
 	if(options->fixed_nugget_mode == 1){
-		// force the nugget to be fixed_nugget +- 5%
-		fixedNuggetLeeWay = 0.05*(options->fixed_nugget);
-		gsl_matrix_set(options->grad_ranges, 1, 0, options->fixed_nugget - fixedNuggetLeeWay);
+		// force the nugget to be fixed_nugget +- 20%
+		fixedNuggetLeeWay = 0.20*(options->fixed_nugget);
+		//gsl_matrix_set(options->grad_ranges, 1, 0, options->fixed_nugget - fixedNuggetLeeWay);
+		//fix the min at the usual value
+		gsl_matrix_set(options->grad_ranges, 1, 0, rangeMinNugget);
 		gsl_matrix_set(options->grad_ranges, 1, 1, options->fixed_nugget + fixedNuggetLeeWay);
-		printf("# (reset) %d ranges: %lf %lf (nugget)\n", 1,options->fixed_nugget - fixedNuggetLeeWay
-					 ,options->fixed_nugget + fixedNuggetLeeWay);
+		printf("# (reset) %d ranges: %lf %lf (nugget)\n", 1, gsl_matrix_get(options->grad_ranges, 1,0), gsl_matrix_get(options->grad_ranges, 1,1));
 	}		
 
 	
