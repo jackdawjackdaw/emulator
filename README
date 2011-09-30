@@ -6,7 +6,7 @@ functions to implement Gaussian Process regression in R and C
 
 Brief:
 
-A project to implement scalar gaussian process regression with a variety of covariance functions with an optional (up to 3rd order) linear regression prior mean. Maximum likelihood hyperparameters can be estimated to parameterize a given set of training data. For a given model (estimated hyperparams and training data set) the posterior mean and variance can be sampled at arbitrary locations in the parameter space. 
+A project to implement scalar Gaussian process regression with a variety of covariance functions with an optional (up to 3rd order) linear regression prior mean. Maximum likelihood hyper-parameters can be estimated to parametrize a given set of training data. For a given model (estimated hyperparams and training data set) the posterior mean and variance can be sampled at arbitrary locations in the parameter space. 
 
 The model parameter space can take any dimension (within limits of the optimizer), output must be scalar. 
 
@@ -20,7 +20,7 @@ R
 
 Installs: 
 
-bins, estimatior and emulator to ~/local/bin. 
+bins, estimator and emulator to ~/local/bin. 
 libs, libRbind, libEmu, libLBFGS to ~/local/lib
 R<->C bindings, ~/local/include/libRbind: EmuRbind.R, rbind.h
 
@@ -37,25 +37,27 @@ HTML documentation, such as it is, can be compiled with doxygen.
 
 Example Usage:
 
-The file examples/r-simple.R generates a simple set of model data and then trains an emulator on this data. Build and install the codebase, fire up an R shell and load the file with source("r-simple.R"). 
+The file examples/r-simple.R generates a simple set of model data and then trains an emulator on this data. Build and install the code base, fire up an R shell and load the file with source("r-simple.R"). 
 
-If everything works ok you should see some output in the R terminal and a plot of the emulator predictions (red) against the true model (black) and the trainign points (green griangles). It is interesting to Try changing the number of model samples (the argument to mkae.model) and the cov.fn and reg.order used in estimate.model.
+If everything works OK you should see some output in the R terminal and a plot of the emulator predictions (red) against the true model (black) and the training points (green triangles). The output should look somethign like examples/r-simple-plot.pdf.
+
+It is interesting to Try changing the number of model samples (the argument to make.model) and the cov.fn and reg.order used in estimate.model.
 
 ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 
 Emulator Theory Summary:
 
-Gaussian Process regression is a supervised learning method, a representative set of samples of a model's output can be used to build a predictive distribution for the output at untried locations in the models parameter space. This codebase has been developed to apply this process to the output of complex computer codes.
+Gaussian Process regression is a supervised learning method, a representative set of samples of a model's output can be used to build a predictive distribution for the output at untried locations in the models parameter space. This code base has been developed to apply this process to the output of complex computer codes.
 
-Suppose we have a model Y_m(u) which produces scalar output as a function of some set of input parameters u. A design is a set of points D = {u_1, ..., u_n} in the u space at which we will evaluate the model. A set of training outputs Y_t = {Y_m(u_1), ... Y_m(u_n)} is produced by evaluating the model at each location in D. The set's D and Y_t are then sufficient to 'train' a GP regression model or Emulator to produce predictions at some new locations u*. 
+Suppose we have a model Y_m(u) which produces scalar output as a function of some set of input parameters u. A design is a set of points D = {u_1, ..., u_n} in the u space at which we will evaluate the model. A set of training outputs Y_t = {Y_m(u_1), ... Y_m(u_n)} is produced by evaluating the model at each location in D. The sets D and Y_t are then sufficient to 'train' a GP regression model or Emulator to produce predictions at some new locations u*. 
 
 The training process conditions a Gaussian Process prior on the set {Y_t, D} such that functions drawn from the ensuing posterior will always pass through the training locations. A Gaussian Process (GP) is a stochastic process for which any finite set of samples have a multi variate normal distribution. In essence we force the Gaussian Process to always generate functions which interpolate our data set. 
 
-The GP is specified in terms of a prior mean, usually chosen to be zero or given by a simple regression model of the training data, and a covariance function over the parameter space. The covariance function specifies the correlation between pairs of parameter values u_i, u_j. A power expoential form, with a nugget, is the default. 
+The GP is specified in terms of a prior mean, usually chosen to be zero or given by a simple regression model of the training data, and a covariance function over the parameter space. The covariance function specifies the correlation between pairs of parameter values u_i, u_j. A power exponential form, with a nugget, is the default. 
 
 		C(u_i, u_j) = theta_0 * exp(-1/2 ( u_i - u_j) ^2 / theta_l^2) + theta_1.
 
-The covariance function itself is controlled by a set of hyper-parameters theta_i, these act as characteristic length scales in the parameter space and are apriori unknown. The training process consists of estimating the 'best' set of length scales for the given model data set. This estimation process is done through numerical maximisation of the posterior hyperparameter likelihood, a fully bayesian treatment is also possible.
+The covariance function itself is controlled by a set of hyper-parameters theta_i, these act as characteristic length scales in the parameter space and are a-priori unknown. The training process consists of estimating the 'best' set of length scales for the given model data set. This estimation process is done through numerical maximization of the posterior hyper parameter likelihood, a fully Bayesian treatment is also possible.
 
 Once the GP has been conditioned, and a best set of hyper parameters Theta has been obtained,  we have a posterior predictive distribution for the model output at a new location u*:
 
@@ -68,11 +70,11 @@ where the posterior mean and covariance are (for a zero prior mean)
 
 Here C(D,D) represents the matrix formed by evaluating the covariance function C(u_i, u_j) at each of the locations in D, the vector C(u*)_(D)  = {C(u*, u_1), C(u*, u_2),...C(u*, u_n)} is the correlation between each location in the design set and the new point. 
 
-These equations have a relatively straightforward interpretation. The prior mean (0) is modified by the covariance structure deduced from the data C(u*)_(Y_t)^t  C(D,D)^{-1} Y_t, at u* = u_i where u_i is in D, we can see that m(ui) = 0. The prior covariance at u*, C(u*,u*) is somewhat reduced by the training set C(u*)_(Y_t)^t C(D,D)^{-1} C(u*)_(Y_t) and again at u*=u_i for u_i in D we reduce to cov(u_i) = 0. As such we have constructed an interpolator.
+These equations have a relatively straightforward interpretation. The prior mean (0) is modified by the covariance structure deduced from the data C(u*)_(Y_t)^t  C(D,D)^{-1} Y_t, at u* = u_i where u_i is in D, we can see that m(u_i) = 0. The prior covariance at u*, C(u*,u*) is somewhat reduced by the training set C(u*)_(Y_t)^t C(D,D)^{-1} C(u*)_(Y_t) and again at u*=u_i for u_i in D we reduce to cov(u_i) = 0. As such we have constructed an interpolating function.
 
-It is important to note that unlike some other data interopolation/extrapolation methods we end up with a probability distribution for the value of our model at an untried locatoin, as it is normal the mean and covariance are sufficient to describe the distrubution. These can be obtained by the emulate_at_point or emulate_at_list functions.
+It is important to note that unlike some other data interpolation/extrapolation methods we end up with a probability distribution for the value of our model at an untried location, as it is normal the mean and covariance are sufficient to describe the distribution. These can be obtained by the emulate_at_point or emulate_at_list functions.
 
 It is straightforward to draw samples from the predictive distribution, although care must be taken to expand the above equations correctly for a set of m observation locations U* = {u*_1, ... u*_m}.
 
-For more information see the documentation, the website http://www.gaussianprocess.org and the invaluable book "gaussian processes for machine learning".
+For more information see the documentation, the website http://www.gaussianprocess.org and the invaluable book "Gaussian processes for machine learning".
 
