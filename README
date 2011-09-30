@@ -33,6 +33,16 @@ make install;
 
 HTML documentation, such as it is, can be compiled with doxygen.
 
+~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
+
+Example Usage:
+
+The file examples/r-simple.R generates a simple set of model data and then trains an emulator on this data. Build and install the codebase, fire up an R shell and load the file with source("r-simple.R"). 
+
+If everything works ok you should see some output in the R terminal and a plot of the emulator predictions (red) against the true model (black) and the trainign points (green griangles). It is interesting to Try changing the number of model samples (the argument to mkae.model) and the cov.fn and reg.order used in estimate.model.
+
+~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
+
 Emulator Theory Summary:
 
 Gaussian Process regression is a supervised learning method, a representative set of samples of a model's output can be used to build a predictive distribution for the output at untried locations in the models parameter space. This codebase has been developed to apply this process to the output of complex computer codes.
@@ -48,6 +58,7 @@ The GP is specified in terms of a prior mean, usually chosen to be zero or given
 The covariance function itself is controlled by a set of hyper-parameters theta_i, these act as characteristic length scales in the parameter space and are apriori unknown. The training process consists of estimating the 'best' set of length scales for the given model data set. This estimation process is done through numerical maximisation of the posterior hyperparameter likelihood, a fully bayesian treatment is also possible.
 
 Once the GP has been conditioned, and a best set of hyper parameters Theta has been obtained,  we have a posterior predictive distribution for the model output at a new location u*:
+
 		  P(Y_m(u*) | Y_t, D, Theta) = MVN(m(u*), cov(u*)),
 
 where the posterior mean and covariance are (for a zero prior mean)
@@ -64,3 +75,4 @@ It is important to note that unlike some other data interopolation/extrapolation
 It is straightforward to draw samples from the predictive distribution, although care must be taken to expand the above equations correctly for a set of m observation locations U* = {u*_1, ... u*_m}.
 
 For more information see the documentation, the website http://www.gaussianprocess.org and the invaluable book "gaussian processes for machine learning".
+
