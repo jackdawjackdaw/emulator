@@ -39,18 +39,23 @@ Gaussian Process regression is a supervised learning method, a representative se
 
 Suppose we have a model Y_m(u) which produces scalar output as a function of some set of input parameters u. A design is a set of points D = {u_1, ..., u_n} in the u space at which we will evaluate the model. A set of training outputs Y_t = {Y_m(u_1), ... Y_m(u_n)} is produced by evaluating the model at each location in D. The set's D and Y_t are then sufficient to 'train' a GP regression model or Emulator to produce predictions at some new locations u*. 
 
-The training process conditions a Gaussian Process prior on the set {Y_t, D} such that functions drawn from the ensuing posterior will always pass through the training locations. A Gaussian Process (GP) is a stochastic process for which any finite set of samples have a multi variate normal distribution, a GP   In essence we force the Gaussian Process to always generate functions which interpolate our data set. 
+The training process conditions a Gaussian Process prior on the set {Y_t, D} such that functions drawn from the ensuing posterior will always pass through the training locations. A Gaussian Process (GP) is a stochastic process for which any finite set of samples have a multi variate normal distribution. In essence we force the Gaussian Process to always generate functions which interpolate our data set. 
 
 The GP is specified in terms of a prior mean, usually chosen to be zero or given by a simple regression model of the training data, and a covariance function over the parameter space. The covariance function specifies the correlation between pairs of parameter values u_i, u_j. A power expoential form, with a nugget, is the default. 
+
 		C(u_i, u_j) = theta_0 * exp(-1/2 ( u_i - u_j) ^2 / theta_l^2) + theta_1.
+
 The covariance function itself is controlled by a set of hyper-parameters theta_i, these act as characteristic length scales in the parameter space and are apriori unknown. The training process consists of estimating the 'best' set of length scales for the given model data set. This estimation process is done through numerical maximisation of the posterior hyperparameter likelihood, a fully bayesian treatment is also possible.
 
 Once the GP has been conditioned, and a best set of hyper parameters Theta has been obtained,  we have a posterior predictive distribution for the model output at a new location u*:
 		  P(Y_m(u*) | Y_t, D, Theta) = MVN(m(u*), cov(u*)),
+
 where the posterior mean and covariance are (for a zero prior mean)
-			m(u*) = C(u*)_(Y_t)^t  C(D,D)^{-1} Y_t
-			cov(u*) = C(u*,u*) - C(u*)_(Y_t)^t C(D,D)^{-1} C(u*)_(Y_t).
-Here C(D,D) represents the matrix formed by evaluating the covariance function C(u_i, u_j) at each of the locations in D, the vector C(u*)_(Y_t)  = {C(u*, u_1), C(u*, u_2),...C(u*, u_n)} is formed from the correlation between each location in the design set and the new point. 
+
+			m(u*) = C(u*)_(D)^t  C(D,D)^{-1} Y_t
+			cov(u*) = C(u*,u*) - C(u*)_(D)^t C(D,D)^{-1} C(u*)_(D).
+
+Here C(D,D) represents the matrix formed by evaluating the covariance function C(u_i, u_j) at each of the locations in D, the vector C(u*)_(D)  = {C(u*, u_1), C(u*, u_2),...C(u*, u_n)} is the correlation between each location in the design set and the new point. 
 
 These equations have a relatively straightforward interpretation. The prior mean (0) is modified by the covariance structure deduced from the data C(u*)_(Y_t)^t  C(D,D)^{-1} Y_t, at u* = u_i where u_i is in D, we can see that m(ui) = 0. The prior covariance at u*, C(u*,u*) is somewhat reduced by the training set C(u*)_(Y_t)^t C(D,D)^{-1} C(u*)_(Y_t) and again at u*=u_i for u_i in D we reduce to cov(u_i) = 0. As such we have constructed an interpolator.
 
