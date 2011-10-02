@@ -37,7 +37,7 @@ HTML documentation, such as it is, can be compiled with doxygen.
 
 Example Usage:
 
-The file examples/r-simple.R generates a simple set of model data and then trains an emulator on this data. Build and install the code base, fire up an R shell and load the file with source("r-simple.R"). 
+The file examples/simple-regression.R generates a set of model data for a 1d model and then trains an emulator on this data. Build and install the code base, fire up an R shell and load the file with source("simple-regression.R"). 
 
 If everything works OK you should see some output in the R terminal and a plot of the emulator predictions (red) against the true model (black) and the training points (green triangles). The output should look somethign like examples/r-simple-plot.pdf.
 
