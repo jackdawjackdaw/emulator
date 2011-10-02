@@ -37,8 +37,6 @@ if(is.loaded("callEstimate") == FALSE){
   dyn.load(libNAME)
 }
 
-library(mvtnorm)
-
 ##
 ## some wobbly gaussians in 2d
 yM <- function(vec, delta=0.0005)
@@ -48,6 +46,15 @@ yM <- function(vec, delta=0.0005)
   sig1[1,2] <- 0.2
   sig1[2,2] <- 0.8
   sig1[2,1] <- 0.2
+
+  ## test for the library
+  retval <- require("mvtnorm", quietly=TRUE)
+  if(retval == FALSE){
+    print("installing the mvtnorm library")
+    install.packages(c("mvtnorm"))
+  }
+
+  
   f <- dmvnorm(vec, mean=c(0.5, 1.3), sigma=0.1*sig1) + rnorm(1,mean=0, sd=delta) +
     dmvnorm(vec, mean=c(1.2, 1.8), sigma=0.1*diag(2)) + 
       dmvnorm(vec, mean=c(1.58, 0.9), sigma=0.2*sig1) +
@@ -60,9 +67,8 @@ yM <- function(vec, delta=0.0005)
 ## @return a list containing the model design and the evaluations of the model over the design
 make.model.2d <- function(m, rangeMin=0.0, rangeMax=2.0, modelFunc=yM){
   nparams <- 2
-  retval <- require("lhs", quietly=TRUE)
-
   ## test for the library
+  retval <- require("lhs", quietly=TRUE)
   if(retval == FALSE){
     print("installing the lhs library")
     install.packages(c("lhs"))
@@ -182,7 +188,7 @@ plot.result.2d <- function(emu.result, model, modelfn){
 ## changing this argument is interesting, < 32 gives rather poor (or variable) results
 ## the computational process starts to get quite slow for ~ 100 points
 ##
-model <- make.model.2d(256)
+model <- make.model.2d(48)
 
 ## estimate optimal hyper-parameters for this model
 estimResult <- estimate.model(model)
