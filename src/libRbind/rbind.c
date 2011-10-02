@@ -506,7 +506,7 @@ void setupEmulateMCMulti(double* xmodel_in, int* nparams_in,
 	for (index = 0; index < nydims; ++index){
 		
 		for (i = 0; i < nthetas; ++i)
-			theta_double_vec[i] = gsl_matrix_get(thetas_matrix, i, index);
+			theta_double_vec[i] = gsl_matrix_get(thetas_matrix, index, i);
 
 		for(i = 0; i < nmodelpts; ++i)
 			training_double_vec[i] = gsl_matrix_get(training_matrix, i, index);
@@ -565,7 +565,7 @@ void callEmulateMCMulti(double* point_in, int* nydims_in, double* final_mean, do
 								 h_matrix, cmatrix_inv, beta_vector);
 		
 		final_mean[index] = temp_mean[index];
-		final_var[index] = temp_mean[index];
+		final_var[index] = temp_var[index];
 	}
 
 	free(temp_mean);
