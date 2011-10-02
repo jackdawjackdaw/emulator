@@ -68,7 +68,7 @@ else()
 	SET(CMAKE_C_FLAGS "-std=gnu99 -O2")
 endif(APPLE)
 
-SET(CMAKE_C_FLAGS_DEBUG "-std=gnu99 -O2 -g -Wall -Wextra -pedantic")
+SET(CMAKE_C_FLAGS_DEBUG "-std=gnu99 -O0 -g -pg -Wall -Wextra -pedantic")
 
 if(APPLE)
 # we need to use the same compiler as R CMD SHLIB would use
