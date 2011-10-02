@@ -291,8 +291,7 @@ setup.MC.multi <- function(model, thetas, nmodelpoints, nydims, nparams, nthetas
 
 ## make a quick call to the emulator mean and variance given a previous setup
 ##
-emulate.MC.multi <- function(point){
-  nydims <- length(point)
+emulate.MC.multi <- function(point, nydims){
   res <- .C("callEmulateMCMulti",
             as.double(point),
             as.integer(nydims),
@@ -304,7 +303,7 @@ emulate.MC.multi <- function(point){
 
 
 ## delete everything we setup
-destroy.MC.multi <- function(){
+destroy.MC.multi <- function(nydims){
   .C("freeEmulateMCMulti",
      as.integer(nydims))
 }
