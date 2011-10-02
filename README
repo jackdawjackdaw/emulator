@@ -43,6 +43,11 @@ If everything works OK you should see some output in the R terminal and a plot o
 
 It is interesting to Try changing the number of model samples (the argument to make.model) and the cov.fn and reg.order used in estimate.model.
 
+The file 2d-regression.R builds an emulator for a 2d model, makes predictions over a grid and plots
+the predicted mean, variance, the original model and the variance weighted squared difference:
+		D(u*) = sqrt{ (m(u*) - yM(u*))**2 / cov(u*) }
+This is fun to play with.
+
 ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 
 Emulator Theory Summary:
