@@ -46,7 +46,7 @@ doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL, cov.fn.in=1, reg.o
 # do we want to scale the output too?
   scaledModelData <- scale(modelData) # well this does make things nicer
 
-  if(is.null(fixNugget) != TRUE){
+  if(is.null(fixNugget) == FALSE){
                                         # need to scale the nuggets too
     ## the model data are currently errors or sd's so we should sum them as squares to get the
     ## combined variance
@@ -54,8 +54,9 @@ doCombEstimation <- function(doNotScale=NULL, fixNugget=NULL, cov.fn.in=1, reg.o
     sdVec <- rep(NA, nobs)
     for(i in 1:nobs){
       scale <- attr(scaledModelData, "scaled:scale")[i]
-      sdVec[i] <- sum(expData$errModel.stat[,i]**2) / scale**2 
+      sdVec[i] <- mean(expData$errModel.stat[,i])**2 / scale**2 
     }
+
     combinedThetas <- multidim(scaledDesign, nmodelpts=nruns,
                                training=scaledModelData, nydims=nbins, fixedNugget=sdVec,
                                cov.fn=cov.fn.in, reg.order=reg.order.in)
