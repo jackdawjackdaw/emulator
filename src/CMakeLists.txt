@@ -16,16 +16,18 @@ set(emulator_SOURCES emulator-main ioread useful optstruct resultstruct modelstr
 set(estimator_SOURCES main ioread useful optstruct modelstruct resultstruct bin_support)
 
 #set(lhood_SOURCES likelyhoody ioread useful)
-
+# on my deb6 vmware machine we get an error about cannot 
+# find pthread_create, pthread should be explicitly linked?
+# 
 link_directories(${PROJECT_SOURCE_DIR}/src/libEmu)
 link_libraries(${LIBS} pthread)
 
 add_executable(estimator ${estimator_SOURCES})
-target_link_libraries(estimator Emu LBFGS ${libs})
+target_link_libraries(estimator Emu LBFGS ${libs} pthread)
 add_dependencies(estimator Emu LBFGS)
 
 add_executable(emulator ${emulator_SOURCES})
-target_link_libraries(emulator Emu LBFGS ${libs})
+target_link_libraries(emulator Emu LBFGS ${libs} pthread)
 add_dependencies(emulator Emu LBFGS)
 
 install (TARGETS estimator emulator 

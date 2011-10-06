@@ -32,7 +32,8 @@ endif (Fortran_COMPILER_NAME STREQUAL "gfortran")
 ADD_LIBRARY(LBFGS SHARED routines.f)
 
 ADD_LIBRARY(Emu SHARED ${emudeps})
-TARGET_LINK_LIBRARIES(Emu LBFGS ${libs})
+# this seems to be important
+TARGET_LINK_LIBRARIES(Emu LBFGS ${libs} pthread)
 add_dependencies(Emu LBFGS)
 
 
