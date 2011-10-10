@@ -212,7 +212,7 @@ callEvalLhoodList <- function(model, pointList, nevalPoints, nmodelPoints, npara
 ## not to be externally called, checks that the cov.fn and nthetas given match up
 ## should be called before doing any .C calls into rbind
 checkCovFn <- function(nthetas, nparams, cov.fn){
-  if(cov.fn < 1 || cov.fn > 3){
+  if(cov.fn < 1 || cov.fn > 4){
     buffer <- paste("cov.fn index out of range: ", cov.fn, sep="")
     stop(buffer)
   }
@@ -223,8 +223,14 @@ checkCovFn <- function(nthetas, nparams, cov.fn){
                       "needs nthetas: ", nparams+2, sep="")
       stop(buffer)
     }
+  } else if (cov.fn == 4){ ## power exp + alpha
+    if(nthetas != nparams + 3){
+      buffer <- paste("power exp called with nthetas: ", nthetas,
+                      "needs nthetas: ", nparams+3, sep="")
+      stop(buffer)
+    }
   } else { ## matern
-    if(nthetas != 3){
+    if(nthetas != 3 ){
       buffer <- paste("matern class need nthetas = 3, supplied: ", nthetas)
       stop(buffer)
     }
