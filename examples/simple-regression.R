@@ -1,4 +1,4 @@
-## r-simple.R
+## simple-regression example (1d)
 ## ccs, cec24@phy.duke.edu
 ##
 ## A simple example using R interface to libRBIND to make predictions of a function.
@@ -53,6 +53,7 @@ if(is.loaded("callEstimate") == FALSE){
 
 ## our simple model function
 ## with a little bit of noise
+## the noise helps the estimator to converge in the limit of large N
 yM <- function(z, delta=0.005) {5*exp(-3*z)*(sin(z*10)) + 2 + rnorm(1, mean=0, sd=delta) }
 
 ## construct the model data for emulation using a latin hypercube sampling method to generate the design
