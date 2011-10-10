@@ -147,12 +147,19 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args){
 
 	if(cholesky_test == GSL_EDOM){
 		FILE *fptr;
+		fprintf(stderr, "ERROR: evalFnLBFGS\n");
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
 		fprintf(stderr, "matrix dumped to chol-err.dat\n");
 		fptr = fopen("chol-err.dat", "w");
+		
+		fprintf(fptr, "# thetas: ");
+		for(i = 0; i < nthetas; i++)
+			fprintf(fptr, "%lf ", gsl_vector_get(xk, i));
+		fprintf(fptr, "\n");
+		
 		for(i = 0; i < params->options->nmodel_points; ++i){
 			for(j = 0; j < params->options->nmodel_points; ++j){
-				fprintf(fptr, "%lf", gsl_matrix_get(temp_matrix, i, j));				
+				fprintf(fptr, "%lf ", gsl_matrix_get(temp_matrix, i, j));				
 			}
 			fprintf(fptr, "\n");
 		}
@@ -235,9 +242,16 @@ void getGradientExact(double *xinput, double* gradient, int nparamsEstimate, voi
 	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
 	if(cholesky_test == GSL_EDOM){
 		FILE *fptr;
+		fprintf(stderr, "ERROR: getGradientExact\n");
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
 		fprintf(stderr, "matrix dumped to chol-err.dat\n");
 		fptr = fopen("chol-err.dat", "w");
+
+		fprintf(fptr, "# thetas: ");
+		for(i = 0; i < nthetas; i++)
+			fprintf(fptr, "%lf ", gsl_vector_get(xk, i));
+		fprintf(fptr, "\n");
+
 		for (i = 0; i < params->options->nmodel_points; ++i){
 			for (j = 0; j < params->options->nmodel_points; ++j){
 				fprintf(fptr, "%lf", gsl_matrix_get(temp_matrix, i, j));				
@@ -273,7 +287,16 @@ void getGradientExact(double *xinput, double* gradient, int nparamsEstimate, voi
 	gradient[1] = -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 	
 	for(i = 2; i < nthetas; i++){
-		makeGradMatLength(temp_matrix, covariance_matrix, gsl_vector_get(xk, i) , i, nmpoints, nparams);
+	/** 
+	 * the final argument is NULL unless we're varying alpha in which case... 
+	 */
+		if(makeGradMatLength != derivative_l_gauss_alpha){
+			makeGradMatLength(temp_matrix, covariance_matrix, gsl_vector_get(xk, i) , i, nmpoints, nparams, NULL);
+		} else {
+			// if we are varying alpha we send xk (the current thetas vector) instead
+			makeGradMatLength(temp_matrix, covariance_matrix, gsl_vector_get(xk, i) , i, nmpoints, nparams, (void*)xk);
+		}
+
 		gradient[i] = -1.0*amp*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 	}
 	
@@ -358,7 +381,7 @@ void set_random_initial_value(gsl_rng* rand, gsl_vector* x, gsl_matrix* ranges,i
 		range_max = gsl_matrix_get(ranges, i, 1);
 		// set the input vector to a random value in the range
 		the_value = gsl_rng_uniform(rand) * (range_max - range_min) + range_min;
-		//printf("theta %d set to %g\n", i, the_value);
+		printf("theta %d set to %g\n", i, the_value);
 		//gsl_vector_set(x, gsl_rng_uniform(rand)*(range_max-range_min)+range_min, i);
 		gsl_vector_set(x, i, the_value);
 	}

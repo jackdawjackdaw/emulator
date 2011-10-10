@@ -16,6 +16,7 @@
 #define POWEREXPCOVFN 1
 #define MATERN32 2
 #define MATERN52 3
+#define POWEREXPALPHA 4
 
 
 /**

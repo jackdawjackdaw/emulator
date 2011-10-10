@@ -88,7 +88,8 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * further issues with R hanging after calling estimateThetas a second time
 	 * 
 	 */
-	int nthreads = get_number_cpus();
+	//int nthreads = get_number_cpus();
+	int nthreads = 1;
 
 
 	

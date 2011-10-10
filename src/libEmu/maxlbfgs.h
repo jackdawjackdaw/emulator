@@ -26,7 +26,7 @@ double evalFnLBFGS(double *xinput, int nthetas, void* args);
  *
  */
 void (*makeGradMatLength)(gsl_matrix *dCdTheta,  gsl_matrix* xmodel, 
-														double thetaLength, int index, int nmodel_points, int nparams);
+													double thetaLength, int index, int nmodel_points, int nparams, void* args);
 
 void getGradientExact(double *xinput, double* gradient, int nparams, void* args);
 

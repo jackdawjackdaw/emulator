@@ -13,6 +13,12 @@
 //#include "../optstruct.h"
 //#include "../modelstruct.h"
 
+
+/**
+ * ccs, added a void* argument to the derivative functions, we need to pass more information in the 
+ * case that we're varying alpha as well 
+ */
+
 /**
  * the fn ptr to the covariance function, this is the most called function in libEmu
  * you can change this when you setup the optstruct.
@@ -24,20 +30,29 @@ void print_matrix(gsl_matrix* m, int nx, int ny);
 double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
 
 void derivative_l_gauss(gsl_matrix *dCdTheta, gsl_matrix* xmodel, 
-												double thetaLength, int index, int nmodel_points, int nparams);
+												double thetaLength, int index, int nmodel_points, int nparams, void* args);
 
-// same as above but without clamping on small values
-double covariance_fn_gaussian_exact(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
+
+// same as covariance_fn_gaussian but with a variable power too
+double covariance_fn_gaussian_alpha(gsl_vector *xm, gsl_vector *xn, gsl_vector *thetas, int nthetas, int nparams);
+
+// this function needs the void* args to compute the gradient correctly
+void derivative_l_gauss_alpha(gsl_matrix *dCdTheta, gsl_matrix* xmodel, 
+															double thetaLength, int index, int nmodel_points, int nparams, void* args);
+
+
+// a helper, not to be directly called
+double powExpGradAlpha(double rtemp, double alpha,  int thetaLength);
 
 double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
 
 void derivative_l_matern_three(gsl_matrix *dCdTheta, gsl_matrix* xmodel, double thetaLength,
-															  int index, int nmodel_points, int nparams);
+															 int index, int nmodel_points, int nparams, void* args);
 
 double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams);
 
 void derivative_l_matern_five(gsl_matrix *dCdTheta, gsl_matrix* xmodel, double thetaLength,
-															int index, int nmodel_points, int nparams);
+															int index, int nmodel_points, int nparams, void* args);
 
 
 void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams);

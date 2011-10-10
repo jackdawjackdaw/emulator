@@ -79,15 +79,17 @@ void setup_regression(optstruct *opts)
 
 void setup_cov_fn(optstruct *options)
 {
-	if (options->cov_fn_index == MATERN32){
+
+	switch(options->cov_fn_index){
+	case MATERN32:
 		covariance_fn = covariance_fn_matern_three;
 		makeGradMatLength = derivative_l_matern_three;
-
 		if(options->nthetas != 3)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas, potential memory errors abound\n");
 		options->nthetas = 3;
 		fprintf(stderr, "# cov_fn: MATERN32\n");
-	} else if (options->cov_fn_index == MATERN52){
+		break;
+	case MATERN52:
 		covariance_fn = covariance_fn_matern_five;
 		makeGradMatLength = derivative_l_matern_five;
 
@@ -95,9 +97,9 @@ void setup_cov_fn(optstruct *options)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas to, potential memory errors abound\n");
 		options->nthetas = 3;
 		fprintf(stderr, "# cov_fn: MATERN52\n");
-	} else if(options->cov_fn_index == POWEREXPCOVFN) { 
-		// for testing
-		covariance_fn = covariance_fn_gaussian_exact;
+		break;
+	case POWEREXPCOVFN:
+		covariance_fn = covariance_fn_gaussian;
 		makeGradMatLength = derivative_l_gauss;
 
 		if(options->nthetas != (options->nparams+2))
@@ -105,11 +107,23 @@ void setup_cov_fn(optstruct *options)
 
 		options->nthetas = options->nparams+2;
 		fprintf(stderr, "# cov_fn: POWEREXP\n");
-	} else {
-		// crap out if given a bad argument
+		break;
+	case POWEREXPALPHA:
+		covariance_fn = covariance_fn_gaussian_alpha;
+		makeGradMatLength = derivative_l_gauss_alpha;
+
+		if(options->nthetas != (options->nparams+3))
+			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas from %d, potential memory errors\n", options->nthetas);
+
+		options->nthetas = options->nparams+3;
+		fprintf(stderr, "# cov_fn: POWEREXP+ALPHA\n");
+		break;
+		
+	default:
 		printf("err: cov_fn_index set to unsupported value %d\n", options->cov_fn_index);
 		exit(1);
 	}
+
 }
 
 
@@ -139,6 +153,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 {
 	int i = 0;
 	char buffer[128];
+	int thetaLengthOffset = 2;
 	double low, high;
 	double bigRANGE = 10.0;
 	double rangeMin = 0.0, rangeMax = 0.0;
@@ -147,6 +162,9 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 
 	double rangeMinNugget = 0.0000001;
 	double rangeMaxNugget = 0.01; //what's a sensible upper limit here?
+
+	double rangeMinAlpha = 1.0;
+	double rangeMaxAlpha = 2.00001;
 	/** 
 	 * alloc the grad_ranges matrix in the options and 
 	 * put in some sensible defaults 
@@ -156,7 +174,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	/* 
 	 * setup that we're using a log scale
 	 */
-	if(options->cov_fn_index == POWEREXPCOVFN){
+	if(options->cov_fn_index == POWEREXPCOVFN || options->cov_fn_index == POWEREXPALPHA ){
 		rangeMin = rangeMinLog;
 		rangeMax = 5;
 	} else {
@@ -171,20 +189,31 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	gsl_matrix_set(options->grad_ranges, 1, 0, rangeMinNugget);
 	gsl_matrix_set(options->grad_ranges, 1, 1, rangeMaxNugget);
 
+	if(options->cov_fn_index == POWEREXPALPHA){
+		gsl_matrix_set(options->grad_ranges, 2, 0, rangeMinAlpha);
+		gsl_matrix_set(options->grad_ranges, 2, 1, rangeMaxAlpha);
+		thetaLengthOffset = 3;
+	}
+
+	printf("covfnindex: %d\n", options->cov_fn_index);
+	printf("thetaLengthOffset: %d\n", thetaLengthOffset);
+	printf("nthetas: %d\n", options->nthetas);
+
+
 	if(options->use_data_scales){ 
 		// use length scales set by the data
-		for(i = 2; i < options->nthetas; i++){
+		for(i = thetaLengthOffset; i < options->nthetas; i++){
 
-			if(options->cov_fn_index == POWEREXPCOVFN){
-				rangeMin = 0.5*log(gsl_vector_get(the_model->sample_scales, i-2));
+			if(options->cov_fn_index == POWEREXPCOVFN || options->cov_fn_index == POWEREXPALPHA){
+				rangeMin = 0.5*log(gsl_vector_get(the_model->sample_scales, i-thetaLengthOffset));
 				} else {
-				rangeMin = 0.5*(gsl_vector_get(the_model->sample_scales, i-2));
+				rangeMin = 0.5*(gsl_vector_get(the_model->sample_scales, i-thetaLengthOffset));
 			}
 			
 			if(rangeMin > rangeMax){
 				fprintf(stderr, "#ranges failed\n");
 				printf("# %d ranges: %lf %lf\n", i, rangeMin, rangeMax);
-				printf("# sampleScale: %lf\n", gsl_vector_get(the_model->sample_scales, i-2));
+				printf("# sampleScale: %lf\n", gsl_vector_get(the_model->sample_scales, i-thetaLengthOffset));
 				exit(EXIT_FAILURE);
 			}
 			gsl_matrix_set(options->grad_ranges, i, 0, rangeMin);
@@ -197,7 +226,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 
 	} else { // use some default scales
 
-		for(i = 2; i < options->nthetas; i++){
+		for(i = thetaLengthOffset; i < options->nthetas; i++){
 			gsl_matrix_set(options->grad_ranges, i, 0, rangeMin);
 			gsl_matrix_set(options->grad_ranges, i, 1, rangeMax);
 		} 
@@ -219,18 +248,18 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	/** 
 	 * print the ranges, no this is annoying
 	 */
-	/* for(i = 0; i < options->nthetas; i++){ */
-	/* 		low = gsl_matrix_get(options->grad_ranges, i, 0); */
-	/* 		high = gsl_matrix_get(options->grad_ranges, i, 1); */
+	for(i = 0; i < options->nthetas; i++){
+			low = gsl_matrix_get(options->grad_ranges, i, 0);
+			high = gsl_matrix_get(options->grad_ranges, i, 1);
 		
-	/* 	if(i == 0){ */
-	/* 		printf("# %d ranges: %lf %lf (scale)\n", i, low, high);  */
-	/* 	} if (i == 1){ */
-	/* 		printf("# %d ranges: %lf %lf (nugget)\n", i, low, high);  */
-	/* 	} else if (i > 1) { */
-	/* 		printf("# %d ranges: %lf %lf\n", i, low, high); */
-	/* 	} */
-	/* } */
+		if(i == 0){
+			printf("# %d ranges: %lf %lf (scale)\n", i, low, high);
+		} if (i == 1){
+			printf("# %d ranges: %lf %lf (nugget)\n", i, low, high);
+		} else if (i > 1) {
+			printf("# %d ranges: %lf %lf\n", i, low, high);
+		}
+	}
 
 
 }

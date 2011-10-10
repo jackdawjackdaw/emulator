@@ -89,82 +89,18 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
  * 1) why are the thetas exponentiated? from now on all thetas 
  * are not to be scaled by cov fns
  * 
+ * updated: oct 10 11, 
+ * 1) removed the clamped version, the previous covariance_fn_gaussian_exact is now 
+ * the default
  *
  */
-
-/** CLAMPVALUE is the cutoff for calculating the exponential covariance, anythign less than this
- * is just a waste of precision and computation
- * 
- * -10 is too large
- * -25 is about right, but you can fiddle around with this a bit to pull a tiny smidgin more speed out of the code
- * -100 is too small
- */
-#define CLAMPVALUE -15
-double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
-	// calc the covariance for a given set of input points
-	int i, truecount  = 0;
-	int theta_offest = 2; // how many entries to look ahread in thetas to get the length scales
-	double covariance = 0.0;
-	double exponent = 0.0;
-	double xm_temp = 0.0;
-	double xn_temp = 0.0;
-	double r_temp = 0.0;
-	double dist_temp = 0.0;
-	int theta_offset = 2;
-	//double amp = exp(gsl_vector_get(thetas, 0));
-	double amp = gsl_vector_get(thetas, 0);
-	double nug = gsl_vector_get(thetas, 1);
-	
-	for(i = 0; i < nparams; i++){
-		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
-		xn_temp = gsl_vector_get(xn, i);
-
-		//r_temp = gsl_vector_get(thetas, i+theta_offset);
-    r_temp = exp(gsl_vector_get(thetas, i+theta_offset));
-
-		// fix alpha = 2.0
-		//r_temp = pow(r_temp , alpha); 
-		r_temp = r_temp * r_temp;
-		// gaussian term				
-
-		// change from pow to explicit multiplication, for alpha = 2.0
-		//exponent += (-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp);
-		dist_temp = fabs(xm_temp-xn_temp);
-		exponent += (-1.0/2.0)*dist_temp*dist_temp/(r_temp);
-
-		//DEBUGprintf("%g\n", covariance);
-		if (dist_temp < 0.0000000001){
-			truecount++; 		
-		}
-	}
-	
-	// we're going to clamp exp(exponent) == 0 if exponent < -100
-	if(exponent < CLAMPVALUE){
-		covariance = 0.0;
-	} else {
-		covariance = exp(exponent)*amp;
-	}
-
-	/** 
-	 * the nugget is only added to the diagonal covariance terms,
-	 * the parts where xm == xn (vectorwise)
-	 */
-	if(truecount == nparams) {
-		// i.e the two vectors are hopefully the same
-		covariance += gsl_vector_get(thetas,1);
-	}
-
-
-	return(covariance);
-}
-
 /**
  * same as covariance_fn_gaussian but without any clamping of the exponential, the clamping
  * *appears* to cause issues with cholesky inversion for largeish nmodelpts ~ 100 
  * 
  * we can use the same gradient, since it's actually the right gradient for this function
  */
-double covariance_fn_gaussian_exact(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
+double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
 	// calc the covariance for a given set of input points
 	int i, truecount  = 0;
 	int theta_offset = 2;
@@ -206,7 +142,7 @@ double covariance_fn_gaussian_exact(gsl_vector *xm, gsl_vector* xn, gsl_vector* 
 	 */
 	if(truecount == nparams) {
 		// i.e the two vectors are hopefully the same
-		covariance += gsl_vector_get(thetas,1);
+		covariance += nug;
 	}
 
 
@@ -229,9 +165,11 @@ double covariance_fn_gaussian_exact(gsl_vector *xm, gsl_vector* xn, gsl_vector* 
  * dC/dtheta / exp(theta_0) = exp(-0.5 * exp(-2*theta_L) * r^2  - 2*theta_L) * r^2
  * 
  * if alpha is ever modified above, this should also be changed
+ * 
+ * the args argument is optional and not used here
  */
 void derivative_l_gauss(gsl_matrix *dCdTheta, gsl_matrix* xmodel, 
-												double thetaLength, int index, int nmodel_points, int nparams){ 
+												double thetaLength, int index, int nmodel_points, int nparams, void* args){ 
 	int i, j;
 	double scale;
 	double rtemp;
@@ -285,51 +223,82 @@ void derivative_l_gauss(gsl_matrix *dCdTheta, gsl_matrix* xmodel,
  * we assume that amp and the length scales are log-scaled, we don't need to do anything in our 
  * cov fn but we will care when we compute the gradient
  */
-/* double covariance_fn_gaussian_alpha(gsl_vector *xm, gsl_vector *xn, gsl_vector *thetas, int nthetas, int nparams){ */
-/* 	double covariance = 0.0; */
-/* 	double r_temp = 0.0; */
-/* 	double amp = gsl_vector_get(thetas, 0); */
-/* 	double nug = gsl_vector_get(thetas, 1); */
-/* 	double alpha = gsl_vector_get(thetas, 2); */
-/* 	int theta_offset = 3; // how many entries to look ahead in thetas vector to get the length scales */
+double covariance_fn_gaussian_alpha(gsl_vector *xm, gsl_vector *xn, gsl_vector *thetas, int nthetas, int nparams){
+	double covariance = 0.0;
+	double r_temp = 0.0;	
+	double amp;
+	double nug;
+	double alpha;
 
-/* 	for(i = 0; i < nparams; i++){ */
-/* 		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer */
-/* 		xn_temp = gsl_vector_get(xn, i); */
+	int i, truecount;
+	double xm_temp, xn_temp, dist_temp, exponent;
 
-/*     r_temp = exp(gsl_vector_get(thetas, i+theta_offset)); */
-/* 		r_temp = pow(r_temp , alpha);  */
+	assert(nthetas >2);
+
+	amp = gsl_vector_get(thetas, 0);
+	nug = gsl_vector_get(thetas, 1);
+	alpha = gsl_vector_get(thetas, 2);
 
 
-/* 		// change from pow to explicit multiplication, for alpha = 2.0 */
-/* 		//exponent += (-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp); */
-/* 		dist_temp = fabs(xm_temp-xn_temp); */
-/* 		exponent += (-0.5)*pow(dist_temp, alpha)/(r_temp); */
+	int theta_offset = 3; // how many entries to look ahead in thetas vector to get the length scales
 
-/* 		if (dist_temp < 0.0000000001){ // i.e dist_temp is zero */
-/* 			truecount++; 		 */
-/* 		} */
-/* 	} */
+	for(i = 0; i < nparams; i++){
+		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
+		xn_temp = gsl_vector_get(xn, i);
 
-/* 	covariance = exp(exponent)*amp; */
+    r_temp = exp(gsl_vector_get(thetas, i+theta_offset));
+		/* printf("# exp(theta_%d): %lf\n", i, r_temp); */
+		r_temp = pow(r_temp , alpha);
+		/* printf("# alpha = %lf\n", alpha); */
+		/* printf("# r_temp = %lf\n", r_temp); */
 
-/* 	/\**  */
-/* 	 * the nugget is only added to the diagonal covariance terms, */
-/* 	 * the parts where xm == xn (vectorwise) */
-/* 	 *\/ */
-/* 	if(truecount == nparams) { */
-/* 		// i.e the two vectors are hopefully the same */
-/* 		covariance += gsl_vector_get(thetas,1); */
-/* 	} */
 
-/* 	return(covariance); */
+
+		// change from pow to explicit multiplication, for alpha = 2.0
+		//exponent += (-1.0/2.0)*pow(fabs(xm_temp-xn_temp), alpha)/(r_temp);
+		dist_temp = fabs(xm_temp-xn_temp);
+		/* printf("# dist_temp = %lf\n", dist_temp); */
+		/* printf("# dist_temp^alpha = %lf\n", pow(dist_temp, alpha)); */
+		exponent += (-0.5)*pow(dist_temp, alpha)/(r_temp);
+		/* printf("# exp = %lf\n", exponent); */
+
+		if (dist_temp < 0.0000000001){ // i.e dist_temp is zero
+			truecount++;
+		}
+	}
+
+	covariance = exp(exponent)*amp;
+
+	/**
+	 * the nugget is only added to the diagonal covariance terms,
+	 * the parts where xm == xn (vectorwise)
+	 */
+	if(truecount == nparams) {
+		// i.e the two vectors are hopefully the same
+		covariance += nug;
+	}
+
+	if(isnan(covariance)){
+		fprintf(stderr, "# covariance is nan!\n");
+		fprintf(stderr, "# thetas: ");
+		for(i = 0; i < nthetas; i++)
+			fprintf(stderr, "%lf ", gsl_vector_get(thetas, i));
+		fprintf(stderr, "\n");
+		exit(EXIT_FAILURE);
+	}
+				
+
+	return(covariance);
 	
-/* } */
+}
 
 
 /** 
- * we need to compute a matrix of dC/dtheta-length or dC/dtheta-alpha, if index == 3 then we do dC/dalpha 
- * else if index > 3 we do dC/dtheta-length but with a variable alpha (oy)
+ * theta_2 = alpha
+ * theta_3 (and higher) = length scales
+ * 
+ * we need to compute a matrix of dC/dtheta-length or dC/dtheta-alpha, if index == 2 then we do dC/dalpha 
+ * else if index > 2 we do dC/dtheta-length but with a variable alpha (oy)
  * 
  * compute a matrix of dC/dtheta-length / theta_0 for 
  * the gaussian covariance function c(x,y) = theta_0 * exp( - 1/2 * (x-y)^\alpha / theta_L^\alpha ) + theta_1
@@ -348,46 +317,69 @@ void derivative_l_gauss(gsl_matrix *dCdTheta, gsl_matrix* xmodel,
  * 
  * the latter of which simplifies to what we have above: derivative_l_gauss for alpha=2
  *
+ * @param thetaLength the value of the length scale if index > 2, 0 otherwise
+ * @param index which of the length derivatives to do
+ * @param args: (void*) thetas_current, the whole vector of thetas is needed here
  */
-/* void derivative_l_gauss_alpha(gsl_matrix *dCdTheta, gsl_matrix* xmodel, gsl_vector * thetas,  */
-/* 												 int index, int nmodel_points, int nparams){  */
-/* 	int i, j; */
-/* 	double scale; */
-/* 	double rtemp; */
+void derivative_l_gauss_alpha(gsl_matrix *dCdTheta, gsl_matrix* xmodel, 
+															double thetaLength, int index, int nmodel_points, 
+															int nparams, void* args){ 
+
 	
-/* 	const int nthetasConstant = 3; */
-/* 	int indexScaled = index - nthetasConstant; */
-/* 	double thetaLCubed; */
-/* 	double partialCov = 0.0; */
-/* 	double expTheta = exp(-2*thetaLength); */
-
-/* 	//thetaLCubed = thetaLength * thetaLength * thetaLength; */
-
-/* 	for(i = 0; i < nmodel_points; i++){ */
-/* 		for(j = 0; j < nmodel_points; j++){ */
-
-/* 			// is this the correct indexing into xmodel? */
-/* 			rtemp = gsl_matrix_get(xmodel, i, indexScaled) - gsl_matrix_get(xmodel, j, indexScaled);  */
-/* 			/\* */
-/* 			 * this is the correct form for the un logged thetas  */
-/* 			 * dC/dtheta_l */
-/* 			 *\/ */
-			
-/* 			/\* scale = (rtemp * rtemp) / (thetaLCubed); *\/ */
-/* 			/\* partialCov = exp(-(0.5*rtemp*rtemp)/ thetaLength*thetaLength); *\/ */
-/* 			/\* gsl_matrix_set(dCdTheta, i, j, scale*partialCov); *\/ */
-
-/* 			/\* */
-/* 			 * if we have defined our thetas on a log scale then */
-/* 			 * we need to use the dC/dtheta expression */
-/* 			 *\/ */
-/* 			partialCov = exp(-0.5*expTheta *rtemp*rtemp - 2*thetaLength)*rtemp*rtemp; */
-/* 			gsl_matrix_set(dCdTheta, i, j, partialCov); */
-/* 		} */
-/* 	} */
+	// cast args back to the right form
+	gsl_vector *thetas = (gsl_vector*)args;
 	
-/* } */
+	int i, j, paramIndex;
+	double alpha = gsl_vector_get(thetas, 2);
+	double rtemp = 0.0;
+	
+	const int nthetasConstant = 3;
+	int indexScaled = index - nthetasConstant;
+	double partialCov = 0.0;
+	double expTheta = exp(thetaLength);
+	double ralpha = 0.0; // r^alpha
+	double expThetaMinusAlpha = 0.0; // exp(theta)^{-alpha}
 
+	assert(index >= 2);
+
+	for(i = 0; i < nmodel_points; i++){
+		for(j = 0; j < nmodel_points; j++){
+
+			if(index > 2){
+				rtemp = fabs(gsl_matrix_get(xmodel, i, indexScaled) - gsl_matrix_get(xmodel, j, indexScaled));
+				ralpha = pow(rtemp, alpha);
+				expThetaMinusAlpha = pow(expTheta, -1.0*alpha);
+
+				// this is the length derivative case
+				partialCov = 0.5 * exp( -0.5 * expThetaMinusAlpha * ralpha ) * expThetaMinusAlpha * ralpha * alpha;
+			} else if (index == 2){
+				for(paramIndex = 0; paramIndex < nparams; paramIndex++){
+					rtemp = fabs(gsl_matrix_get(xmodel, i, paramIndex) - gsl_matrix_get(xmodel, j, paramIndex));
+					// we're indexing into thetas from 0, so we add nthetasConstant
+					partialCov += powExpGradAlpha(rtemp, alpha, gsl_vector_get(thetas, paramIndex + nthetasConstant));
+				}
+			}
+			gsl_matrix_set(dCdTheta, i, j, partialCov);				
+		}
+	}
+
+	
+}
+
+/**
+ * not to be called directly 
+ * 
+ * dC/d_alpha = r^\alpha exp(\theta)^-{\alpha} (exp{-0.5 exp(\theta)^{-\alpha} r^{\alpha}) 
+ *             * (0.5 log(exp(\theta)) - 0.5 \log(r) )
+ */
+double powExpGradAlpha(double rtemp, double alpha,  int thetaLength){
+	double ctemp = 0.0;
+	double ralpha = pow(rtemp, alpha);
+	double etheta = exp(thetaLength);
+	double ethetaMinsAlpha = pow(exp(thetaLength), -alpha);
+	ctemp = ralpha * ethetaMinsAlpha * exp(-0.5 * ethetaMinsAlpha * ralpha) * (0.5 * thetaLength  - 0.5*log(rtemp));
+	return(ctemp);
+}
 
 
 
@@ -456,11 +448,12 @@ double covariance_fn_matern_three(gsl_vector *xm, gsl_vector* xn, gsl_vector* th
  * @param covsub = c(x,y) - theta_1
  * @param thetaLength <- value of param we're evaluating gradient at
  * @param index <- must be 2 (since matern 3/2 only has 3 indices)
+ * @param args* unused
  * @return dCdTheta <- matrix of dc(r)/dtheta_2
  * 
  */
 void derivative_l_matern_three(gsl_matrix *dCdTheta, gsl_matrix* xmodel, double thetaLength, 
-															 int index, int nmodel_points, int nparams){ 
+															 int index, int nmodel_points, int nparams, void* args){ 
 	assert(index == 2);
 	int i, j, paramIndex;
 	double derivVal = 0.0;
@@ -558,7 +551,7 @@ double covariance_fn_matern_five(gsl_vector *xm, gsl_vector* xn, gsl_vector* the
  * 
  */
 void derivative_l_matern_five(gsl_matrix *dCdTheta, gsl_matrix* xmodel, double thetaLength, 
-															 int index, int nmodel_points, int nparams){ 
+															int index, int nmodel_points, int nparams, void* args){ 
 	assert(index == 2);
 	int i, j, paramIndex;
 	double derivVal = 0.0;
