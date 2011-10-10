@@ -84,10 +84,10 @@ estimate.model <- function(model){
   nparams <- 1 ## number of dimensions in the u space
   ## for the default power-exponential covariance function this nthetas = nparams + 2
   ## callEstimate will complain if this is set to an incorrect value.
-  nthetas <- nparams + 2
+  nthetas <- nparams + 3
   ## pick which covariance function to use from (1=powerExponential, 2=matern3/2, 3=matern5/2), 
   ## the power exponential function should almost always be used.
-  cov.fn <- 1
+  cov.fn <- 4
   ## pick the order of the prior regression process (0=constant only, 1=linear model, 2=quadratic model, 3=cubic)
   reg.order <- 1
 
