@@ -88,7 +88,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * further issues with R hanging after calling estimateThetas a second time
 	 * 
 	 */
-	int nthreads = get_number_cpus();
+	int nthreads = 1; // get_number_cpus();
 
 
 	
@@ -262,7 +262,9 @@ void* estimate_thread_function(void* args){
 			break;
 
 		/* just support LBFGS maximisation now */
-		maxWithLBFGS(params);
+		//maxWithLBFGS(params);
+		/* switch to multimin for testing */
+		maxWithMultimin(params);
 		
 		/* this returns the likelihood of the final set of thetas from maxWithLBFGS */
 		my_theta_val = evalLikelyhoodLBFGS_struct(params);
