@@ -264,10 +264,10 @@ void* estimate_thread_function(void* args){
 		/* just support LBFGS maximisation now */
 		//maxWithLBFGS(params);
 		/* switch to multimin for testing */
-		maxWithMultimin(params);
+		maxWithMultiMin(params);
 		
 		/* this returns the likelihood of the final set of thetas from maxWithLBFGS */
-		my_theta_val = evalLikelyhoodLBFGS_struct(params);
+		my_theta_val = evalLikelihood_struct(params);
 
 		/* store you local best value too */
 		if(my_theta_val > params->my_best)

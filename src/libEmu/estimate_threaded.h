@@ -27,6 +27,7 @@ struct estimate_thetas_params{
 
 // have to include this after derining the above struct or you get tied in knots
 #include "maxlbfgs.h"
+#include "maxmultimin.h"
 
 #define USEMUTEX
 
