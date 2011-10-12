@@ -631,6 +631,8 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 	double the_likelyhood = 0.0;
 	int nevalPts  = *nevalPoints_in;
 	gsl_matrix *the_point_array;
+	gsl_vector_view point_vec_view;
+
 	double *xinput;
 	int i,j;
 	struct estimate_thetas_params params;
@@ -699,11 +701,12 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 
 
 	for(i = 0; i < nevalPts; i++){
-		for(j = 0; j < options.nthetas; j++){
-			xinput[j] = gsl_matrix_get(the_point_array, i, j);
-		}
+		/* for(j = 0; j < options.nthetas; j++){ */
+		/* 	xinput[j] = gsl_matrix_get(the_point_array, i, j); */
+		/* } */
+		point_vec_view = gsl_matrix_row(the_point_array, i);
 		// we can get away with changing xinput each time since the params thetas are not used
-		the_likelyhood = evalFnLBFGS(xinput, options.nthetas, &params);
+		the_likelyhood = evalFnMulti(&(point_vec_view.vector),  &params);
 		answer[i] = the_likelyhood;
 	}
 	
