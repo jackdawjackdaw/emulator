@@ -79,7 +79,8 @@ void setup_regression(optstruct *opts)
 
 void setup_cov_fn(optstruct *options)
 {
-	if (options->cov_fn_index == MATERN32){
+ switch(options->cov_fn_index){
+ case MATERN32:
 		covariance_fn = covariance_fn_matern_three;
 		makeGradMatLength = derivative_l_matern_three;
 
@@ -87,7 +88,8 @@ void setup_cov_fn(optstruct *options)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas, potential memory errors abound\n");
 		options->nthetas = 3;
 		fprintf(stderr, "# cov_fn: MATERN32\n");
-	} else if (options->cov_fn_index == MATERN52){
+		break;
+ case MATERN52:
 		covariance_fn = covariance_fn_matern_five;
 		makeGradMatLength = derivative_l_matern_five;
 
@@ -95,9 +97,10 @@ void setup_cov_fn(optstruct *options)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas to, potential memory errors abound\n");
 		options->nthetas = 3;
 		fprintf(stderr, "# cov_fn: MATERN52\n");
-	} else if(options->cov_fn_index == POWEREXPCOVFN) { 
+		break;
+ case POWEREXPCOVFN:
 		// for testing
-		covariance_fn = covariance_fn_gaussian_exact;
+		covariance_fn = covariance_fn_gaussian;
 		makeGradMatLength = derivative_l_gauss;
 
 		if(options->nthetas != (options->nparams+2))
@@ -105,11 +108,13 @@ void setup_cov_fn(optstruct *options)
 
 		options->nthetas = options->nparams+2;
 		fprintf(stderr, "# cov_fn: POWEREXP\n");
-	} else {
+		break;
+ default:
 		// crap out if given a bad argument
 		printf("err: cov_fn_index set to unsupported value %d\n", options->cov_fn_index);
 		exit(1);
-	}
+ }
+	
 }
 
 
