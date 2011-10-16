@@ -148,7 +148,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	double bigRANGE = 10.0;
 	double rangeMin = 0.0, rangeMax = 0.0;
 	double fixedNuggetLeeWay = 0.0 ;
-	double rangeMinLog = -15;
+	double rangeMinLog = -5;
 
 	double rangeMinNugget = log(0.0000001);
 	double rangeMaxNugget = log(0.01); //what's a sensible upper limit here?
