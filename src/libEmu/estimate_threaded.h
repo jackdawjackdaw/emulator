@@ -22,6 +22,7 @@ struct estimate_thetas_params{
 	gsl_rng* random_number;	
 	gsl_matrix* h_matrix;
 	int max_tries;
+	double lhood_current;
 	double my_best; // want to check on the local best values
 } estimate_thetas_params;
 

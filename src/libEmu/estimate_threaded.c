@@ -21,7 +21,7 @@ pthread_spinlock_t results_spin;
  */
 
 /* how many lots of thread_level_tries to do */
-int ntries = 16; 
+int ntries = 1; 
 /* mutex protected counter to keep track of completed jobs */
 int jobnumber = 0; 
 /* global spot for the best thetas to be kept in */
@@ -96,6 +96,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	if(ntries < nthreads){
 		ntries = nthreads;
 	}
+	ntries = 1;
 
 	//fprintf(stderr, "nthreads = %d\tntries = %d\n", nthreads, ntries);
 
@@ -105,7 +106,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * we only care about the *best* so it doesn't matter if we just throw 
 	 * the rest out the window... 
 	 */
-	int thread_level_tries = 25; 
+	int thread_level_tries = 1; 
 
 	pthread_t *threads;
 	struct estimate_thetas_params *params;
@@ -265,9 +266,11 @@ void* estimate_thread_function(void* args){
 		//maxWithLBFGS(params);
 		/* switch to multimin for testing */
 		maxWithMultiMin(params);
-		
-		/* this returns the likelihood of the final set of thetas from maxWithLBFGS */
-		my_theta_val = evalLikelihood_struct(params);
+		my_theta_val = params->lhood_current;
+
+		/* printf("my_theta_val = %g\n", my_theta_val); */
+		/* printf("params->best = %g\n", params->my_best); */
+		/* printf("params->lhood = %g\n", params->lhood_current); */
 
 		/* store you local best value too */
 		if(my_theta_val > params->my_best)
@@ -293,8 +296,8 @@ void* estimate_thread_function(void* args){
 			gsl_vector_memcpy(best_thetas, params->the_model->thetas); // save them
 			// save the new best too
 			best_likelyhood_val = my_theta_val;
-			/* fprintPt(stdout, my_id); */
-			/* printf(" won with %g\n",  my_theta_val); */
+			fprintPt(stdout, my_id);
+			printf(" won with %g\n",  my_theta_val);
 		}
 		#ifdef USEMUTEX
 		pthread_mutex_unlock(&results_mutex);
