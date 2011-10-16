@@ -162,6 +162,9 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
  * dC/dtheta / exp(theta_0) = exp(-0.5 * exp(-2*theta_L) * r^2  - 2*theta_L) * r^2
  * 
  * if alpha is ever modified above, this should also be changed
+ *
+ * note: this was being called by getGradientExact with the matrix as the covmatrix
+ * not the xmodel, cripes!
  */
 void derivative_l_gauss(gsl_matrix *dCdTheta, gsl_matrix* xmodel, 
 												double thetaLength, int index, int nmodel_points, int nparams){ 
@@ -172,7 +175,7 @@ void derivative_l_gauss(gsl_matrix *dCdTheta, gsl_matrix* xmodel,
 	int indexScaled = index - nthetasConstant;
 	double thetaLCubed;
 	double partialCov = 0.0;
-	double expTheta = exp(-2*thetaLength);
+	double expTheta = exp(-2.0*thetaLength);
 
 	//thetaLCubed = thetaLength * thetaLength * thetaLength;
 
@@ -195,6 +198,7 @@ void derivative_l_gauss(gsl_matrix *dCdTheta, gsl_matrix* xmodel,
 			 * we need to use the dC/dtheta expression
 			 */
 			partialCov = exp(-0.5*expTheta *rtemp*rtemp - 2*thetaLength)*rtemp*rtemp;
+			//printf("rtemp %g\tthetaLength %g\tpartialCov %g\n", rtemp, thetaLength, partialCov);
 			gsl_matrix_set(dCdTheta, i, j, partialCov);
 		}
 	}
