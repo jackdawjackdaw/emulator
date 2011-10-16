@@ -4,7 +4,7 @@
  * @file
  * @author C.Coleman-Smith, cec24@phy.duke.edu
  * @date oct-11
- * @version 0.1
+ * @version 0.
  * @section DESCRIPTION
  * 
  * contains routines to use the multimin maximisation methods
@@ -20,8 +20,20 @@
  * when optimization has finished params->the_model->thetas is set to the winning 
  * set and params->best_value should be set to the loglikelihood of this set
  * 
+ * currently this roughly works, but the routine seems to terminate very quickly, well
+ * before the gradient is satisfactory
  * 
  */
+
+/**
+ * to specify a system for multimin we should supply:
+ * the evaluation function itself: double (*f)(gsl_vector* x, void *params)
+ * the grad fn: void (*df)(gsl_vector* x, void* params, gsl_vector*g) - sets the grad vector
+ * a combo fn: void (*fdf)(gsl_vector* x, void* params, double* f, gsl_vector*g) - sets f and g
+ * 
+ */
+
+
 
 #define SCREWUPVALUE -2000
 
@@ -98,13 +110,6 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 
 }
 
-/**
- * to specify a system for multimin we should supply:
- * the evaluation function itself: double (*f)(gsl_vector* x, void *params)
- * the grad fn: void (*df)(gsl_vector* x, void* params, gsl_vector*g) - sets the grad vector
- * a combo fn: void (*fdf)(gsl_vector* x, void* params, double* f, gsl_vector*g) - sets f and g
- * 
- */
 
 /*
  * the actual eval fn, returns the loglikelihood for a given set of vectors at the location theta_vec
@@ -242,11 +247,13 @@ void gradFnMulti(const gsl_vector* theta_vec, void* params_in, gsl_vector * grad
 	// using the random initial conditions! (xold not thetas)
 	makeCovMatrix(covariance_matrix, params->the_model->xmodel, theta_local, nmpoints, nthetas, nparams);
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
-	
+
+	#ifdef DEBUG1
 	printf("#thetas: ");
 	for(i = 0; i < nthetas; ++i)
 		printf("%g ", gsl_vector_get(theta_local, i));
 	printf("\n");
+	#endif
 	//print_matrix(temp_matrix, nmpoints, nmpoints);
 
 	// do a cholesky decomp of the cov matrix
@@ -313,11 +320,13 @@ void gradFnMulti(const gsl_vector* theta_vec, void* params_in, gsl_vector * grad
 		grad_temp = -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 		gsl_vector_set(grad_vec, i, grad_temp);
 	}
-	
+
+	#ifdef DEBUG1
 	printf("# gradient: ");
 	for(i = 0; i < nthetas; ++i)
 		printf("%g ", gsl_vector_get(grad_vec,i));
 	printf("\n");
+	#endif
 
 	
 	gsl_matrix_free(covariance_matrix);
@@ -385,6 +394,7 @@ double getGradientCn(gsl_matrix * dCdtheta, gsl_matrix *cinverse,  gsl_vector* t
 
 // compute the function value and the gradient vector in one call
 void evalFnGradMulti(const gsl_vector* theta_vec, void* params, double* fnval, gsl_vector * grad_vec){
+	printf("# called fdf\n");
 	*fnval = evalFnMulti(theta_vec, params);
 	gradFnMulti(theta_vec, params, grad_vec);
 }
@@ -432,10 +442,11 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	double stepSizeInit = 0.1;
 	double tolerance = 0.2; // sets the accuracy of the line search.
 	double fnValue = 0.0;
+	double norm = 0.0; // norm of the gradient
 	/*
 	 * we stop when |g| < epsAbs, not sure how to set this yet
 	 */
-	double epsAbs = 1.0; 
+	double epsAbs = 0.05; 
 
 	fprintf(stderr, "#doOptimizeMultiMin: nthetas %d\tnmpoints %d\tnparams %d\n", 
 					nthetas, nmpoints, nparams);
@@ -449,12 +460,16 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	// our multimin fn
 	gsl_multimin_function_fdf multiminFn;
 	multiminFn.n = nthetas; // the number of dimensions
-	multiminFn.f = fn;
-	multiminFn.df = gradientFn;
-	multiminFn.fdf = fnGradFn;
+	/* multiminFn.f = fn; */
+	/* multiminFn.df = gradientFn; */
+	/* multiminFn.fdf = fnGradFn; */
+	multiminFn.f = &evalFnMulti;
+	multiminFn.df = &gradFnMulti;
+	multiminFn.fdf = &evalFnGradMulti;
+	
 	multiminFn.params = args;
 
-	// the multiminimizer
+	// the multiminimizer, this is not working very well currently...
 	const gsl_multimin_fdfminimizer_type *min_type = gsl_multimin_fdfminimizer_vector_bfgs2; //set this properly
 	//const gsl_multimin_fdfminimizer_type *min_type = gsl_multimin_fdfminimizer_conjugate_fr; //set this properly
 
@@ -488,8 +503,14 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 		fprintf(stderr, "#grad: ");
 		for (i = 0; i < nthetas; ++i)
 			fprintf(stderr, "%lf ", gsl_vector_get(fdfmin->gradient, i));
-
-		fprintf(stderr, "\n");
+		
+		norm = 0.0;
+		for(i = 0; i < nthetas; ++i){
+			norm+= gsl_vector_get(fdfmin->gradient,i)*gsl_vector_get(fdfmin->gradient,i);
+		}
+		fprintf(stderr, "norm: %g\n", sqrt(norm));
+		
+		
 		
 		// this will return GSL_SUCCESS if we are done
 		status = gsl_multimin_test_gradient(fdfmin->gradient, epsAbs);
