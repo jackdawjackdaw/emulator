@@ -92,22 +92,18 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	assert(options->nthetas >0);
 	assert(options->nparams >0);
 
-	/**!!!! set the number of regression fns
-	 * 
-	 * this is regression model dependant
-	 * 
-	 * (1+ options->nparams) is correct for the simple linear fit in each dimension plus a constant intercept
-	 * 
+	/* 
+	 * set the order of the regression process, we'll use the 
+	 * default constant only regression
 	 */
-	options->regression_order = 2;
-	//options->nregression_fns =  1 + options->nparams;
+	options->regression_order = 0;
 	
 	/* 
 	 * use the powerexp cov fn by default 
    */
 	options->cov_fn_index = POWEREXPCOVFN;
 	
-	// use the data scales
+	// use the data scales, sure this doesn't really do anything
 	options->use_data_scales = 1;
 }
 
