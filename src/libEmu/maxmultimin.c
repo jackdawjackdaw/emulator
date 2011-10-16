@@ -64,7 +64,7 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 											 &evalFnGradMulti, // does both at once
 											 xInit, xFinal, (void*)params);
 		
-		likelihood = evalFnMulti(xFinal, (void*)params);
+		likelihood = -1*evalFnMulti(xFinal, (void*)params);
 		
 		/*annoying!
 		**/
@@ -74,7 +74,7 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 		if(likelihood > bestLHood && (isnan(likelihood) == 0 && isinf(likelihood) == 0)){
 			bestLHood = likelihood;
 			gsl_vector_memcpy(xBest, xFinal);
-
+			
 			/* fprintPt(stdout, self); */
 			/* printf(":best = %g\n", bestLikelyHood); */
 		}
@@ -89,6 +89,7 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 	}
 
 	gsl_vector_memcpy(params->the_model->thetas, xBest);
+	params->lhood_current = bestLHood;
 	
 	gsl_vector_free(xInit);
 	gsl_vector_free(xFinal);
@@ -186,14 +187,18 @@ double evalFnMulti(const gsl_vector* theta_vec, void* params_in){
 															params->h_matrix, nmodel_points, 
 															nthetas, nparams, params->options->nregression_fns);
 		
-	fprintf(stderr,"L:%f\n", temp_val);
-	//print_vector_quiet(theta_local, nthetas);
-		
+	
+	/* printf("evalfn: %g\t", -1*temp_val); */
+	/* for(i = 0; i < nthetas; i++) */
+	/* 	printf("%g ", gsl_vector_get(theta_local, i)); */
+	/* printf("\n"); */
+
+
 	gsl_matrix_free(covariance_matrix);
 	gsl_matrix_free(cinverse);
 	gsl_matrix_free(temp_matrix);
 	gsl_vector_free(theta_local);
-	return(temp_val);
+	return(-1*temp_val);
 }
 
 /**
@@ -237,7 +242,11 @@ void gradFnMulti(const gsl_vector* theta_vec, void* params_in, gsl_vector * grad
 	// using the random initial conditions! (xold not thetas)
 	makeCovMatrix(covariance_matrix, params->the_model->xmodel, theta_local, nmpoints, nthetas, nparams);
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
-
+	
+	printf("#thetas: ");
+	for(i = 0; i < nthetas; ++i)
+		printf("%g ", gsl_vector_get(theta_local, i));
+	printf("\n");
 	//print_matrix(temp_matrix, nmpoints, nmpoints);
 
 	// do a cholesky decomp of the cov matrix
@@ -278,7 +287,9 @@ void gradFnMulti(const gsl_vector* theta_vec, void* params_in, gsl_vector * grad
 	// now we need to sub out the contribution from the nugget, in the bad way...
 	for(i = 0; i < nmpoints; i++)
 		gsl_matrix_set(temp_matrix, i, i, gsl_matrix_get(temp_matrix,i,i) - nug);
-			
+
+	/* printf("#dC/dtheta_0\n"); */
+	/* print_matrix(temp_matrix, nmpoints, nmpoints); */
 
 	grad_temp = -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 	gsl_vector_set(grad_vec, 0, grad_temp);
@@ -287,14 +298,27 @@ void gradFnMulti(const gsl_vector* theta_vec, void* params_in, gsl_vector * grad
 	gsl_matrix_set_identity(temp_matrix);
 	// since we're log scaling the nugget we need to set the cov-matrix accordingly
 	gsl_matrix_scale(temp_matrix, nug);
+
+ 	/* printf("#dC/dtheta_1\n"); */
+	/* print_matrix(temp_matrix, nmpoints, nmpoints); */
+
 	grad_temp= -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 	gsl_vector_set(grad_vec, 1, grad_temp);
 	
 	for(i = 2; i < nthetas; i++){
-		makeGradMatLength(temp_matrix, covariance_matrix, gsl_vector_get(theta_local, i) , i, nmpoints, nparams);
-		grad_temp = -1.0*amp*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
+		makeGradMatLength(temp_matrix, params->the_model->xmodel, gsl_vector_get(theta_local, i) , i, nmpoints, nparams);
+		gsl_matrix_scale(temp_matrix, amp);
+		/* printf("#dC/dtheta_2\n"); */
+		/* print_matrix(temp_matrix, nmpoints, nmpoints); */
+		grad_temp = -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 		gsl_vector_set(grad_vec, i, grad_temp);
 	}
+	
+	printf("# gradient: ");
+	for(i = 0; i < nthetas; ++i)
+		printf("%g ", gsl_vector_get(grad_vec,i));
+	printf("\n");
+
 	
 	gsl_matrix_free(covariance_matrix);
 	gsl_matrix_free(cinverse);
@@ -316,8 +340,9 @@ void gradFnMulti(const gsl_vector* theta_vec, void* params_in, gsl_vector * grad
  * @param cinverse the inverted cov matrix
  * @return the value of the gradient in this direction
  * 
- * grad = -1/2*trace( cinverse %*% dCdtheta ) + 1/2 tn^{t} %*% cinverse %*% dCdtheta %*% tn 
+ * grad = -1/2*trace( cinverse %*% dCdtheta ) + 1/2 tn^{t} %*% cinverse %*% dCdtheta %*% cinverse %*% tn 
  *
+ * see Rasumussen eqn 5.9 for a little simplification of the algebra here
  */
 double getGradientCn(gsl_matrix * dCdtheta, gsl_matrix *cinverse,  gsl_vector* training_vector,int nmodel_points, int nthetas){
 	double grad = 0;
@@ -374,7 +399,13 @@ double evalLikelihood_struct(struct estimate_thetas_params *params){
 
 	gsl_vector_memcpy(thetas_local, params->the_model->thetas);
 
-	likelihood = evalFnMulti(thetas_local, params);
+	printf("struct thetas: ");
+	for(i=0; i< nthetas;i++)
+		printf("%g ", gsl_vector_get(thetas_local, i));
+	printf("\n");
+
+	likelihood = -1*evalFnMulti(thetas_local, params);
+	printf("lhood: %g\n", likelihood);
 
 	gsl_vector_free(thetas_local);
 	return(likelihood);
@@ -395,16 +426,16 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	int nthetas = params->options->nthetas;
 	int status;
 	int stepcount = 0;
-	int stepmax = 25;
+	int stepmax = 30;
 	int i;
 
-	double stepSizeInit = 10;
-	double tolerance = 0.1; // sets the accuracy of the line search.
+	double stepSizeInit = 0.1;
+	double tolerance = 0.2; // sets the accuracy of the line search.
 	double fnValue = 0.0;
 	/*
 	 * we stop when |g| < epsAbs, not sure how to set this yet
 	 */
-	double epsAbs = 0.2; 
+	double epsAbs = 1.0; 
 
 	fprintf(stderr, "#doOptimizeMultiMin: nthetas %d\tnmpoints %d\tnparams %d\n", 
 					nthetas, nmpoints, nparams);
@@ -412,8 +443,8 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	gsl_vector *tempTest = gsl_vector_alloc(nthetas); // get values out of the min to check on progress
 	
 	gsl_vector *thetaTemp = gsl_vector_alloc(nthetas);
-	//gsl_vector_memcpy(thetaTemp, thetaInit);
-	gsl_vector_set_zero(thetaTemp);
+	gsl_vector_memcpy(thetaTemp, thetaInit);
+	//gsl_vector_set_zero(thetaTemp);
 
 	// our multimin fn
 	gsl_multimin_function_fdf multiminFn;
@@ -425,17 +456,22 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 
 	// the multiminimizer
 	const gsl_multimin_fdfminimizer_type *min_type = gsl_multimin_fdfminimizer_vector_bfgs2; //set this properly
+	//const gsl_multimin_fdfminimizer_type *min_type = gsl_multimin_fdfminimizer_conjugate_fr; //set this properly
 
 	gsl_multimin_fdfminimizer *fdfmin = gsl_multimin_fdfminimizer_alloc(min_type, nthetas);
 	
-	gsl_multimin_fdfminimizer_set(fdfmin, &multiminFn, thetaTemp, stepSizeInit, tolerance);
+	
 	
 	printf ("#multimin: using a '%s' minimizer with %d dimensions\n",
 					gsl_multimin_fdfminimizer_name (fdfmin), nthetas);
 
+	status = gsl_multimin_fdfminimizer_set(fdfmin, &multiminFn, thetaTemp, stepSizeInit, tolerance);
+	printf("set_status: %d\n", status);
+
 	// iterate our minimizer
 	do{
 		status = gsl_multimin_fdfminimizer_iterate(fdfmin);
+		printf("status =%d\n", status);
 		
 		if(status == GSL_ENOPROG && stepcount > 0){
 			// no progress on this step
@@ -474,6 +510,8 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	
 	gsl_vector_memcpy(thetaFinal, fdfmin->x);
 
+	
+
 	// clear up
 	gsl_vector_free(thetaTemp);
 	gsl_multimin_fdfminimizer_free(fdfmin);
@@ -500,7 +538,7 @@ void set_random_init_value(gsl_rng* rand, gsl_vector* x, gsl_matrix* ranges,int 
 		range_max = gsl_matrix_get(ranges, i, 1);
 		// set the input vector to a random value in the range
 		the_value = gsl_rng_uniform(rand) * (range_max - range_min) + range_min;
-		printf("theta %d set to %g\n", i, the_value);
+		printf("theta(%d) init-val:  %g\n", i, the_value);
 		//gsl_vector_set(x, gsl_rng_uniform(rand)*(range_max-range_min)+range_min, i);
 		gsl_vector_set(x, i, the_value);
 	}

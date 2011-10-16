@@ -273,7 +273,8 @@ void getGradientExact(double *xinput, double* gradient, int nparamsEstimate, voi
 	gradient[1] = -1.0*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 	
 	for(i = 2; i < nthetas; i++){
-		makeGradMatLength(temp_matrix, covariance_matrix, gsl_vector_get(xk, i) , i, nmpoints, nparams);
+		// this should be called with xmodel not the cov matrix?
+		makeGradMatLength(temp_matrix, params->the_model->xmodel, gsl_vector_get(xk, i) , i, nmpoints, nparams);
 		gradient[i] = -1.0*amp*getGradientCn(temp_matrix, cinverse, params->the_model->training_vector, nmpoints,  nthetas);
 	}
 	
