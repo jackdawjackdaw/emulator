@@ -88,18 +88,12 @@ void print_matrix(gsl_matrix* m, int nx, int ny){
  * updated: sep 12 11,
  * 1) why are the thetas exponentiated? from now on all thetas 
  * are not to be scaled by cov fns
+ *
+ * updated: oct 11
+ * 1) yes they are scaled, as is everything else or we get into big confusions
  * 
  *
  */
-
-/** CLAMPVALUE is the cutoff for calculating the exponential covariance, anythign less than this
- * is just a waste of precision and computation
- * 
- * -10 is too large
- * -25 is about right, but you can fiddle around with this a bit to pull a tiny smidgin more speed out of the code
- * -100 is too small
- */
-#define CLAMPVALUE -15
 double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
 	// calc the covariance for a given set of input points
 	int i, truecount  = 0;
@@ -112,8 +106,10 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 	double dist_temp = 0.0;
 	int theta_offset = 2;
 	//double amp = exp(gsl_vector_get(thetas, 0));
-	double amp = gsl_vector_get(thetas, 0);
-	double nug = gsl_vector_get(thetas, 1);
+
+	// exponentiate all the thetas
+	double amp = exp(gsl_vector_get(thetas, 0));
+	double nug = exp(gsl_vector_get(thetas, 1));
 	
 	for(i = 0; i < nparams; i++){
 		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
@@ -138,66 +134,6 @@ double covariance_fn_gaussian(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas
 		}
 	}
 	
-	// we're going to clamp exp(exponent) == 0 if exponent < -100
-	if(exponent < CLAMPVALUE){
-		covariance = 0.0;
-	} else {
-		covariance = exp(exponent)*amp;
-	}
-
-	/** 
-	 * the nugget is only added to the diagonal covariance terms,
-	 * the parts where xm == xn (vectorwise)
-	 */
-	if(truecount == nparams) {
-		// i.e the two vectors are hopefully the same
-		covariance += gsl_vector_get(thetas,1);
-	}
-
-
-	return(covariance);
-}
-
-/**
- * same as covariance_fn_gaussian but without any clamping of the exponential, the clamping
- * *appears* to cause issues with cholesky inversion for largeish nmodelpts ~ 100 
- * 
- * we can use the same gradient, since it's actually the right gradient for this function
- */
-double covariance_fn_gaussian_exact(gsl_vector *xm, gsl_vector* xn, gsl_vector* thetas, int nthetas, int nparams){
-	// calc the covariance for a given set of input points
-	int i, truecount  = 0;
-	int theta_offset = 2;
-	double covariance = 0.0;
-	double exponent = 0.0;
-	double xm_temp = 0.0;
-	double xn_temp = 0.0;
-	double r_temp = 0.0;
-	double dist_temp = 0.0;
-	//double amp = exp(gsl_vector_get(thetas, 0));
-	double amp = gsl_vector_get(thetas, 0);
-	double nug = gsl_vector_get(thetas, 1);
-	
-	for(i = 0; i < nparams; i++){
-		xm_temp = gsl_vector_get(xm, i);  // get the elements from the gsl vector, just makes things a little clearer
-		xn_temp = gsl_vector_get(xn, i);
-
-		//r_temp = gsl_vector_get(thetas, i+theta_offset);
-    r_temp = exp(gsl_vector_get(thetas, i+theta_offset));
-
-		// fix alpha = 2.0
-		r_temp = r_temp * r_temp;
-
-
-		// change from pow to explicit multiplication, for alpha = 2.0
-		dist_temp = fabs(xm_temp-xn_temp);
-		exponent += (-1.0/2.0)*dist_temp*dist_temp/(r_temp);
-
-		if (dist_temp < 0.0000000001){
-			truecount++; 		
-		}
-	}
-
 	covariance = exp(exponent)*amp;
 
 	/** 
@@ -206,23 +142,20 @@ double covariance_fn_gaussian_exact(gsl_vector *xm, gsl_vector* xn, gsl_vector* 
 	 */
 	if(truecount == nparams) {
 		// i.e the two vectors are hopefully the same
-		covariance += gsl_vector_get(thetas,1);
+		covariance += nug;
 	}
-
-
 	return(covariance);
 }
 
 
-
 /* 
  * compute a matrix of dC/dtheta-length / theta_0 for 
- * the gaussian covariance function c(x,y) = theta_0 * exp( - 1/2 * (x-y)^2 / theta_L^2 ) + theta_1
+ * the gaussian covariance function c(x,y) = exp(theta_0) * exp( - 1/2 * (x-y)^2 / theta_L^2 ) + exp(theta_1
  * where theta_L = exp(theta_2) is the scale along one of the nparams dimensions 
  *  
  * if r^2 = (x-y)^2 then
  *
- * dC/dtheta_l / theta_0  = \frac{r^2 } {\theta_L^3}  exp(-1/2 * r^2 / theta_L^2 ) 
+ * dC/dtheta_l / exp(theta_0)  = \frac{r^2 } {\theta_L^3}  exp(-1/2 * r^2 / theta_L^2 ) 
  * 
  * but we really want dC/dtheta
  * 
