@@ -2,6 +2,7 @@
 #define _INC_RBIND_
 
 #include "stdio.h"
+#include "math.h"
 
 #include "libEmu/emulator.h"
 #include "libEmu/estimator.h"
@@ -14,6 +15,8 @@
 #include "optstruct.h"
 #include "modelstruct.h"
 #include "resultstruct.h"
+
+
 
 #include "../defaults.h"
 

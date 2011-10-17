@@ -1,17 +1,11 @@
 #ifndef __EMULATOR_INC_
 #define __EMULATOR_INC_
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <assert.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h> 
 #include <gsl/gsl_sf.h>
 
 #include "regression.h"
-//#include "../optstruct.h"
-//#include "../modelstruct.h"
 
 /**
  * the fn ptr to the covariance function, this is the most called function in libEmu

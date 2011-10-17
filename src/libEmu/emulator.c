@@ -1,4 +1,7 @@
+#include "math.h"
+#include "assert.h"
 #include "emulator.h"
+
 /** 
  * @file 
  * @author Chris Coleman-Smith cec24@phy.duke.edu

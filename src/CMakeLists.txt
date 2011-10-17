@@ -23,12 +23,12 @@ link_directories(${PROJECT_SOURCE_DIR}/src/libEmu)
 link_libraries(${LIBS} pthread)
 
 add_executable(estimator ${estimator_SOURCES})
-target_link_libraries(estimator Emu LBFGS ${libs} pthread)
-add_dependencies(estimator Emu LBFGS)
+target_link_libraries(estimator Emu ${libs} pthread)
+add_dependencies(estimator Emu)
 
 add_executable(emulator ${emulator_SOURCES})
-target_link_libraries(emulator Emu LBFGS ${libs} pthread)
-add_dependencies(emulator Emu LBFGS)
+target_link_libraries(emulator Emu ${libs} pthread)
+add_dependencies(emulator Emu)
 
 install (TARGETS estimator emulator 
 				RUNTIME DESTINATION bin
