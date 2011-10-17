@@ -87,7 +87,7 @@ endif(${CMAKE_BUILD_TYPE} MATCHES "debug")
 add_subdirectory(src)
 
 # explicitly install the headers we need, and the r-files				
-INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator.h src/libEmu/regression.h)
+INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emulator.h src/libEmu/estimate_threaded.h src/libEmu/estimator-fns.h src/libEmu/regression.h)
 # # ccs: added the R files we need to use rbind
 # we have moved the contents of multivar.R into EmuRbind.R
 INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h src/libRbind/EmuRbind.R 
