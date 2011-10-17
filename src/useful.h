@@ -4,13 +4,8 @@
  * \brief some basic functions one always uses in scientific code
  */
 
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
 #include "gsl/gsl_rng.h"
 #include "gsl/gsl_vector.h"
-#include "math.h"
-#include "sys/time.h"
 
 
 /**

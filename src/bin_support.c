@@ -2,7 +2,7 @@
 #include "defaults.h"
 #include "optstruct.h"
 #include "modelstruct.h"
-
+#include "assert.h"
 #include "bin_support.h"
 
 //! print the short-option switches

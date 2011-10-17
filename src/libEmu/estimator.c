@@ -1,5 +1,5 @@
 #include "estimator.h"
-
+#include "math.h"
 /** 
  * @file 
  * @author Chris Coleman-Smith cec24@phy.duke.edu

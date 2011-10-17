@@ -1,4 +1,5 @@
 #include "main.h"
+#include "assert.h"
 #include "resultstruct.h"
 
 /** 

@@ -1,5 +1,7 @@
 #include "main.h"
 
+
+
 	
 /**
  * 
@@ -70,7 +72,7 @@ int main (int argc, char ** argv){
 
 	
 	/* now we can allocate the modelstruct */
-	message("using lbfgs", 1);
+	message("using gsl-multimin", 1);
 
 	/** 
 	 * \todo: the model structure should be serialised so that
@@ -105,7 +107,6 @@ int main (int argc, char ** argv){
 
 	/* push the input_data into the model structure */
 	fill_modelstruct(&the_model, &options, input_data, number_lines);
-
 	setup_optimization_ranges(&options, &the_model);
 	
 	sprintf(buffer, "nthetas = %d\n", options.nthetas);

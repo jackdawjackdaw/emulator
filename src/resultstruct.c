@@ -1,4 +1,6 @@
+#include "assert.h"
 #include "resultstruct.h"
+#include "string.h"
 
 /**
  * free a resultstruct 

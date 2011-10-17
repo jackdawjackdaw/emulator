@@ -1,17 +1,16 @@
 #ifndef __INC_ESTIMATE_THREADED__
 #define __INC_ESTIMATE_THREADED__
 
-//#include "main.h"
+
 #include "unistd.h"
 #include "pthread.h"
 #include "gsl/gsl_rng.h"
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
 
-//#include "../main.h"
+
 /* common data block for most options to be passed around */
 #include "../optstruct.h" 
-//#include "../modelstruct.h" 
 
 
 //! used to pass the args into estimate_thread_function
@@ -26,9 +25,6 @@ struct estimate_thetas_params{
 	double lhood_current;
 	double my_best; // want to check on the local best values
 } estimate_thetas_params;
-
-// have to include this after defining the above struct or you get tied in knots
-#include "maxmultimin.h"
 
 #define USEMUTEX
 

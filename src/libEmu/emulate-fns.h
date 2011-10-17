@@ -1,13 +1,8 @@
 #ifndef _INC_EMULATE_FNS_
 #define _INC_EMULATE_FNS_
 
-#include "stdio.h"
-#include "stdlib.h"
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
-
-#include "emulator.h"
-#include "regression.h"
 
 
 #include "../optstruct.h"

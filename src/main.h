@@ -1,23 +1,26 @@
 #ifndef __INC_MAIN__
 #define __INC_MAIN__
 
+
+
 #include "stdio.h"
 #include "stdlib.h"
-#include "getopt.h"
 #include "libEmu/estimator.h"
 #include "libEmu/emulator.h"
 #include "libEmu/emulate-fns.h"
 #include "libEmu/estimate_threaded.h"
 #include "libEmu/regression.h"
 #include "ioread.h"
-#include "sys/time.h"
 #include "useful.h"
 #include "optstruct.h"
 #include "modelstruct.h"
 #include "defaults.h"
 #include "bin_support.h"
 #include "buildConfig.h"
+#include "assert.h"
+#include "math.h"
 
+#include "gsl/gsl_vector.h"
 
 /**
  * @file main.h

@@ -1,5 +1,10 @@
 #include "emulate-fns.h"
 
+
+#include "emulator.h"
+#include "regression.h"
+
+
 /**
  * emulates the model at through emulate_min -> emulate_max in each dimension
  * @param results -> malloc'd and filled by testPts.txt

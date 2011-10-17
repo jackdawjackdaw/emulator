@@ -7,14 +7,10 @@
  * creating hmatrix, a done once kind of job, slap together hvectors for each of the design points
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <assert.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h> 
-#include <gsl/gsl_sf.h>
+#include <gsl/gsl_sf.h> 
 
 
 /**

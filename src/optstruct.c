@@ -1,5 +1,6 @@
-
+#include "assert.h"
 #include "optstruct.h"
+#include "string.h"
 #include "libEmu/maxmultimin.h"
 
 void free_optstruct(optstruct *opts){
