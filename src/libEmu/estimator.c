@@ -90,4 +90,3 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cmatrix,  gsl_matrix *x
 	return(the_likelyhood);
 }
 
-
