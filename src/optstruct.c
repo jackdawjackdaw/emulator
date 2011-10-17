@@ -148,10 +148,10 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	double bigRANGE = 10.0;
 	double rangeMin = 0.0, rangeMax = 0.0;
 	double fixedNuggetLeeWay = 0.0 ;
-	double rangeMinLog = -5;
+	double rangeMinLog = 0;
 
-	double rangeMinNugget = log(0.0000001);
-	double rangeMaxNugget = log(0.01); //what's a sensible upper limit here?
+	double rangeMinNugget = -5.0;//log(0.0011);
+	double rangeMaxNugget = -2.0;//log(0.01); //what's a sensible upper limit here?
 	/** 
 	 * alloc the grad_ranges matrix in the options and 
 	 * put in some sensible defaults 
