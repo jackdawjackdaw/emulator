@@ -110,6 +110,8 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	
 	// use the data scales, sure this doesn't really do anything
 	options->use_data_scales = 1;
+
+	options->fixed_nugget_mode = 0;
 }
 
 
