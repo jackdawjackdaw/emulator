@@ -118,6 +118,7 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 	gsl_vector_free(xInit);
 	gsl_vector_free(xFinal);
 	gsl_vector_free(xBest);
+	gsl_vector_free(xTest);
 	free(tempVec);
 
 }
@@ -513,7 +514,7 @@ void gradFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in, gsl_vect
 	printf("\n");
 	#endif
 
-	
+	gsl_vector_free(theta_local);
 	gsl_matrix_free(covariance_matrix);
 	gsl_matrix_free(cinverse);
 	gsl_matrix_free(temp_matrix);
@@ -715,6 +716,9 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	sigma_final = log(estimateSigmaFull(tempTest, args));
 	if(sigma_final == GSL_NAN){
 		fprintf(stderr, "# cannot estimate sigma for these x\n");
+		gsl_vector_free(thetaTemp);
+		gsl_vector_free(tempTest);
+		gsl_multimin_fdfminimizer_free(fdfmin);
 		exit(1);
 	}
 	fprintf(stderr, "#FINAL estimated sigma: %g\n", sigma_final);
@@ -725,8 +729,10 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	
 
 	// clear up
-	gsl_vector_free(thetaTemp);
 	gsl_multimin_fdfminimizer_free(fdfmin);
+	gsl_vector_free(thetaTemp);
+	//gsl_vector_free(tempTest);
+
 
 }
 
