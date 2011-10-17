@@ -21,7 +21,7 @@ ENDIF(APPLE)
 
 
 add_library(RBIND SHARED rbind ../bin_support)
-target_link_libraries(RBIND Emu ${libs} ${EXTRA_LIBS})									
+target_link_libraries(RBIND Emu ${libs} pthread ${EXTRA_LIBS})									
 add_dependencies(RBIND Emu)
 
 install (TARGETS RBIND

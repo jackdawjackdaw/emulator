@@ -3,6 +3,7 @@
 
 #include "stdio.h"
 #include "math.h"
+#include "assert.h"
 
 #include "libEmu/emulator.h"
 #include "libEmu/estimator.h"
