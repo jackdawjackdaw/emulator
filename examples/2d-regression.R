@@ -97,7 +97,7 @@ estimate.model <- function(model){
   ## callEstimate will complain if this is set to an incorrect value.
   nthetas <- nparams + 2
   cov.fn <- 1
-  reg.order <- 1
+  reg.order <- 0
 
   ## callEstimate uses libRBIND to try and generate the best set of length scales for the supplied model
   thetas.est <- callEstimate(model, nmodelpts,
