@@ -6,10 +6,8 @@ cmake_minimum_required (VERSION 2.6)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
-#set(emudeps emulator.c estimate_threaded.c estimator.c lbfgs.c maxlbfgs.c regression.c emulator.h estimate_threaded.h estimator.h lbfgs.h  maxlbfgs.h regression.h ../useful.c ../optstruct.c ../modelstruct.c ../resultstruct.c emulate-fns.c emulate-fns.h)
-
 # using multimin
-set(emudeps emulator.c estimate_threaded.c estimator.c maxmultimin.c regression.c emulator.h estimate_threaded.h estimator.h regression.h ../useful.c ../optstruct.c ../modelstruct.c ../resultstruct.c emulate-fns.c emulate-fns.h maxmultimin.h)
+set(emudeps emulator.c estimate_threaded.c estimator-fns.c maxmultimin.c regression.c emulator.h estimate_threaded.h estimator-fns.h regression.h ../useful.c ../optstruct.c ../modelstruct.c ../resultstruct.c emulate-fns.c emulate-fns.h maxmultimin.h )
 
 # we don't need this on the multimin branch
 # FFLAGS depend on the compiler

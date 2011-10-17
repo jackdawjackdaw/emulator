@@ -12,8 +12,8 @@ add_subdirectory("./libRbind")
 
 MESSAGE("link libs: ${libs}")
 
-set(emulator_SOURCES emulator-main ioread useful optstruct resultstruct modelstruct bin_support)
-set(estimator_SOURCES main ioread useful optstruct modelstruct resultstruct bin_support)
+set(emulator_SOURCES emulator ioread useful optstruct resultstruct modelstruct bin_support)
+set(estimator_SOURCES estimator ioread useful optstruct modelstruct resultstruct bin_support)
 
 #set(lhood_SOURCES likelyhoody ioread useful)
 # on my deb6 vmware machine we get an error about cannot 
