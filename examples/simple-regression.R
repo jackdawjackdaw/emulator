@@ -89,7 +89,7 @@ estimate.model <- function(model){
   ## the power exponential function should almost always be used.
   cov.fn <- 1
   ## pick the order of the prior regression process (0=constant only, 1=linear model, 2=quadratic model, 3=cubic)
-  reg.order <- 1
+  reg.order <- 0
 
   ## callEstimate uses libRBIND to try and generate the best set of length scales for the supplied model
   ##
@@ -156,7 +156,11 @@ plot.model <- function(emu.result, model){
 ## 3) generate the model with 10 samples of our test function
 ## re-run the script with different values here to see how changing the number of samples of our underlying model changes
 ## the shape of  our predictions
-model <- make.model(10)
+
+#model <- make.model(10)
+load("model-saved.dat")
+
+
 
 ## 4) train the emulator by estimating the appropriate characteristic length scales (hyper parameters vector Theta)
 estimResult <- estimate.model(model)

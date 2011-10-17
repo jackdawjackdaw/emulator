@@ -28,6 +28,9 @@ double getGradientCn(gsl_matrix * dCdtheta, gsl_matrix *cinverse,
 void evalFnGradMulti(const gsl_vector* theta_vec, void* params, 
 										 double* fnval, gsl_vector * grad_vec);
 
+double estimateSigma(gsl_matrix* cinverse, void* params_in);
+
+double estimateSigmaFull(gsl_vector *thetas, void* params_in);
 
 void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													
 												void(*gradientFn)(const gsl_vector*,void*, gsl_vector*),
