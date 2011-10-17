@@ -20,6 +20,7 @@
  * when optimization has finished params->the_model->thetas is set to the winning 
  * set and params->best_value should be set to the loglikelihood of this set
  * 
+ * there's a lot of duplication here...
  */
 
 /**
@@ -80,7 +81,10 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 											 &evalFnGradMulti, // does both at once
 											 xInit, xFinal, (void*)params);
 		
-		
+		/** 
+		 * need to send a theta_vector without the amplitude if you want to 
+		 * get the lhood from the evalFn directly
+		 */
 		for(i = 0; i < nthetas-1; i++)
 			gsl_vector_set(xTest, i, gsl_vector_get(xFinal, i+1));
 
@@ -119,7 +123,14 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 }
 
 /**
- * compute cinverse and then call estimateSigma
+ * estimate the training sample covariance, like estimateSigma but here the cov matrix is directly 
+ * inverted. 
+ * this takes a full length theta
+ * 
+ * @return sigma^2 or GSL_NAN if inversion fails, this is NOT log scaled
+ * @param thetas, full vector of thetas {amp, nug, length_1, length_2,...} (including amplitude field)
+ * @param params_in a correctly setup estimate_thetas_params structure
+ * 
  */
 double estimateSigmaFull(gsl_vector *thetas, void* params_in){
 	double sigmaValue = 0.0;
@@ -160,7 +171,7 @@ double estimateSigmaFull(gsl_vector *thetas, void* params_in){
 			fprintf(fptr, "\n");
 		}
 		
-		// lets clean up and jump out of here
+		// clean up and return
 		gsl_matrix_free(cmatrix);
 		gsl_vector_free(theta_local);
 		// if the fn cannot be evaluated we return GSL_NAN?
@@ -178,12 +189,16 @@ double estimateSigmaFull(gsl_vector *thetas, void* params_in){
 }
 
 
-/* estimate the process sd sigma, this should probably
- * be moved into estimator.c
- * sigma = 1/Nmodel_points (yt - \hat{mu})^t cinverse (yt - \hat{mu})
- * 
+/** 
+ * estimate the process variance
+ *
+ * sigma^2 = 1/Nmodel_points (yt - \hat{mu})^t %*% cinverse %*% (yt - \hat{mu})
+ * where yt is the training vector and \hat{mu} is the estimated mean 
  * this is not log scaled.
- * @return estimated sigma
+ * 
+ * @return sigma^2
+ * @param cinverse inverted covariance matrix, computed with the cov-fn amplitude set to 1!
+ * @param params_in a correctly initialized estimate_thetas_params structure
  */
 double estimateSigma(gsl_matrix* cinverse, void* params_in){
 	struct estimate_thetas_params *params = (struct estimate_thetas_params*) params_in;
@@ -246,13 +261,17 @@ double estimateSigma(gsl_matrix* cinverse, void* params_in){
 }
 
 
-/*
- * the actual eval fn, returns the loglikelihood for a given set of vectors at the location theta_vec
+/**
+ * 
+ * the eval fn, returns the loglikelihood for a given set of vectors at the location theta_vec
  * for the model specified by the params struct
  * 
  * when we fix sigma then theta_vec starts from the nugget, as far as the max routine cares
  * so we need to be very careful to copy it into entries 1..nthetas in the 
  * local vectors
+ * 
+ * @return loglikelihood for theta_vec_less_amp or GSL_NAN
+ * @param theta_vec_less_amp -> length nthetas-1 , {nug, theta_1, theta_2,...} (no ampltitude term)
  */
 double evalFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in){
 	struct estimate_thetas_params *params = (struct estimate_thetas_params*) params_in;
@@ -267,12 +286,7 @@ double evalFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in){
 	gsl_matrix* cinverse = gsl_matrix_alloc(nmodel_points, nmodel_points);
 	gsl_matrix* temp_matrix = gsl_matrix_alloc(nmodel_points, nmodel_points);
 
-	// make a copy of thetas
 	gsl_vector *theta_local = gsl_vector_alloc(nthetas);
-	//gsl_vector_memcpy(theta_local, theta_vec);
-
-
-	//#endif
 	
 	double determinant_c = 0.0;
 	double temp_val = 0.0;
@@ -280,7 +294,6 @@ double evalFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in){
 	int i, j;
 	int cholesky_test = 0;
 
-	//#ifdef FIXSIG
 	// if we're fixing sigma we want to first compute the cov matrix 
 	// without the amplitude
 	gsl_vector_set(theta_local, 0, 0.0); 
@@ -289,13 +302,11 @@ double evalFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in){
 	
 		
 	// make the covariance matrix 
-	// 
 	makeCovMatrix(covariance_matrix, params->the_model->xmodel, theta_local, nmodel_points, nthetas, nparams);
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 
 	//print_matrix(temp_matrix, params->options->nmodel_points, params->options->nmodel_points);
 
-	// do a cholesky decomp of the cov matrix, LU is not stable for ill conditioned matrices
 	temp_handler = gsl_set_error_handler_off();
 	cholesky_test = gsl_linalg_cholesky_decomp(temp_matrix);
 
@@ -339,13 +350,13 @@ double evalFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in){
 	// now we can estimate the process scale (sigma) and pass this through into the ll
 	// note that we have to log our estimate
 	sigma_est = log(estimateSigma(cinverse, params_in));
-	fprintf(stderr, "#sigma_est(eval): %g\n", sigma_est);
-	print_vector_quiet(theta_local, nthetas);
+	/* fprintf(stderr, "#sigma_est(eval): %g\n", sigma_est); */
+	/* print_vector_quiet(theta_local, nthetas); */
 	// now we store the estimated sigma, so that we get the correct likelihood
 	gsl_vector_set(theta_local, 0, sigma_est);
 
 
-	// temp_val is now the likelyhood for this answer
+	// compute the likelyhood for these thetas and amplitude
 	temp_val = getLogLikelyhood(cinverse, determinant_c, 
 															params->the_model->xmodel, 
 															params->the_model->training_vector, 
@@ -371,7 +382,6 @@ double evalFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in){
  * this gets the exact gradient, for a theta_vec
  *
  * the gradient is a vector in each of the theta directions
- * -- NOT MAXIMISED theta_0 (the scale of the cov fn)
  * theta_1 (the nugget)
  * theta_2..theta_n (the directions of the cov-fn)
  *
@@ -461,7 +471,7 @@ void gradFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in, gsl_vect
 	
 	// now we can estimate sigma again  (note that we have to log it)
 	sigma_est = log(estimateSigma(cinverse, params_in));
-	fprintf(stderr, "#sigma_est(grad): %g\n", sigma_est);
+	/* fprintf(stderr, "#sigma_est(grad): %g\n", sigma_est); */
 	// now we store the estimated sigma, so that we get the correct likelihood
 	gsl_vector_set(theta_local, 0, sigma_est);
 
@@ -568,7 +578,10 @@ double getGradientCn(gsl_matrix * dCdtheta, gsl_matrix *cinverse,  gsl_vector* t
 }
 
 
-// compute the function value and the gradient vector in one call
+/**
+ * compute the function value and the gradient vector in one call
+ * required by the multimin lib
+ */
 void evalFnGradMulti(const gsl_vector* theta_vec, void* params, double* fnval, gsl_vector * grad_vec){
 	printf("# called fdf\n");
 	*fnval = evalFnMulti(theta_vec, params);
@@ -577,8 +590,16 @@ void evalFnGradMulti(const gsl_vector* theta_vec, void* params, double* fnval, g
 
 
 
-
-// actually carry out the multimin steps
+/**
+ * minimize the supplied functions, taking thetaInit as a starting point.
+ * 
+ * @return thetaFinal is set to the full ntheta {amp, nug, theta_1, theta_2,...} vector.
+ * @param double(*fn)(...) the evaluation function
+ * @param void(*gradientFn)(...) computes the gradient
+ * @param void(*fnGradFn)(...) computes the grad and the fn value
+ * @param thetaInit the initial location in the optimization space, nthetas long (includes amp term)
+ * @param thetaFinal the final location, nthetas long (includes estimated amp term)
+ */
 void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 												void(*gradientFn)(const gsl_vector*,void*, gsl_vector*),
 												void(*fnGradFn)(const gsl_vector*, void*, double*, gsl_vector*),
@@ -592,7 +613,7 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	int nthetas_opt = nthetas - 1; 
 	int status;
 	int stepcount = 0;
-	int stepmax = 30;
+	int stepmax = 30; // tune this if a huge number of steps seem to be happening
 	int i;
 
 	double sigma_final = 0.0;
