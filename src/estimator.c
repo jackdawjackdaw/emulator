@@ -10,7 +10,6 @@
  */
 
 
-
 /**
  * \brief the main routine for the estimator code, run this to produce estimated hyperparameters
  *
@@ -133,7 +132,9 @@ int main (int argc, char ** argv){
 	fprintf(stderr, "\n");
 		
 	// write the optimum thetas to a text file  ./thetas.txt 
-	// perhaps seralising the_model and everything else so that it can be 
+	//
+	// we should also be
+	// seralising the_model and everything else so that it can be 
 	// passed to the emulator would be more efficient
 	write_thetas(theta_file, the_model.thetas, &options);
 

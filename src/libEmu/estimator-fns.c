@@ -1,4 +1,4 @@
-#include "estimator.h"
+#include "estimator-fns.h"
 #include "math.h"
 /** 
  * @file 
