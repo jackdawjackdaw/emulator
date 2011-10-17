@@ -5,7 +5,7 @@
 #include "pthread.h" // for debug info
 #include "regression.h"
 #include "emulator.h"
-#include "estimator.h"
+#include "estimator-fns.h"
 #include "../useful.h"
 
 
