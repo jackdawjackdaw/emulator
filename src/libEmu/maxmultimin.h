@@ -13,6 +13,23 @@
 #include "gsl/gsl_multimin.h"
 #include "gsl/gsl_errno.h"
 
+/**
+ * compute the gradient matrix for the length setting theta values
+ * dC/dTheta = (C-nugget) * (1/2)*(x_i - x_j)^(alpha) * alpha / (thetaLength) 
+ * 
+ * this is a fn-ptr which will be set when the cov function is setup
+ * the different target fns are in emulator.c called derivative_l_<covfnname>
+ * 
+ * @param covsub the covariance matrix with the nugget term subtracted
+ * @param thetaLength the current value of the length scale we're differentiating wrt
+ * @param index, the direction we're looking in
+ * @return dCdTheta the matrix of the derivative of C wrt index
+ *
+ */
+void (*makeGradMatLength)(gsl_matrix *dCdTheta,  gsl_matrix* xmodel, 
+														double thetaLength, int index, int nmodel_points, int nparams);
+
+
 
 void maxWithMultiMin(struct estimate_thetas_params *params);
 

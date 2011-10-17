@@ -2,6 +2,7 @@
 #define __INC_ESTIMATE_THREADED__
 
 //#include "main.h"
+#include "unistd.h"
 #include "pthread.h"
 #include "gsl/gsl_rng.h"
 #include "gsl/gsl_matrix.h"
@@ -26,8 +27,7 @@ struct estimate_thetas_params{
 	double my_best; // want to check on the local best values
 } estimate_thetas_params;
 
-// have to include this after derining the above struct or you get tied in knots
-#include "maxlbfgs.h"
+// have to include this after defining the above struct or you get tied in knots
 #include "maxmultimin.h"
 
 #define USEMUTEX
