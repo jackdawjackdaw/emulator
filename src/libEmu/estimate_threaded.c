@@ -90,7 +90,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * further issues with R hanging after calling estimateThetas a second time
 	 * 
 	 */
-	int nthreads = 1; // get_number_cpus();
+	int nthreads = get_number_cpus();
 
 
 	
@@ -98,7 +98,6 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	if(ntries < nthreads){
 		ntries = nthreads;
 	}
-	ntries = 1;
 
 	//fprintf(stderr, "nthreads = %d\tntries = %d\n", nthreads, ntries);
 
@@ -138,8 +137,6 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 
 	/* regular stuff */
 	const gsl_rng_type *T;
-	int number_steps = 20;
-
 	T = gsl_rng_default;
 
 	/* 
