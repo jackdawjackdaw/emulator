@@ -149,11 +149,10 @@ double estimateSigmaFull(gsl_vector *thetas, void* params_in){
 
 
 	gsl_vector* theta_local = gsl_vector_alloc(nthetas);
-	gsl_vector_set(theta_local, 0, 0.0); // set the amp to zero
-	for(i = 1; i < nthetas_opt; ++i)
+	gsl_vector_set_zero(theta_local); // set the amp to zero
+	for(i = 1; i < nthetas; ++i)
 		gsl_vector_set(theta_local, i, gsl_vector_get(thetas, i-1));
-	
-	
+
 	makeCovMatrix(cmatrix, xmodel, theta_local, nmodel_points, nthetas, nparams);
 
 	temp_handler = gsl_set_error_handler_off();
