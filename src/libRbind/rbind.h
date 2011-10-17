@@ -6,7 +6,7 @@
 #include "assert.h"
 
 #include "libEmu/emulator.h"
-#include "libEmu/estimator.h"
+#include "libEmu/estimator-fns.h"
 #include "libEmu/emulate-fns.h"
 #include "libEmu/regression.h"
 #include "libEmu/estimate_threaded.h"
