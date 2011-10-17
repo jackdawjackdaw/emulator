@@ -1,12 +1,10 @@
 #include "main.h"
 
-
-
 	
 /**
  * 
  * estimator
- * @file main.c
+ * @file estimator.c
  * @author C.Coleman-Smith, cec24@phy.duk.edu
  * \brief contains the main routine for the estimator code
  */
