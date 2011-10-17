@@ -3,10 +3,7 @@
 
 #include <gsl/gsl_matrix.h>
 #include "modelstruct.h"
-#include "libEmu/regression.h"
-#include "libEmu/emulator.h"
 
-#include <string.h>
 
 /**
  * @file optstruct.h

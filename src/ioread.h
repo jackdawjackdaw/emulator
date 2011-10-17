@@ -1,12 +1,9 @@
 #ifndef __INC_IOREAD_
 #define __INC_IOREAD_
 
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
-#include "useful.h"
+
 
 /**
  * @file ioread.h

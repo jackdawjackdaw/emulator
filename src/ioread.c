@@ -1,5 +1,9 @@
-
+#include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
 #include "ioread.h"
+#include "useful.h"
+
 
 /**
  * some useful io stuff

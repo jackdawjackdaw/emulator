@@ -1,9 +1,6 @@
 
 #include "optstruct.h"
-
-// this causes confusion if it's in optstruct.h
-// modules, i do not understand you
-#include "libEmu/maxlbfgs.h"
+#include "libEmu/maxmultimin.h"
 
 void free_optstruct(optstruct *opts){
 	gsl_matrix_free(opts->grad_ranges);

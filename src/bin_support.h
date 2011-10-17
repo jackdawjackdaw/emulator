@@ -1,17 +1,6 @@
 #ifndef _INC_BIN_SUPPORT_
 #define _INC_BIN_SUPPORT_
 
-#include "stdio.h"
-#include "stdlib.h"
-#include "getopt.h"
-#include "defaults.h"
-#include "optstruct.h"
-#include "modelstruct.h"
-#include "useful.h"
-
-#include "libEmu/emulator.h"
-#include "libEmu/regression.h"
-
 /*
  * get the version number from the cmake build file
  */

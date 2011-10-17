@@ -1,3 +1,8 @@
+#include "getopt.h"
+#include "defaults.h"
+#include "optstruct.h"
+#include "modelstruct.h"
+
 #include "bin_support.h"
 
 //! print the short-option switches
