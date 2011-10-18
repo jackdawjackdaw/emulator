@@ -43,8 +43,6 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	options.nmodel_points = *nmodelpts;
 	options.nparams = *nparams_in;
 	options.nthetas = *nthetas_in;
-	options.emulate_min = EMULATEMINDEFAULT;
-	options.emulate_max = EMULATEMAXDEFAULT;
 	options.grad_ranges = gsl_matrix_alloc(options.nthetas, 2);
 	options.cov_fn_index = *cov_fn_index_in;
 	options.regression_order = *regression_order_in;
@@ -133,8 +131,6 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	/****************************************/
 	/* defaults not used in this process    */
 	options.use_data_scales = 1; 
-	options.emulate_min = 0; 
-	options.emulate_max = 1; 
 	options.fixed_nugget_mode = 0;
 	options.fixed_nugget = 0;
 
@@ -229,8 +225,6 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	options.fixed_nugget_mode = 0;
 	options.fixed_nugget = 0;
 	options.use_data_scales = 1; 
-	options.emulate_min = 0; 
-	options.emulate_max = 1;
 	/****************************************/
 	setup_cov_fn(&options);
 	setup_regression(&options);
@@ -340,8 +334,6 @@ void setupEmulateMCHelper(struct emulateMCData* emuMCData, double* xmodel_in,
 	options->fixed_nugget_mode = 0;
 	options->fixed_nugget = 0;
 	options->use_data_scales = 1; 
-	options->emulate_min = 0; 
-	options->emulate_max = 1;
 	/****************************************/
 	setup_cov_fn(options);
 	setup_regression(options);
@@ -655,8 +647,6 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 	/****************************************/
 	/* defaults not used in this process    */
 	options.use_data_scales = 1; 
-	options.emulate_min = 0; 
-	options.emulate_max = 1;
 	options.fixed_nugget_mode = 0;
 	options.fixed_nugget = 0;
 	/****************************************/

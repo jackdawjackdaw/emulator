@@ -56,7 +56,6 @@ int main (int argc, char **argv){
 	sprintf(input_file, "%s", "stdin");
 	sprintf(input_file_thetas, "thetas.txt");
 
-	sprintf(options.outputfile, "emulator-out.txt");
 
 	assert(options.nthetas >0);
 	assert(options.nparams >0);

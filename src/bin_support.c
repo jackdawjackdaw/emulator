@@ -46,7 +46,7 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	sprintf(file, "input.txt");
 
 	// short options only
-	while (( c = getopt(argc, argv, "f:t:p:n:m:a:b:?")) != -1)
+	while (( c = getopt(argc, argv, "f:t:p:n:m:?")) != -1)
 		switch(c)
 			{
 			case '?':
@@ -67,12 +67,6 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 			case 'm':
 				nemulate_val = atoi(optarg);
 				break;
-			case 'a':
-				min_val = strtod(optarg, NULL);
-				break;
-			case 'b':
-				max_val = strtod(optarg, NULL);
-				break;								 
 			default:
 				abort();
 			}
@@ -89,10 +83,6 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 
 	options->nmodel_points = nmodel_points;
 	options->nemulate_points = nemulate_val;
-	options->emulate_min = min_val;
-	options->emulate_max = max_val;
-	sprintf(options->filename, "%s", file);
-	sprintf(options->outputfile, "emulator-out.txt");
 
 	assert(options->nthetas >0);
 	assert(options->nparams >0);

@@ -1,6 +1,5 @@
 #include "main.h"
 
-	
 /**
  * 
  * estimator
@@ -8,6 +7,8 @@
  * @author C.Coleman-Smith, cec24@phy.duk.edu
  * \brief contains the main routine for the estimator code
  */
+
+void save_everything(char* filename, optstruct* options, modelstruct* the_model);
 
 
 /**
@@ -66,10 +67,7 @@ int main (int argc, char ** argv){
 	parse_arguments(argc, argv, &options);	
 	setup_cov_fn(&options);
 	setup_regression(&options);
-
 	
-	/* now we can allocate the modelstruct */
-	message("using gsl-multimin", 1);
 
 	/** 
 	 * \todo: the model structure should be serialised so that
@@ -85,16 +83,13 @@ int main (int argc, char ** argv){
 	 * input_data buffer, unformatted and unprocessed.
 	 */
 	input_data = unconstrained_read(input_file, &number_lines); 
-	sprintf(buffer, "read in %d lines\n", number_lines);
-	message(buffer,2);
+	fprintf(stderr, "read in %d lines\n", number_lines);
 
 	assert(number_lines >0);
 
 	if(options.nmodel_points != number_lines){
-		sprintf(buffer, "options.nmodel_points = %d but read in %d\n", options.nmodel_points, number_lines);
-		message(buffer, 2);
-		sprintf(buffer, "redfining options.nmodel_points to reflect read in value\n");
-		message(buffer, 2);
+		fprintf(stderr, "options.nmodel_points = %d but read in %d\n", options.nmodel_points, number_lines);
+		fprintf(stderr, "redfining options.nmodel_points to reflect read in value\n");
 		// change the value to match what we actually read
 		options.nmodel_points = number_lines;
 	}
@@ -106,10 +101,8 @@ int main (int argc, char ** argv){
 	fill_modelstruct(&the_model, &options, input_data, number_lines);
 	setup_optimization_ranges(&options, &the_model);
 	
-	sprintf(buffer, "nthetas = %d\n", options.nthetas);
-	message(buffer, 2);
-	sprintf(buffer, "nparams = %d\n", options.nparams);
-	message(buffer, 2);
+	fprintf(stderr, "# nthetas = %d\n", options.nthetas);
+	fprintf(stderr, "# nparams = %d\n", options.nparams);
 
 	/* estimate the hyperparameters for this model,  
 	 * this is where all the computation takes place
@@ -120,7 +113,7 @@ int main (int argc, char ** argv){
 
 	/* the thetas are log-scaled in the current power-exp covariance fn
 	 * be careful */
-	fprintf(stderr, "rescaled thetas:");
+	fprintf(stderr, "# rescaled thetas:");
 	for(i = 0; i < options.nthetas; i++){
 		if(i != 1){
 			fprintf(stderr, " %g", exp(gsl_vector_get(the_model.thetas, i)));
@@ -137,6 +130,8 @@ int main (int argc, char ** argv){
 	// seralising the_model and everything else so that it can be 
 	// passed to the emulator would be more efficient
 	write_thetas(theta_file, the_model.thetas, &options);
+
+	save_everything("test-file.dat", &options, &the_model);
 
 	free_modelstruct(&the_model);
 	free_optstruct(&options);
@@ -161,6 +156,21 @@ void write_thetas(char* theta_file, gsl_vector* thetas, optstruct *options){
 	fclose(fptr);
 }
 						
+
+/**
+ * seralize everything to disk, the resulting file should be enough to make predictions
+ * at any additional point in the parameter space
+ *
+ * so we need to seralize optstruct, modelstruct and the thetas, ideally in a human-readable way
+ */
+void save_everything(char* filename, optstruct* options, modelstruct* the_model){
+	FILE *fptr;
+	fptr = fopen(filename, "w");
+	dump_optstruct(fptr, options);
+	dump_modelstruct(fptr, the_model, options);
+	fclose(fptr);
+}
+
 
 
 
