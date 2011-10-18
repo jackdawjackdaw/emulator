@@ -35,6 +35,25 @@ library("lhs")
 ## offensive code and when things go screwy you'll have gdb underneath to give some clues
 ## 
 
+##
+## first we want to load the emulator dylibs call this function
+initEmu <- function(){
+  arch <- system("uname -s", intern=TRUE)
+  if(is.loaded("callEstimate") == FALSE){
+    libNAME <- "~/local/lib/libRBIND"
+    if(arch == "Linux"){
+      libNAME <- paste(libNAME, ".so", sep="")
+    } else if(arch =="Darwin"){
+      libNAME <- paste(libNAME, ".dylib", sep="")
+    } else {
+      buffer <- paste("error: uname -s gives ", arch , " not supported", sep="")
+      stop(buffer)
+    }
+    dyn.load(libNAME)
+  }
+}
+
+
  
 ## estimates the thetas for a model, do this first to create your emulator
 ## 
