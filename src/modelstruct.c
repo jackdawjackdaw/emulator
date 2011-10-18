@@ -13,7 +13,6 @@ void alloc_modelstruct(modelstruct* the_model, optstruct* options){
 	the_model->training_vector = gsl_vector_alloc(options->nmodel_points);
 	the_model->thetas = gsl_vector_alloc(options->nthetas);
 	the_model->sample_scales = gsl_vector_alloc(options->nparams);
-	the_model->options = options;
 }
 
 /**
@@ -36,6 +35,78 @@ void copy_modelstruct(modelstruct* dst, modelstruct* src){
 	gsl_vector_memcpy(dst->sample_scales, src->sample_scales);
 }
 	
+
+/**
+ * dump a model struct to fptr, in ascii each field is dumped in order they 
+ * are defined.
+ * vectors take a single line and matricies take nrows lines
+ * we use the optstruct to get the sizes of everything
+ */
+void dump_modelstruct(FILE *fptr, modelstruct* the_model, optstruct *opts){
+	int i,j;
+	int nparams = opts->nparams;
+	int nmp = opts->nmodel_points;
+	int nthetas = opts->nthetas;
+
+	for(i = 0; i < nmp; i++){
+		for(j = 0; j < nparams; j++){
+			fprintf(fptr, "%lf ", gsl_matrix_get(the_model->xmodel, i, j));
+		}
+		fprintf(fptr, "\n");
+	}
+
+	for(i = 0; i < nmp; i++)
+		fprintf(fptr, "%lf ", gsl_vector_get(the_model->training_vector, i));
+	
+	for(i = 0; i < nthetas; i++)
+		fprintf(fptr, "%lf ", gsl_vector_get(the_model->thetas, i));
+	
+	for(i = 0; i < nparams; i++)
+		fprintf(fptr, "%lf ", gsl_vector_get(the_model->sample_scales, i));
+	
+}
+
+/**
+ * load a model struct from fptr, we use the optstruct to allocate 
+ * the fields in the supplied modelstruct before filling them
+ */
+void load_modelstruct(FILE* fptr, modelstruct* the_model, optstruct* opts){
+	int nparams = opts->nparams;
+	int nmp = opts->nmodel_points;
+	int nthetas = opts->nthetas;
+	int i,j;
+	double temp;
+	
+	// allocate everything first
+	the_model->xmodel = gsl_matrix_alloc(nmp, nparams);
+	the_model->training_vector = gsl_vector_alloc(nmp);
+	the_model->thetas = gsl_vector_alloc(nthetas);
+	the_model->sample_scales = gsl_vector_alloc(nparams);
+
+
+	for(i = 0; i < nmp; i++){
+		for(j = 0; j < nparams; j++){
+			fscanf(fptr, "%lf ", &temp);
+			gsl_matrix_set(the_model->xmodel, i, j, temp);
+		}
+	}
+
+	for(i = 0; i < nmp; i++){
+		fscanf(fptr, "%lf ", &temp);
+		gsl_vector_set(the_model->training_vector, i, temp);
+	}
+	
+	for(i = 0; i < nthetas; i++){
+		fscanf(fptr, "%lf ", &temp);
+		gsl_vector_set(the_model->thetas, i, temp);
+	}
+	
+	for(i = 0; i < nparams; i++){
+		fscanf(fptr, "%lf ", &temp);
+		gsl_vector_set(the_model->sample_scales, i, temp);
+	}
+
+}
 
 
 

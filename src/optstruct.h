@@ -2,7 +2,6 @@
 #define __INC_OPTSTRUCT__
 
 #include <gsl/gsl_matrix.h>
-#include "modelstruct.h"
 
 
 /**
@@ -40,11 +39,10 @@ typedef struct optstruct{
 	 * process
 	 */
 	int nmodel_points;
-	/** 
+	/**
 	 * how many points to evaluate the emulated model at
 	 */
 	int nemulate_points;
-
 
 	/**
 	 * what order (if any) should the regression model be
@@ -70,18 +68,6 @@ typedef struct optstruct{
 	int fixed_nugget_mode;
 	double fixed_nugget;
 
-	/**
-	 * sets the min position of the "hyper-cube" over which we evaluted the estimated mode;
-	 */
-	double emulate_min;
-	/**
-	 * sets the max position of the "hyper-cube" over which we evaluted the estimated mode;
-	 */
-	double emulate_max;
-	char  filename[128];
-	char outputfile[128];
-	/** this holds the ranges for the optimisation routine*/
-	gsl_matrix* grad_ranges;
 	
 	/** 
 	 * set which cov fn to use, can be one of 
@@ -96,14 +82,24 @@ typedef struct optstruct{
 	// set this to not zero if you want to use the length scales set by the data
 	int use_data_scales;
 
+	/** this holds the ranges for the optimisation routine*/
+	gsl_matrix* grad_ranges;
+
 } optstruct;
 
 void free_optstruct(optstruct *opts);
 void copy_optstruct(optstruct *dst, optstruct* src);
+void dump_optstruct(FILE *fptr, optstruct* opts);
+void load_optstruct(FILE *fptr, optstruct* opts);
+
 void setup_cov_fn(optstruct *opts);
 void setup_regression(optstruct *opts);
 
+
+#include "modelstruct.h"
+
 void setup_optimization_ranges(optstruct* options, modelstruct* the_model);
+
 
 
 #endif

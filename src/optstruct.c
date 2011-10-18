@@ -16,8 +16,8 @@ void copy_optstruct(optstruct *dst, optstruct* src){
 	dst->regression_order = src->regression_order;
 	dst->cov_fn_index = src->cov_fn_index;
 
-	strcpy(dst->filename, src->filename);
-	strcpy(dst->outputfile, src->outputfile);
+	/* strcpy(dst->filename, src->filename); */
+	/* strcpy(dst->outputfile, src->outputfile); */
 
 	dst->fixed_nugget = src->fixed_nugget;
 	dst->fixed_nugget_mode = src->fixed_nugget_mode;
@@ -238,3 +238,57 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 
 }
 
+/** 
+ * writes the contents of opts to fptr, 
+ * each field is written on a new line, a vector takes a whole line and 
+ * a matrix takes nrows lines. 
+ */
+void dump_optstruct(FILE *fptr, optstruct* opts){
+	int i;
+	fprintf(fptr, "%d\n", opts->nthetas);
+	fprintf(fptr, "%d\n", opts->nparams);
+	fprintf(fptr, "%d\n", opts->nmodel_points);
+	fprintf(fptr, "%d\n", opts->nemulate_points);
+	fprintf(fptr, "%d\n", opts->regression_order);
+	fprintf(fptr, "%d\n", opts->nregression_fns);
+	fprintf(fptr, "%d\n", opts->fixed_nugget_mode);
+	fprintf(fptr, "%lf\n", opts->fixed_nugget);
+	fprintf(fptr, "%d\n", opts->cov_fn_index);
+	fprintf(fptr, "%d\n", opts->use_data_scales);
+	
+	for(i = 0; i < opts->nthetas; i++)
+		fprintf(fptr, "%lf\t%lf\n", gsl_matrix_get(opts->grad_ranges, i, 0),
+						gsl_matrix_get(opts->grad_ranges, i, 1));
+	
+}
+
+/**
+ * reads the fptr into an optstruct, we have to allocate the grad_ranges matrix
+ * when we do this
+ */
+void load_optstruct(FILE *fptr, optstruct* opts){
+	int i; 
+	double rlow, rhigh;
+	fscanf(fptr, "%d", &opts->nthetas);
+	fscanf(fptr, "%d", &opts->nthetas);
+	fscanf(fptr, "%d", &opts->nparams);
+	fscanf(fptr, "%d", &opts->nmodel_points);
+	fscanf(fptr, "%d", &opts->nemulate_points);
+	fscanf(fptr, "%d", &opts->regression_order);
+	fscanf(fptr, "%d", &opts->nregression_fns);
+	fscanf(fptr, "%d", &opts->fixed_nugget_mode);
+	fscanf(fptr, "%lf", &opts->fixed_nugget);
+	fscanf(fptr, "%d", &opts->cov_fn_index);
+	fscanf(fptr, "%d", &opts->use_data_scales);
+	
+	
+	// allocate the grad_ranges matrix
+	opts->grad_ranges = gsl_matrix_alloc(opts->nthetas, 2);
+
+	for(i = 0; i < opts->nthetas; i++){
+		fscanf(fptr, "%lf\t%lf", &rlow, &rhigh);
+		gsl_matrix_set(opts->grad_ranges, i, 0, rlow);
+		gsl_matrix_set(opts->grad_ranges, i, 1, rhigh);
+	}
+	
+}
