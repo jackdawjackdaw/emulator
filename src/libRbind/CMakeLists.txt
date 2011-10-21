@@ -5,7 +5,7 @@ include_directories("../libEmu" "..")
 
 IF(APPLE)
 
-	SET(CMAKE_C_COMPILER "gcc-4.2")
+	SET(CMAKE_C_COMPILER "gcc")
 
 	SET(CMAKE_SKIP_BUILD_RPATH  TRUE)
 	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) 
