@@ -92,8 +92,6 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 */
 	int nthreads = get_number_cpus();
 
-
-	
 	/* force each thread to do at least one of the tries */
 	if(ntries < nthreads){
 		ntries = nthreads;
@@ -122,6 +120,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 		params[i].options = MallocChecked(sizeof(optstruct));
 	}
 
+
 	/*
 	 * setup the bulk of the parameter structures, but we need to 
 	 * setup the random_number afterwards
@@ -144,6 +143,10 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 */
 
 	/* setup the thread params */
+	/**
+	 * \bug final scores seem similar across threads, why?
+	 * \todo investigate the initial conditions, does each thread get an inde rng
+	 */
 	for(i = 0; i < nthreads; i++){
 		// alloc a rng for each thread
 		params[i].random_number = gsl_rng_alloc(T);
@@ -158,6 +161,8 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	pthread_spin_init(&job_counter_spin, 0);
 	pthread_spin_init(&results_spin, 0);
 	#endif
+
+
 
 	// create the threads
 	for(i = 0; i < nthreads; i++){

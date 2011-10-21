@@ -40,23 +40,23 @@ void setup_regression(optstruct *opts)
 	switch(opts->regression_order){
 	case 0:
 		opts->nregression_fns = 1;
-		makeHVector = *(makeHVector_trivial);
+		makeHVector = &(makeHVector_trivial);
 		break;
 	case 1:
 		opts->nregression_fns = 1 + nparams;
-		makeHVector = *(makeHVector_linear);
+		makeHVector = &(makeHVector_linear);
 		break;
 	case 2:
 		opts->nregression_fns = 1 + 2*nparams;
-		makeHVector = *(makeHVector_quadratic);
+		makeHVector = &(makeHVector_quadratic);
 		break;
 	case 3:
 		opts->nregression_fns = 1+ 3*nparams;
-		makeHVector = *(makeHVector_cubic);
+		makeHVector = &(makeHVector_cubic);
 		break;
 	default:
 		opts->nregression_fns = 1;
-		makeHVector = *(makeHVector_trivial);
+		makeHVector = &(makeHVector_trivial);
 		break;
 	}
 	printf("# set regression order to: %d\n", opts->regression_order);
@@ -77,29 +77,29 @@ void setup_regression(optstruct *opts)
 
 void setup_cov_fn(optstruct *options)
 {
- switch(options->cov_fn_index){
- case MATERN32:
-		covariance_fn = covariance_fn_matern_three;
-		makeGradMatLength = derivative_l_matern_three;
+	switch(options->cov_fn_index){
+	case MATERN32:
+		covariance_fn = &(covariance_fn_matern_three);
+		makeGradMatLength = &(derivative_l_matern_three);
 
 		if(options->nthetas != 3)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas, potential memory errors abound\n");
 		options->nthetas = 3;
 		fprintf(stderr, "# cov_fn: MATERN32\n");
 		break;
- case MATERN52:
-		covariance_fn = covariance_fn_matern_five;
-		makeGradMatLength = derivative_l_matern_five;
+	case MATERN52:
+		covariance_fn = &(covariance_fn_matern_five);
+		makeGradMatLength = &(derivative_l_matern_five);
 
 		if(options->nthetas != 3)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas to, potential memory errors abound\n");
 		options->nthetas = 3;
 		fprintf(stderr, "# cov_fn: MATERN52\n");
 		break;
- case POWEREXPCOVFN:
+	case POWEREXPCOVFN:
 		// for testing
-		covariance_fn = covariance_fn_gaussian;
-		makeGradMatLength = derivative_l_gauss;
+		covariance_fn = &(covariance_fn_gaussian);
+		makeGradMatLength = &(derivative_l_gauss);
 
 		if(options->nthetas != (options->nparams+2))
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas from %d, potential memory errors\n", options->nthetas);
@@ -107,11 +107,11 @@ void setup_cov_fn(optstruct *options)
 		options->nthetas = options->nparams+2;
 		fprintf(stderr, "# cov_fn: POWEREXP\n");
 		break;
- default:
+	default:
 		// crap out if given a bad argument
 		printf("err: cov_fn_index set to unsupported value %d\n", options->cov_fn_index);
 		exit(1);
- }
+	}
 	
 }
 
@@ -141,8 +141,7 @@ void setup_cov_fn(optstruct *options)
 void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 {
 	int i = 0;
-	char buffer[128];
-	double low, high;
+
 	double bigRANGE = 10.0;
 	double rangeMin = 0.0, rangeMax = 0.0;
 	double fixedNuggetLeeWay = 0.0 ;

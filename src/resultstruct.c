@@ -46,7 +46,6 @@ void fill_resultstruct(resultstruct* res, optstruct* options, char** input_data,
 	int i,j;
 	double temp_value;
 	char* split_string;
-	char buffer[128];
 
 	// there's a bug, this can't handle empty lines at the end of the input!
 	for(i = 0; i < options->nemulate_points; i++){

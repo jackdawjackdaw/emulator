@@ -165,23 +165,23 @@ R_NativePrimitiveArgType freeEmulateMCMultiArgs[1] = {INTSXP};
 
 
 
-R_CMethodDef cMethods[] = {
-	{"callEstimate", (DL_FUNC)&callEstimate, 10, callEstArgs},
-	{"callEmulateAtList", (DL_FUNC)&callEmulateAtList, 12, callEmuAtListArgs},
-	{"callEmulateAtPt", (DL_FUNC)&callEmulateAtPt, 11, callEmuAtPtArgs},
-	{"callEvalLhoodList", (DL_FUNC)&callEvalLhoodList, 10, callEvalListArgs},
-	{"setupEmulateMC", (DL_FUNC)&setupEmulateMC, 8, setupEmulateMCArgs},
-	{"callEmulateMC", (DL_FUNC)&callEmulateMC, 3, callEmulateMCArgs},
-	{"freeEmulateMC", (DL_FUNC)&freeEmulateMC, 0, NULL},
-	{"setupEmulateMCMulti", (DL_FUNC)&setupEmulateMCMulti, 9, setupEmulateMCMultiArgs},
-	{"callEmulateMC", (DL_FUNC)&callEmulateMCMulti, 4, callEmulateMCMultiArgs},
-	{"freeEmulateMC", (DL_FUNC)&freeEmulateMCMulti, 1, freeEmulateMCMultiArgs},
-
-	{NULL, NULL, 0}
-};
-
-
 void R_init_libRBIND(DllInfo *dll){
+
+	R_CMethodDef cMethods[] = {
+		{"callEstimate", (DL_FUNC)&callEstimate, 10, callEstArgs},
+		{"callEmulateAtList", (DL_FUNC)&callEmulateAtList, 12, callEmuAtListArgs},
+		{"callEmulateAtPt", (DL_FUNC)&callEmulateAtPt, 11, callEmuAtPtArgs},
+		{"callEvalLhoodList", (DL_FUNC)&callEvalLhoodList, 10, callEvalListArgs},
+		{"setupEmulateMC", (DL_FUNC)&setupEmulateMC, 8, setupEmulateMCArgs},
+		{"callEmulateMC", (DL_FUNC)&callEmulateMC, 3, callEmulateMCArgs},
+		{"freeEmulateMC", (DL_FUNC)&freeEmulateMC, 0, NULL},
+		{"setupEmulateMCMulti", (DL_FUNC)&setupEmulateMCMulti, 9, setupEmulateMCMultiArgs},
+		{"callEmulateMC", (DL_FUNC)&callEmulateMCMulti, 4, callEmulateMCMultiArgs},
+		{"freeEmulateMC", (DL_FUNC)&freeEmulateMCMulti, 1, freeEmulateMCMultiArgs},
+		{NULL, NULL, 0}
+	};
+
+
 	R_registerRoutines(dll, cMethods, NULL, NULL, NULL);
 }
 		

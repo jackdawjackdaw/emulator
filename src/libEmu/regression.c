@@ -77,6 +77,7 @@ void makeHMatrix(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, in
 	int i,j; 
 	gsl_vector *h_vec = gsl_vector_alloc(nregression_fns);
 	gsl_vector_view xmodel_row_i;
+	
 	for(i = 0; i < nmodel_points; i++){
 		xmodel_row_i = gsl_matrix_row(xmodel, i);
 		makeHVector(h_vec, &xmodel_row_i.vector, nparams);

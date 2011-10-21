@@ -66,8 +66,6 @@ int main (int argc, char ** argv){
 	/* after this the optstruct should be totally filled out */
 	parse_arguments(argc, argv, &options);	
 	setup_cov_fn(&options);
-	setup_regression(&options);
-	
 
 	/** 
 	 * \todo: the model structure should be serialised so that
@@ -103,6 +101,8 @@ int main (int argc, char ** argv){
 	
 	fprintf(stderr, "# nthetas = %d\n", options.nthetas);
 	fprintf(stderr, "# nparams = %d\n", options.nparams);
+
+	setup_regression(&options);
 
 	/* estimate the hyperparameters for this model,  
 	 * this is where all the computation takes place

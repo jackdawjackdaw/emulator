@@ -36,8 +36,6 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	int theta_val = NTHETASDEFAULT;
 	int param_val = NPARAMSDEFAULT;
 	int nemulate_val = NEMULATEDEFAULT;
-	double min_val = EMULATEMINDEFAULT;
-	double max_val = EMULATEMAXDEFAULT;
 	char file[128];
 	int nmodel_points = 0;
 	int c;
@@ -91,7 +89,7 @@ void parse_arguments(int argc, char** argv, optstruct* options){
 	 * set the order of the regression process, we'll use the 
 	 * default constant only regression
 	 */
-	options->regression_order = 0;
+	options->regression_order = 1;
 	
 	/* 
 	 * use the powerexp cov fn by default 
