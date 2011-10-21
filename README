@@ -14,14 +14,16 @@ Primary user interface is through R, rbind.c & EmuRbind.R. The heavy lifting tak
 
 Depends:
 
-cmake 
-gsl
-R
+cmake (http://www.cmake.org/cmake/resources/software.html)
+gsl 
+R (http://www.r-project.org/)
 
 Installs: 
 
-bins, estimator and emulator to ~/local/bin. 
-libs, libRbind, libEmu, libLBFGS to ~/local/lib
+The following files will be installed by make install
+
+standalone bins, estimator and emulator to ~/local/bin. 
+libs, libRbind &libEmu to ~/local/lib
 R<->C bindings, ~/local/include/libRbind: EmuRbind.R, rbind.h
 
 Compiling:
@@ -30,6 +32,14 @@ mkdir build
 cd build; 
 cmake ..
 make install;
+
+On OS-X you need to set the following environment variables:
+
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:"~/local/lib"
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"~/local/lib"
+
+Otherwise R will complain when you try and load libRbind.dylib
+
 
 HTML documentation, such as it is, can be compiled with doxygen.
 
