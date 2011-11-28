@@ -157,8 +157,8 @@ plot.model <- function(emu.result, model){
 ## re-run the script with different values here to see how changing the number of samples of our underlying model changes
 ## the shape of  our predictions
 
-#model <- make.model(10)
-load("model-saved.dat")
+model <- make.model(10)
+#load("model-saved.dat")
 
 
 
