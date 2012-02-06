@@ -59,8 +59,8 @@ void setup_regression(optstruct *opts)
 		makeHVector = &(makeHVector_trivial);
 		break;
 	}
-	printf("# set regression order to: %d\n", opts->regression_order);
-	printf("# set nregression_fns to: %d\n", opts->nregression_fns);
+	/* printf("# set regression order to: %d\n", opts->regression_order); */
+	/* printf("# set nregression_fns to: %d\n", opts->nregression_fns); */
 		
 }
 
@@ -85,7 +85,7 @@ void setup_cov_fn(optstruct *options)
 		if(options->nthetas != 3)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas, potential memory errors abound\n");
 		options->nthetas = 3;
-		fprintf(stderr, "# cov_fn: MATERN32\n");
+		//fprintf(stderr, "# cov_fn: MATERN32\n");
 		break;
 	case MATERN52:
 		covariance_fn = &(covariance_fn_matern_five);
@@ -94,7 +94,7 @@ void setup_cov_fn(optstruct *options)
 		if(options->nthetas != 3)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas to, potential memory errors abound\n");
 		options->nthetas = 3;
-		fprintf(stderr, "# cov_fn: MATERN52\n");
+		//fprintf(stderr, "# cov_fn: MATERN52\n");
 		break;
 	case POWEREXPCOVFN:
 		// for testing
@@ -105,7 +105,7 @@ void setup_cov_fn(optstruct *options)
 			fprintf(stderr, "# (warn) setup_cov_fn has changed nthetas from %d, potential memory errors\n", options->nthetas);
 
 		options->nthetas = options->nparams+2;
-		fprintf(stderr, "# cov_fn: POWEREXP\n");
+		//fprintf(stderr, "# cov_fn: POWEREXP\n");
 		break;
 	default:
 		// crap out if given a bad argument
