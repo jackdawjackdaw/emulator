@@ -328,7 +328,8 @@ void* estimate_thread_function(void* args){
 void fprintPt(FILE *f, pthread_t pt) {
   unsigned char *ptc = (unsigned char*)(void*)(&pt);
   fprintf(f, "0x");
-  for (size_t i=0; i<sizeof(pt); i++) {
+	size_t i;
+  for (i=0; i<sizeof(pt); i++) {
     fprintf(f, "%02x", (unsigned)(ptc[i]));
   }
 }
