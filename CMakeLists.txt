@@ -4,10 +4,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 project (Emulator)
 
 
-################### 
-# the install prefix is where the bins and libs get dropped. 
-message("Setting Install prefix to Home folder: $ENV{HOME}")
-set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local")
+########################
+###### the install prefix is where the bins and libs get dropped.
+#####message("Setting Install prefix to Home folder: $ENV{HOME}")
+#####set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local")
+########################
 
 
 # lets get a version number from git
@@ -95,6 +96,3 @@ INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emula
 INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h src/libRbind/EmuRbind.R 
 																	 src/libRbind/emuOverDesign.R src/libRbind/implausOverDesign.R
 																	 src/libRbind/testEst.R)
-
-
-
