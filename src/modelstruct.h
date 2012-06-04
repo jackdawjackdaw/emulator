@@ -10,7 +10,7 @@
  * @file modelstruct.h
  * \brief defines modelstruct which contains the raw data to be worked on by emulator and estimator
  */
-
+struct optstruct;
 //! holds the main data structures for a single model emulator run
 
 /**
@@ -54,7 +54,7 @@ typedef struct modelstruct{
 	/**
 	 * a pointer back to the options struct used to init this structure, just for fun really
 	 */
-	//struct optstruct* options;
+	struct optstruct* options;
 } modelstruct;
 
 
