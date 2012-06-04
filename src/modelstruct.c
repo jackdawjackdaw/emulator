@@ -164,8 +164,284 @@ void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_d
 	/* fprintf(stderr, "the training data is:\n"); */
 	/* print_vector_quiet(the_model->training_vector, options->nmodel_points); */
 
-
 	gsl_vector_free(differences);
-	
 }
+
+
+/**
+ * Set some global variables: makeHVector, covariance_fn, and
+ * makeGradMatLength.  Copied from optstruct.c's setup_cov_fn() and
+ * setup_regression().
+ * 
+ * Called from alloc_modelstruct_2() and load_modelstruct_2().
+ */
+void set_global_ptrs(int regression_order, int cov_fn_index) {
+	switch (regression_order) {
+	case 1:
+		makeHVector = &(makeHVector_linear);
+		break;
+	case 2:
+		makeHVector = &(makeHVector_quadratic);
+		break;
+	case 3:
+		makeHVector = &(makeHVector_cubic);
+		break;
+	default:
+		makeHVector = &(makeHVector_trivial);
+	}
+	switch (cov_fn_index) {
+	case MATERN32:
+		covariance_fn = &(covariance_fn_matern_three);
+		makeGradMatLength = &(derivative_l_matern_three);
+		break;
+	case MATERN52:
+		covariance_fn = &(covariance_fn_matern_five);
+		makeGradMatLength = &(derivative_l_matern_five);
+		break;
+	default:
+		covariance_fn = &(covariance_fn_gaussian);
+		makeGradMatLength = &(derivative_l_gauss);
+	}
+}
+
+/**
+ * Copied from src/libRbind/rbind.c.  Allocates and fills in
+ * sample_scales vector, based on xmodel matrix of sample points.
+ * Called from alloc_modelstruct_2().
+ */
+gsl_vector * calculate_sample_scales(gsl_matrix * xmodel) {
+	int i, j;
+	int nmodel_points = xmodel->size1;
+	int nparams = xmodel->size2;
+	double min_value, value;
+	gsl_vector * sample_scales = gsl_vector_alloc(nparams);
+	for(i = 0; i < nparams; i++) {
+		min_value = fabs(
+			gsl_matrix_get(xmodel, 1, i) -
+			gsl_matrix_get(xmodel, 0, i));
+		for(j = 1; j < (nmodel_points - 1); j++) {
+			value = fabs(
+				gsl_matrix_get(xmodel, j + 1, i) -
+				gsl_matrix_get(xmodel, j,     i));
+			if (value < min_value)
+				min_value = value;
+		}
+		if(min_value < 1.0e-5)
+			min_value = 1.0e-5;
+		gsl_vector_set(sample_scales, i, min_value);
+	}
+	return sample_scales;
+}
+
 	
+/**
+ * Inspired by the functions in src/libRbind/rbind.c, but simplified.
+ * 
+ * Allocates and populates both modelstruct and optstruct.
+ * 
+ * @param xmodel: (n x d) matrix containing the training points.
+ * @param training_vector: n-size vector containing the training values.
+ * @param cov_fn_index:  POWEREXPCOVFN, MATERN32, or MATERN52
+ * @param regression_order:  0, 1, 2, or 3
+ * 
+ * Does not estimate the thetas, since that is a labor-intensive.
+ * 
+ * Sets global variables.  I'd like to eliminate those globals and move
+ * that information into the options structure.  Global variables means
+ * that we can't have two models in use at once.
+ * 
+ * Returns NULL on error.
+ */
+modelstruct * alloc_modelstruct_2(
+		gsl_matrix * xmodel,
+		gsl_vector * training_vector,
+		int cov_fn_index,
+		int regression_order) {
+	if ((training_vector == NULL) ||
+			(xmodel == NULL) ||
+			(training_vector->size != xmodel->size1) ||
+			(training_vector->size < 1) ||
+			(xmodel->size2 < 1))
+		return NULL; /* Return NULL on error */
+
+	/* Read parameters from dimensions of xmodel */
+	int nmodel_points = xmodel->size1;
+	int nparams = xmodel->size2;
+
+	/* use default if out of range */
+	if (regression_order < 0 || regression_order > 3)
+		regression_order = 0;
+
+	/* ntheta is a function of cov_fn_index and nparams */
+	int nthetas;
+	if ((cov_fn_index == MATERN32) || (cov_fn_index == MATERN52)) {
+		nthetas = 3;
+	} else if (cov_fn_index == POWEREXPCOVFN) {
+		nthetas = nparams + 2;
+	} else {
+		/* be liberal in what you accept. */
+		cov_fn_index = POWEREXPCOVFN;
+		nthetas = nparams + 2;
+	}
+
+	modelstruct * model = (modelstruct*) malloc(sizeof(modelstruct));
+	model->options = (optstruct*) malloc(sizeof(optstruct));
+
+	model->options->nparams = nparams;
+	model->options->nmodel_points =  nmodel_points;
+	model->options->nthetas = nthetas;
+	model->options->cov_fn_index = cov_fn_index;
+	model->options->regression_order = regression_order;
+	model->options->grad_ranges = gsl_matrix_alloc(nthetas, 2);
+	model->options->nregression_fns = 1 + (regression_order * nparams);
+
+	/* Set some global variables: makeHVector, covariance_fn, and makeGradMatLength */
+	set_global_ptrs(regression_order, cov_fn_index);
+
+	/* alloc_modelstruct() replacement code */
+	model->xmodel = xmodel;
+	model->training_vector = training_vector;
+	model->thetas = gsl_vector_alloc(nthetas);
+
+	model->sample_scales = calculate_sample_scales(gsl_matrix * xmodel);
+
+	setup_optimization_ranges(model->options, model);
+	return model;
+}
+
+
+/**
+ * @param model: pointer to the modelstruct to be freed.
+ *
+ * Does not free model->xmodel or model->training_vector
+ * since alloc_modelstruct_2() doesn't take "ownership" of those
+ * data structures.
+ */
+void free_modelstruct_2(modelstruct * model) {
+	/* gsl_matrix_free(model->xmodel); */
+	/* gsl_vector_free(model->training_vector); */
+	gsl_vector_free(model->thetas);
+	gsl_vector_free(model->sample_scales);
+	gsl_matrix_free(model->options->grad_ranges);
+	free((void *)(model->options));
+	free((void *)model);
+}
+
+/**
+ * Dump a modelstruct+optstruct to fptr in ASCII.  Inverse of
+ * load_modelstruct_2.
+ */
+void dump_modelstruct_2(FILE *fptr, modelstruct* the_model){
+	int i,j;
+	int nparams = the_model->options->nparams;
+	int nmodel_points = the_model->options->nmodel_points;
+	int nthetas = the_model->options->nthetas;
+
+	fprintf(fptr, "%d\n", nthetas);
+	fprintf(fptr, "%d\n", nparams);
+	fprintf(fptr, "%d\n", nmodel_points);
+	fprintf(fptr, "%d\n", the_model->options->nemulate_points);
+	fprintf(fptr, "%d\n", the_model->options->regression_order);
+	fprintf(fptr, "%d\n", the_model->options->nregression_fns);
+	fprintf(fptr, "%d\n", the_model->options->fixed_nugget_mode);
+	fprintf(fptr, "%.17lf\n", the_model->options->fixed_nugget);
+	fprintf(fptr, "%d\n", the_model->options->cov_fn_index);
+	fprintf(fptr, "%d\n", the_model->options->use_data_scales);
+	for(i = 0; i < nthetas; i++)
+		fprintf(fptr, "%.17lf %.17lf\n",
+			gsl_matrix_get(the_model->options->grad_ranges, i, 0),
+			gsl_matrix_get(the_model->options->grad_ranges, i, 1));
+	for(i = 0; i < nmodel_points; i++){
+		for(j = 0; j < nparams; j++)
+			fprintf(fptr, "%.17lf ", gsl_matrix_get(the_model->xmodel, i, j));
+		fprintf(fptr, "\n");
+	}
+	for(i = 0; i < nmodel_points; i++)
+		fprintf(fptr, "%.17lf ", gsl_vector_get(the_model->training_vector, i));
+	fprintf(fptr, "\n");
+	for(i = 0; i < nthetas; i++)
+		fprintf(fptr, "%.17lf ", gsl_vector_get(the_model->thetas, i));
+	fprintf(fptr, "\n");
+	for(i = 0; i < nparams; i++)
+		fprintf(fptr, "%.17lf ", gsl_vector_get(the_model->sample_scales, i));
+	fprintf(fptr, "\n");
+}
+
+
+/**
+ * Load a modelstruct+optstruct from fptr. Inverse of dump_modelstruct_2().
+ *
+ * Sets global variables.  I'd like to eliminate those globals and
+ * move that information into the options structure.  Global variables
+ * means that we can't have two models in use at once.
+ *
+ * Returns NULL if premature end of file is reached.
+ *
+ * Remember to update this function if the format of
+ * modelstruct+optstruct changes.
+ */
+modelstruct* load_modelstruct_2(FILE *fptr) {
+	modelstruct* model = (modelstruct*)malloc(sizeof(modelstruct));
+	model->options = (optstruct*)malloc(sizeof(optstruct));
+
+	int i,j,r;
+	int nparams, nmodel_points, nthetas;
+
+	r = fscanf(fptr, "%d%*c", & nthetas);
+	r = fscanf(fptr, "%d%*c", & nparams);
+	r = fscanf(fptr, "%d%*c", & nmodel_points);
+
+	if (r < 1) {
+		free(model->options);
+		free(model);
+		return NULL;
+	}
+
+	model->options->nparams = nparams;
+	model->options->nmodel_points = nmodel_points;
+	model->options->nthetas = nthetas;
+
+	fscanf(fptr, "%d%*c", &(model->options->nemulate_points));
+	fscanf(fptr, "%d%*c", &(model->options->regression_order));
+	fscanf(fptr, "%d%*c", &(model->options->nregression_fns));
+	fscanf(fptr, "%d%*c", &(model->options->fixed_nugget_mode));
+	fscanf(fptr, "%lf%*c", &(model->options->fixed_nugget));
+	fscanf(fptr, "%d%*c", &(model->options->cov_fn_index));
+	fscanf(fptr, "%lf%*c", &(model->options->use_data_scales));
+
+	model->options->grad_ranges = gsl_matrix_alloc(nthetas, 2);
+	for(i = 0; i < nthetas; i++) {
+		fscanf(fptr, "%lf%*c", gsl_matrix_ptr(model->options->grad_ranges,i,0));
+		fscanf(fptr, "%lf%*c", gsl_matrix_ptr(model->options->grad_ranges,i,1));
+	}
+
+	model->xmodel = gsl_matrix_alloc(nmodel_points, nparams);
+	for(i = 0; i < nmodel_points; i++)
+		for(j = 0; j < nparams; j++)
+			fscanf(fptr, "%lf%*c", gsl_matrix_ptr(model->xmodel, i, j));
+
+	model->training_vector = gsl_vector_alloc(nmodel_points);
+	for(i = 0; i < nmodel_points; i++)
+		fscanf(fptr, "%lf%*c", gsl_vector_ptr(model->training_vector, i));
+
+	model->thetas = gsl_vector_alloc(nthetas);
+	for(i = 0; i < nthetas; i++)
+		fscanf(fptr, "%lf%*c", gsl_vector_ptr(model->thetas, i));
+
+	model->sample_scales = gsl_vector_alloc(nparams);
+	for(i = 0; i < nparams; i++)
+		r = fscanf(fptr, "%lf%*c", gsl_vector_ptr(model->sample_scales, i));
+
+	if (r < 1) {
+		/* Check for premature end of file. */
+		gsl_matrix_free(model->xmodel);
+		gsl_vector_free(model->training_vector);
+		free_modelstruct_2(model);
+		return NULL;
+	}
+
+	set_global_ptrs(model->options->regression_order,
+		model->options->cov_fn_index);
+	return model;
+}
+
