@@ -11,6 +11,6 @@ r-fns/*.pdf
 *.dat
 .Rhistory
 docs
-*.txt
+#*.txt
 # junk fron scons i guess?
 *.sconsign.dblite

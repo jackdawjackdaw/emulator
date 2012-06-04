@@ -220,6 +220,11 @@ Does not estimate the thetas, since that is a labor-intensive.
 Sets global variables.  I'd like to eliminate those globals and move
 that information into the options structure.  Global variables means
 that we can't have two models in use at once.
+
+ccs, the fnptrs are now also in the modelstruct, the rub is that changing the 
+estimation process to use the fnptrs will break the Rlibrary which is not ideal
+so estimation remains non-thread-safe but sampling the mean/variance at different locations 
+is safe if you use the emulator_struct form
 *********************************************************************/
 modelstruct * alloc_modelstruct_2(
 		gsl_matrix * xmodel,
@@ -260,22 +265,55 @@ modelstruct * alloc_modelstruct_2(
 	model->options->grad_ranges = gsl_matrix_alloc(nthetas, 2);
 	model->options->nregression_fns = 1 + (regression_order * nparams);
 
+
 	/** 
 	 *	ccs: why do we need to set makeHVector here and then also in set_global_ptrs?
-	 *  these fn pts are now in modelstruct too, they can be moved into optstruct
+	 *  these fn pts are now in modelstruct 
 	 */
-	if (model->options->regression_order == 0)
+	if (model->options->regression_order == 0){
 		makeHVector = &(makeHVector_trivial);
-	else if  (model->options->regression_order == 1)
+		model->makeHVector = &(makeHVector_trivial);
+	}
+	else if  (model->options->regression_order == 1){
 		makeHVector = &(makeHVector_linear);
-	else if (model->options->regression_order == 2)
+		model->makeHVector = &(makeHVector_linear);
+	}
+	else if (model->options->regression_order == 2){
 		makeHVector = &(makeHVector_quadratic);
-	else if (model->options->regression_order == 3)
+		model->makeHVector = &(makeHVector_quadratic);
+	}
+	else if (model->options->regression_order == 3){
 		makeHVector = &(makeHVector_cubic);
+		model->makeHVector = &(makeHVector_cubic);
+	}
+	
+	/**
+	 * ccs: set the covfn ptrs
+	 */
+	switch(cov_fn_index){
+	case MATERN32:
+		model->covariance_fn = &(covariance_fn_matern_three);
+		model->makeGradMatLength = &(derivative_l_matern_three);
+		break;
+	case MATERN52:
+		model->covariance_fn = &(covariance_fn_matern_five);
+		model->makeGradMatLength = &(derivative_l_matern_five);
+		break;
+	default:
+		model->covariance_fn = &(covariance_fn_gaussian);
+		model->makeGradMatLength = &(derivative_l_gauss);
+	}
 
+
+	
 	/* Set some global variables: makeHVector, covariance_fn, and makeGradMatLength */
+	/* still need to set at least makeGradMatLength at the global scale
+	 * or estimation will crash
+	 */
 	set_global_ptrs(regression_order, cov_fn_index);
+	
 
+	
 	/* alloc_modelstruct replacement code */
 	model->xmodel = xmodel;
 	model->training_vector = training_vector;
@@ -441,61 +479,17 @@ int open_model_file(char * input_filename,
 
 
 /*********************************************************************
-This data structure holds pointers to the information used to execute
-the emulator at a new point.  This is especially helpful since I want
-to stream in queries and get results streamed back out.
-*********************************************************************/
-/* typedef struct emulator_struct { */
-/* 	int nparams; */
-/* 	int nmodel_points; */
-/* 	int nregression_fns; */
-/* 	int nthetas; */
-/* 	modelstruct * model; */
-/* 	gsl_matrix * cinverse; */
-/* 	gsl_vector * beta_vector; */
-/* 	gsl_matrix * h_matrix; */
-/* } emulator_struct; */
-
-
-/*********************************************************************
-Allocates emulator_struct.
-*********************************************************************/
-/* emulator_struct * alloc_emulator_struct(modelstruct * model) { */
-/* 	emulator_struct * e = (emulator_struct *)malloc(sizeof(emulator_struct)); */
-/* 	double determinant_c	= 0.0; */
-/* 	e->nparams = model->options->nparams; */
-/* 	e->nmodel_points = model->options->nmodel_points; */
-/* 	e->nregression_fns = model->options->nregression_fns; */
-/* 	e->nthetas = model->options->nthetas; */
-/* 	e->model = model; */
-/* 	gsl_matrix * c_matrix = gsl_matrix_alloc(e->nmodel_points, e->nmodel_points); */
-/* 	e->cinverse = gsl_matrix_alloc(e->nmodel_points, e->nmodel_points); */
-/* 	e->beta_vector = gsl_vector_alloc(e->nregression_fns); */
-/* 	e->h_matrix = gsl_matrix_alloc(e->nmodel_points, e->nregression_fns); */
-/* 	gsl_matrix * temp_matrix = gsl_matrix_alloc(e->nmodel_points, e->nmodel_points); */
-
-/* 	makeCovMatrix(c_matrix, model->xmodel, model->thetas, e->nmodel_points, */
-/* 		e->nthetas, e->nparams); */
-/* 	gsl_matrix_memcpy(temp_matrix, c_matrix); */
-/* 	chol_inverse_cov_matrix(model->options, temp_matrix, e->cinverse, &determinant_c); */
-/* 	makeHMatrix(e->h_matrix, model->xmodel, e->nmodel_points, e->nparams, e->nregression_fns); */
-/* 	estimateBeta(e->beta_vector, e->h_matrix, e->cinverse, model->training_vector, */
-/* 							 e->nmodel_points, e->nregression_fns); */
-/* 	gsl_matrix_free(c_matrix); */
-/* 	gsl_matrix_free(temp_matrix); */
-/* 	return e; */
-/* } */
-
-
-/*********************************************************************
 return mean and variance at a point.
+thread-safe, uses fnptrs defined in e->modelstruct
 *********************************************************************/
 void emulate_point(emulator_struct* e, gsl_vector * point,  double * mean, double * variance){
 	gsl_vector * kplus = gsl_vector_alloc(e->nmodel_points); //allocate variable storage
 	gsl_vector * h_vector = gsl_vector_alloc(e->nregression_fns); //allocate variable storage
-	makeKVector(kplus, e->model->xmodel, point,
-		e->model->thetas, e->nmodel_points, e->nthetas, e->nparams);
-	makeHVector(h_vector, point, e->nparams);
+
+	makeKVector_es(kplus, point, e);
+	/* use the fnptr in modelstruct */
+	e->model->makeHVector(h_vector, point, e->nparams);
+	
 	(*mean) = makeEmulatedMean(e->cinverse, e->model->training_vector,
 		kplus, h_vector, e->h_matrix, e->beta_vector, e->nmodel_points);
 	double kappa = covariance_fn(point, point, e->model->thetas, e->nthetas, e->nparams);
@@ -506,16 +500,6 @@ void emulate_point(emulator_struct* e, gsl_vector * point,  double * mean, doubl
 	return;
 }
 
-
-/*********************************************************************
-Free emulator_struct.
-*********************************************************************/
-/* void free_emulator_struct(emulator_struct * e) { */
-/* 	gsl_matrix_free(e->cinverse); */
-/* 	gsl_matrix_free(e->h_matrix); */
-/* 	gsl_vector_free(e->beta_vector); */
-/* 	free((void *)e); */
-/* } */
 
 
 /*********************************************************************

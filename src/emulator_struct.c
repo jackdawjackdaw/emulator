@@ -1,13 +1,17 @@
 #include "emulator_struct.h"
 #include "libEmu/emulator.h"
 #include "libEmu/regression.h"
+#include "libEmu/emulate-fns.h"
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
 
 /*********************************************************************
 Allocates emulator_struct.
+*
+* ccs, should be thread safe now
 *********************************************************************/
-emulator_struct * alloc_emulator_struct(modelstruct * model) {
+emulator_struct * alloc_emulator_struct(modelstruct * model)
+{
 	emulator_struct * e = (emulator_struct *)malloc(sizeof(emulator_struct));
 	double determinant_c	= 0.0;
 	e->nparams = model->options->nparams;
@@ -21,13 +25,12 @@ emulator_struct * alloc_emulator_struct(modelstruct * model) {
 	e->h_matrix = gsl_matrix_alloc(e->nmodel_points, e->nregression_fns);
 	gsl_matrix * temp_matrix = gsl_matrix_alloc(e->nmodel_points, e->nmodel_points);
 
-	makeCovMatrix(c_matrix, model->xmodel, model->thetas, e->nmodel_points,
-		e->nthetas, e->nparams);
+	makeCovMatrix_es(c_matrix, e);
 	gsl_matrix_memcpy(temp_matrix, c_matrix);
 	chol_inverse_cov_matrix(model->options, temp_matrix, e->cinverse, &determinant_c);
-	makeHMatrix(e->h_matrix, model->xmodel, e->nmodel_points, e->nparams, e->nregression_fns);
-	estimateBeta(e->beta_vector, e->h_matrix, e->cinverse, model->training_vector,
-							 e->nmodel_points, e->nregression_fns);
+	makeHMatrix_es(e->h_matrix, e);
+	estimateBeta_es(e->beta_vector, e);
+	
 	gsl_matrix_free(c_matrix);
 	gsl_matrix_free(temp_matrix);
 	return e;
@@ -37,7 +40,8 @@ emulator_struct * alloc_emulator_struct(modelstruct * model) {
 /*********************************************************************
 Free emulator_struct.
 *********************************************************************/
-void free_emulator_struct(emulator_struct * e) {
+void free_emulator_struct(emulator_struct * e)
+{
 	gsl_matrix_free(e->cinverse);
 	gsl_matrix_free(e->h_matrix);
 	gsl_vector_free(e->beta_vector);
@@ -45,4 +49,70 @@ void free_emulator_struct(emulator_struct * e) {
 }
 
 
+/**
+ * the following fns are wrapped versions of commonly used fns in emulator.h etc, this 
+ * should make manipulations a little cleaner without breaking libRbind
+ * they also use the emulator_struct->model->fnptrs instead
+ */
 
+/**
+ * make the matrix of regression fns HMatrix, (thread safe?)
+ * uses modelstruct fnptr: (void)(makeHvector)(gsl_vector*, gsl_vector*, int);
+ *
+ * although emulator_struct contains a h_matrix, we might want this for somethign else, so it is given as the 1st arg
+ * the h_matrix in e is *not set* by this function
+ */
+void makeHMatrix_es(gsl_matrix *h_matrix, emulator_struct *e)
+{
+	makeHMatrix_fnptr(h_matrix, 
+							e->model->xmodel,
+							e->nmodel_points,
+							e->nparams,
+							e->nregression_fns,
+							e->model->makeHVector);
+}
+
+
+/**
+ * make a covariance matrix: makeCovMatrix_es, (thread safe?)
+ * uses the modelstruct fnptr (double)(*covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int)
+ */
+void makeCovMatrix_es(gsl_matrix *cov_matrix, emulator_struct *e)
+{
+	makeCovMatrix_fnptr(cov_matrix, 
+											e->model->xmodel, 
+											e->model->thetas,
+											e->nmodel_points,
+											e->nthetas, 
+											e->nparams,
+											e->model->covariance_fn);
+}
+
+
+/**
+ * compute a kvector at point k(point, emulator_struct) := { c(point, x_1), ... , c(point, x_n) }^T
+ *
+ * threadsafe
+ *
+ * requires: e->model to be init
+ * e->model->thetas needs to contain sensible values
+ */
+void makeKVector_es(gsl_vector *kvector, gsl_vector *point, emulator_struct *e)
+{
+	makeKVector_fnptr(kvector, e->model->xmodel, point,
+										e->model->thetas, e->nmodel_points, e->nthetas, e->nparams, 
+										e->model->covariance_fn);
+}
+
+/** 
+ * estimate betas from an emulator_struct, no need to modify anything to make this threadsafe
+ *
+ * betas are set into the first vector, not in the emulator_struct
+ *
+ * @require e->cinverse and e->h_matrix to be init
+ */
+void estimateBeta_es(gsl_vector *beta_vector, emulator_struct *e)
+{
+	estimateBeta(beta_vector, e->h_matrix, e->cinverse, e->model->training_vector, 
+							 e->nmodel_points, e->nregression_fns);
+}

@@ -565,6 +565,39 @@ void makeKVector(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_
 }
 
 
+//! calculate a vector of the covariances of a given point against all of the model points
+/**
+ * calculate a vector of (c(xnew, xmodel[1]), c(xnew, xmodel[2]) ....) 
+ * this can be thought of as the final row or column of the covariance matrix if you were
+ * to augment it with the additional point xnew. 
+ *
+ * takes a fnptr to the covariance function
+ *
+ * @param xmodel -> the matrix representing all of the model evaluations (nmodel_points x nparams)
+ * @param xnew -> the new point at which the kvector is to be calculated
+ * @param kvector -> on return this is the result
+ * @param thetas -> the hyperparams of the gp used in the estimation.
+ * @return kvector is set to the result
+ */
+void makeKVector_fnptr(gsl_vector* kvector, gsl_matrix *xmodel, gsl_vector *xnew, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams,
+												 double (*covariance_fn_ptr)(gsl_vector*, gsl_vector*, gsl_vector*, int, int))
+{
+	int i = 0; 
+	gsl_vector_view  xmodel_row;
+	double cov;
+	for (i = 0; i < nmodel_points; i++){
+		xmodel_row = gsl_matrix_row(xmodel, i);
+		// send the rows from the xmodel matrix to the kvector, these have nparams width
+		cov = covariance_fn(&xmodel_row.vector, xnew, thetas, nthetas, nparams);
+		if(cov < 1E-10){
+			cov = 0.0;
+		}
+		gsl_vector_set(kvector, i, cov);
+	}
+}
+
+
+
 //! create the covariance matrix
 /**
  * calculate the covariance matrix for a given set of model points and hyperparameters theta
@@ -592,7 +625,38 @@ void makeCovMatrix(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* theta
 	}
 	//print_matrix(cov_matrix, nmodel_points, nmodel_points);
 }
-	
+
+
+//! create the covariance matrix, uses an explicit fnptr to the covariance function instead of the global ptr
+/**
+ * calculate the covariance matrix for a given set of model points and hyperparameters theta
+ * since xmodel is taken to have have nparams columns and rows with the values of these params for each of the training points
+ * we pass slices to the covariance function to create the matrix
+ * 
+ * @param cov_matrix overwritten by the calculated covariances.
+ * @param xmodel matrix of the model points (nmodel_points x nparams)
+ * @param thetas hyperparameters
+ */
+void makeCovMatrix_fnptr(gsl_matrix *cov_matrix, gsl_matrix *xmodel, gsl_vector* thetas, int nmodel_points, int nthetas, int nparams, 
+												 double (*covariance_fn_ptr)(gsl_vector*, gsl_vector*, gsl_vector*, int, int)){
+	int i,j;
+	double covariance; 
+	gsl_vector_view xmodel_row_i;
+	gsl_vector_view xmodel_row_j;
+
+	for(i = 0; i < nmodel_points; i++){
+		for(j = 0; j < nmodel_points; j++){
+			xmodel_row_i = gsl_matrix_row(xmodel, i);
+			xmodel_row_j = gsl_matrix_row(xmodel, j);
+			covariance = covariance_fn_ptr(&xmodel_row_i.vector, &xmodel_row_j.vector, thetas, nthetas,nparams);
+			//printf("(%d,%d) cov: %g\n", i, j, covariance);
+			gsl_matrix_set(cov_matrix, i,j, covariance);
+		}
+	}
+	//print_matrix(cov_matrix, nmodel_points, nmodel_points);
+}
+
+
 
 //! calculate the emulated mean 
 /**

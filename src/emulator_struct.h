@@ -33,4 +33,9 @@ typedef struct emulator_struct {
 emulator_struct * alloc_emulator_struct(modelstruct * model);
 void free_emulator_struct(emulator_struct * e);
 
+void makeHMatrix_es(gsl_matrix *h_matrix, emulator_struct *e);
+void makeCovMatrix_es(gsl_matrix *cov_matrix, emulator_struct *e);
+void makeKVector_es(gsl_vector *kvector, gsl_vector *point, emulator_struct *e);
+void estimateBeta_es(gsl_vector *beta_vector, emulator_struct *e);
+
 #endif

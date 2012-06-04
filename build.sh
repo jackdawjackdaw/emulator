@@ -1,4 +1,5 @@
 #!/bin/sh
+## code by H.Canary
 # $1 is the install path which overwrites the default.
 # $2 is the build directory path.
 

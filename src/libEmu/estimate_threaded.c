@@ -49,7 +49,6 @@ int get_number_cpus(void){
 	return(ncpus);
 }
 
-
 //#define DEBUGMODE
 
 /**
@@ -266,9 +265,9 @@ void* estimate_thread_function(void* args){
 		if(next_job == -1)
 			break;
 
-		/* just support LBFGS maximisation now */
-		//maxWithLBFGS(params);
-		/* switch to multimin for testing */
+		/**
+		 * call the actual maximization routine
+		 */
 		maxWithMultiMin(params);
 		my_theta_val = params->lhood_current;
 

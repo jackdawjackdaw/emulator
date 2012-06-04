@@ -72,6 +72,8 @@ void makeHVector_cubic( gsl_vector *h_vector, gsl_vector *x_location, int nparam
  * create the h_matrix, which is the a matrix of h_vectors evaluated at each 
  * design point from xmodel
  * where h_matrix is defined to be n_model_points x nregression_fns
+ *
+ * not threadsafe: uses the global fnptr makeHVector(...) 
  */
 void makeHMatrix(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, int nparams, int nregression_fns){
 	int i,j; 
@@ -85,6 +87,31 @@ void makeHMatrix(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, in
 	}
 	gsl_vector_free(h_vec);
 }
+
+
+/**
+ * create the h_matrix, which is the a matrix of h_vectors evaluated at each 
+ * design point from xmodel
+ * where h_matrix is defined to be n_model_points x nregression_fns
+ *
+ * threadsafe
+ *
+ * final arg is a ptr to a fn which will init the h_vector correctly
+ */
+void makeHMatrix_fnptr(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, int nparams, int nregression_fns,
+											 void (*makeHVector_ptr)(gsl_vector *h_vector, gsl_vector *x_location, int nparams)){
+	int i,j; 
+	gsl_vector *h_vec = gsl_vector_alloc(nregression_fns);
+	gsl_vector_view xmodel_row_i;
+	
+	for(i = 0; i < nmodel_points; i++){
+		xmodel_row_i = gsl_matrix_row(xmodel, i);
+		makeHVector_ptr(h_vec, &xmodel_row_i.vector, nparams);
+		gsl_matrix_set_row(h_matrix, i, h_vec);
+	}
+	gsl_vector_free(h_vec);
+}
+
 
 /**
  * estimate the values of the coefficients beta for a given training vector and inverse covariance matrix
