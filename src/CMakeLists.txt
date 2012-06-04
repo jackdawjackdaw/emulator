@@ -12,8 +12,10 @@ add_subdirectory("./libRbind")
 
 MESSAGE("link libs: ${libs}")
 
-set(emulator_SOURCES emulator ioread useful optstruct resultstruct modelstruct bin_support)
-set(estimator_SOURCES estimator ioread useful optstruct modelstruct resultstruct bin_support)
+set(common_SOURCES ioread useful optstruct resultstruct modelstruct bin_support)
+set(emulator_SOURCES emulator ${common_SOURCES}) 
+set(estimator_SOURCES estimator ${common_SOURCES})
+set(interactive_SOURCES interactive_emulator ${common_SOURCES} emulator_struct)
 
 #set(lhood_SOURCES likelyhoody ioread useful)
 # on my deb6 vmware machine we get an error about cannot 
@@ -29,6 +31,11 @@ add_dependencies(estimator Emu)
 add_executable(emulator ${emulator_SOURCES})
 target_link_libraries(emulator Emu ${libs} pthread)
 add_dependencies(emulator Emu)
+
+add_executable(interactive_emulator ${interactive_SOURCES})
+target_link_libraries(interactive_emulator Emu ${libs} pthread)
+add_dependencies(interactive_emulator Emu)
+
 
 install (TARGETS estimator emulator 
 				RUNTIME DESTINATION bin

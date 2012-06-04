@@ -49,7 +49,6 @@ int get_number_cpus(void){
 	return(ncpus);
 }
 
-
 //#define DEBUGMODE
 
 /**
@@ -266,9 +265,9 @@ void* estimate_thread_function(void* args){
 		if(next_job == -1)
 			break;
 
-		/* just support LBFGS maximisation now */
-		//maxWithLBFGS(params);
-		/* switch to multimin for testing */
+		/**
+		 * call the actual maximization routine
+		 */
 		maxWithMultiMin(params);
 		my_theta_val = params->lhood_current;
 
@@ -328,7 +327,8 @@ void* estimate_thread_function(void* args){
 void fprintPt(FILE *f, pthread_t pt) {
   unsigned char *ptc = (unsigned char*)(void*)(&pt);
   fprintf(f, "0x");
-  for (size_t i=0; i<sizeof(pt); i++) {
+	size_t i;
+  for (i=0; i<sizeof(pt); i++) {
     fprintf(f, "%02x", (unsigned)(ptc[i]));
   }
 }
