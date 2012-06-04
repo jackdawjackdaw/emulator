@@ -95,6 +95,11 @@ BIGGEST BUG:
   trying to emulate several functions defined on the same space and
   sampled on the same training points?  We need to modify this to
   efficiently do that.
+
+Possible TODO:
+  allow the design x[0,0]...x[nmodel_points,nparams-1] to be read separately from the 
+  training points
+   
 *********************************************************************/
 
 /* #define BINARY_INTERACTIVE_MODE */
