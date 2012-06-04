@@ -37,6 +37,6 @@ target_link_libraries(interactive_emulator Emu ${libs} pthread)
 add_dependencies(interactive_emulator Emu)
 
 
-install (TARGETS estimator emulator 
+install (TARGETS estimator emulator interactive_emulator
 				RUNTIME DESTINATION bin
 				LIBRARY DESTINATION lib)

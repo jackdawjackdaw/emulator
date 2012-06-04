@@ -9,22 +9,14 @@ if test "$1" = "-h" ; then
 	exit 1
 fi
 
-if test "$1" ; then
-	INSTALL_PREFIX="$1"
-	mkdir -p "$INSTALL_PREFIX"
-	INSTALL_PREFIX=`cd "$INSTALL_PREFIX" ; pwd`
-else
-	INSTALL_PREFIX="${HOME}/local"
-	mkdir -p "$INSTALL_PREFIX"
-fi
+choosedir() {
+        D=${1:-${2}}
+        mkdir -p "$D"
+        echo `cd "$D" ; pwd`
+}
 
-if test "$2" ; then
-	BUILD_DIR="$2"
-	mkdir -p "$BUILD_DIR"
-else
-	BUILD_DIR="build_emulator"
-	mkdir -p "$BUILD_DIR"
-fi
+INSTALL_PREFIX=`choosedir "$1" "${HOME}/local"`
+BUILD_DIR=`choosedir "$2" "build_emulator"`
 
 SRC_DIR=`dirname "$0"`
 SRC_DIR=`cd "$SRC_DIR" ; pwd`
@@ -35,22 +27,24 @@ echo "INSTALL_PREFIX=\"${INSTALL_PREFIX}\""
 
 cd "$BUILD_DIR"
 
+mkscpt() {
+        LIB_PATH="${1}/lib"
+        EXE="${1}/bin/$2"
+        SCPT="${1}/bin/run_${2}"
+        {       echo '#!/bin/sh'
+                echo "LD_LIBRARY_PATH=\"${LIB_PATH}\""
+                echo "export LD_LIBRARY_PATH"
+                echo "exec \"${EXE}\" \"\$@\""
+        } > "$SCPT"
+        chmod +x "$SCPT"
+        echo "created \"${SCPT}\"."
+}
+
 cmake \
 	-D "CMAKE_INSTALL_PREFIX:PATH=${INSTALL_PREFIX}" \
 	"$SRC_DIR" && \
 	make && \
-	make install
-
-{	echo '#!/bin/sh'
-	echo "LD_LIBRARY_PATH=\"${INSTALL_PREFIX}/lib\""
-	echo "export LD_LIBRARY_PATH"
-	echo "exec \"${INSTALL_PREFIX}/bin/emulator\" \"\$@\""
-} > "${INSTALL_PREFIX}/bin/run_emulator"
-chmod +x "${INSTALL_PREFIX}/bin/run_emulator"
-
-{	echo '#!/bin/sh'
-	echo "LD_LIBRARY_PATH=\"${INSTALL_PREFIX}/lib\""
-	echo "export LD_LIBRARY_PATH"
-	echo "exec \"${INSTALL_PREFIX}/bin/estimator\" \"\$@\""
-} > "${INSTALL_PREFIX}/bin/run_estimator"
-chmod +x "${INSTALL_PREFIX}/bin/run_estimator"
+	make install && \
+	mkscpt "$INSTALL_PREFIX" estimator && \
+	mkscpt "$INSTALL_PREFIX" emulator && \
+	mkscpt "$INSTALL_PREFIX" interactive_emulator

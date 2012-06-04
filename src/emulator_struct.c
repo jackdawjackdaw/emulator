@@ -116,3 +116,27 @@ void estimateBeta_es(gsl_vector *beta_vector, emulator_struct *e)
 	estimateBeta(beta_vector, e->h_matrix, e->cinverse, e->model->training_vector, 
 							 e->nmodel_points, e->nregression_fns);
 }
+
+/*********************************************************************
+return mean and variance at a point.
+thread-safe, uses fnptrs defined in e->modelstruct
+*********************************************************************/
+void emulate_point(emulator_struct* e, gsl_vector * point,  double * mean, double * variance)
+{
+	gsl_vector * kplus = gsl_vector_alloc(e->nmodel_points); //allocate variable storage
+	gsl_vector * h_vector = gsl_vector_alloc(e->nregression_fns); //allocate variable storage
+
+	makeKVector_es(kplus, point, e);
+	/* use the fnptr in modelstruct */
+	e->model->makeHVector(h_vector, point, e->nparams);
+	
+	(*mean) = makeEmulatedMean(e->cinverse, e->model->training_vector,
+		kplus, h_vector, e->h_matrix, e->beta_vector, e->nmodel_points);
+	double kappa = covariance_fn(point, point, e->model->thetas, e->nthetas, e->nparams);
+	(*variance) = makeEmulatedVariance(e->cinverse, kplus, h_vector,
+		e->h_matrix, kappa, e->nmodel_points, e->nregression_fns);
+	gsl_vector_free(kplus);
+	gsl_vector_free(h_vector);
+	return;
+}
+
