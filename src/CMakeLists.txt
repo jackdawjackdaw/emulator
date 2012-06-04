@@ -15,7 +15,7 @@ MESSAGE("link libs: ${libs}")
 set(common_SOURCES ioread useful optstruct resultstruct modelstruct bin_support)
 set(emulator_SOURCES emulator ${common_SOURCES}) 
 set(estimator_SOURCES estimator ${common_SOURCES})
-set(interactive_SOURCES interactive_emulator ${common_SOURCES})
+set(interactive_SOURCES interactive_emulator ${common_SOURCES} emulator_struct)
 
 #set(lhood_SOURCES likelyhoody ioread useful)
 # on my deb6 vmware machine we get an error about cannot 

@@ -22,7 +22,8 @@ struct optstruct;
  * training vector
  * model points
  * theta vector (hyperparameters)
- * a pointer to the options used to init this model (should *not* be free'd)
+ * the options used to define this model 
+ * \note: the options used to be kept separately, they are now always contained in the modelstruct
  */
 typedef struct modelstruct{
 	/** 
@@ -52,9 +53,48 @@ typedef struct modelstruct{
 	 */
 	gsl_vector* sample_scales; 
 	/**
-	 * a pointer back to the options struct used to init this structure, just for fun really
+	 * the options struct used to init this structure
 	 */
 	struct optstruct* options;
+	
+	/**
+	 * fnptrs which define various aspects of the regression etc
+	 * should these be in optstruct?
+	 */
+
+	/**
+	 * setup the regression H vector, depends upon the regression order 
+	 * 
+	 * (needed in regression.h)
+	 */
+	void (*makeHVector)(gsl_vector *h_vector, gsl_vector *x_location, int nparams); 
+
+	/**
+	 * points to the covariance function, 
+	 * 
+	 * (needed in emulator.h)
+	 */
+	double (*covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int);
+
+	/**
+	 * compute the gradient matrix for the length setting theta values
+	 * dC/dTheta = (C-nugget) * (1/2)*(x_i - x_j)^(alpha) * alpha / (thetaLength) 
+	 * 
+	 * this is a fn-ptr which will be set when the cov function is setup
+	 * the different target fns are in emulator.c called derivative_l_<covfnname>
+	 * 
+	 * @param covsub the covariance matrix with the nugget term subtracted
+	 * @param thetaLength the current value of the length scale we're differentiating wrt
+	 * @param index, the direction we're looking in
+	 * @return dCdTheta the matrix of the derivative of C wrt index
+	 *
+	 * (needed in maxmultimin.h)
+	 */
+	void (*makeGradMatLength)(gsl_matrix *dCdTheta,  gsl_matrix* xmodel, 
+														double thetaLength, int index, int nmodel_points, int nparams);
+
+
+
 } modelstruct;
 
 
