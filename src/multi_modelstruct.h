@@ -6,7 +6,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 
-struct modelstruct
+struct modelstruct;
 
 /**
  * \struct multimodelstruct
@@ -18,8 +18,10 @@ struct modelstruct
 typedef struct multi_modelstruct{
 	int nt; // number of observables in OBSERVED space
 	int nr; // number of pca-observables kept in the ROTATED space
-	int nmodel_points;  // number of points in the design
 	int nparams; // number of dimensions in the PARAMETER SPACE
+	int nmodel_points;  // number of points in the design
+	int cov_fn_index;
+	int regression_order;
 	
 	/** 
 	 * the design (rows:nmodel_points) (cols:nparams)
@@ -31,20 +33,42 @@ typedef struct multi_modelstruct{
 	 * (rows:nmodel_points) (cols:nt)
 	 */
 	gsl_matrix *training_matrix;
-	
-	/** the array of (r) pca decomposed models
-	 */
-	modelstruct* pca_model_array;
-
 	/**
-	 * the eigenvals and vectors from the pca decomp
+	 * a t length vector of the the mean values of the cols of training_matrix 
 	 */
-	gsl_vector *eigenvalues;
-	gsl_matrix *eigenvectors;
+	gsl_vector *training_mean; 
+	
+	/** array of (r) pca decomposed models
+	 */
+	modelstruct** pca_model_array;
+	
+	/**
+	 * the eigenvalues and vectors from the pca decomp (t xt) , not saved for now...
+	 */
+	//gsl_vector *pca_eigenvalues;
+	//gsl_matrix *pca_eigenvectors;
+
+	gsl_vector *pca_evals_r;	/** just the first r evals */
+	gsl_matrix *pca_evecs_r;  /** the first r evecs (t x nr)*/
+	
+
+	/** 
+	 * an (r x nmodel_points) matrix of the pca-transformed training points, these are 
+	 * used to init each of the r entries of pca_model_array */
+	gsl_matrix *pca_zmatrix; /** z <- (1/sqrt(pca_evals_r)) %*% t(pca_evecs_r) %*% (training_matrix - training_mean) */
 	
 } multi_modelstruct;
 
 multi_modelstruct* alloc_multmodelstruct(gsl_matrix *model_in, gsl_matrix *training_matrix_in, int cov_fn_index, int regression_order);
+
+void gen_pca_decomp(multi_modelstruct *m);
+void gen_pca_model_array(multi_modelstruct *m);
+
+void dump_multi_modelstruct(multi_modelstruct *m, FILE* fptr);
+multi_modelstruct *load_multi_modelstruct(FILE* fptr);
+
+
+double vector_elt_sum(gsl_vector* vec, int nstop);
 
 void free_multimodelstruct(multi_modelstruct *m);
 

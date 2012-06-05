@@ -137,6 +137,8 @@ void emulate_point(emulator_struct* e, gsl_vector * point,  double * mean, doubl
 		e->h_matrix, kappa, e->nmodel_points, e->nregression_fns);
 	gsl_vector_free(kplus);
 	gsl_vector_free(h_vector);
+
+	// can we really return on void?
 	return;
 }
 
