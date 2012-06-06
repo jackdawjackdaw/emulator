@@ -460,6 +460,10 @@ int interactive_mode (int argc, char** argv) {
 	return 0;
 }
 
+int interactive_mode_multi (int argc, char** argv) {
+	return EXIT_FAILURE;
+}
+
 /*********************************************************************
 main
 *********************************************************************/
