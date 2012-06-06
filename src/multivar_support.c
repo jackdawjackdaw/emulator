@@ -1,12 +1,17 @@
 #include "multivar_support.h"
 #include "multi_modelstruct.h"
 #include "emulator_struct.h"
+#include "modelstruct.h"
+#include "libEmu/estimate_threaded.h"
+#include <math.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
 
 
+
 /**
- * estimates the thetas for an allocated multvariate model
+ * estimates the thetas for an allocated multvariate model and outputs the 
+ * info to outfp
  * 
  * requries: 
  * m must have been succesfully allocated and pca'd
@@ -18,8 +23,8 @@ void estimate_multi(multi_modelstruct *m, FILE* outfp)
 	for(i = 0; i < m->nr; i++){
 		estimate_thetas_threaded(m->pca_model_array[i], m->pca_model_array[i]->options);
 	}
-	// dump the trained modelstruct
-	dump_multi_modelstruct(m, outfp);
+	// dump the trained modelstruct, this maybe should go somewhere else
+	dump_multi_modelstruct(outfp, m);
 }
 
 multi_emulator *alloc_multi_emulator(multi_modelstruct *m)
@@ -36,9 +41,9 @@ multi_emulator *alloc_multi_emulator(multi_modelstruct *m)
 	e->model = m;
 	
 	// allocate the nr emulators we need
-	e->emu_struct_array = (emulator_struct**)malloc(sizeof(emulator_struct*)*m->nr);
+	e->emu_struct_array = (emulator_struct**)malloc(sizeof(emulator_struct*)*e->nr);
 
-	for(i = 0; i < nr; i++)
+	for(i = 0; i < e->nr; i++)
 		e->emu_struct_array[i] = alloc_emulator_struct(m->pca_model_array[i]);
 	
 	return e;
@@ -51,7 +56,7 @@ void free_multi_emulator(multi_emulator *e)
 	free_multimodelstruct(e->model);
 	for(i = 0; i < e->nr; i++)
 		free_emulator_struct(e->emu_struct_array[i]);
-	free(emu_struct_array);
+	free(e->emu_struct_array);
 }
 
 
@@ -73,7 +78,6 @@ void emulate_point_multi(multi_emulator *emu, gsl_vector *the_point,
 	int nr = emu->nr;
 	int nt = emu->nt;
 	double vec_mat_sum;
-	double temp_mean, temp_var;
 	// the mean and variance in the PCA space
 	gsl_vector *mean_pca = gsl_vector_alloc(nr);
 	gsl_vector *var_pca = gsl_vector_alloc(nr); 
@@ -108,7 +112,7 @@ void emulate_point_multi(multi_emulator *emu, gsl_vector *the_point,
 	 */
 	gsl_vector_set_zero(temp);
 	vec_mat_sum = 0.0;
-	for(i = 0; i < nt){
+	for(i = 0; i < nt; i++){
 		for(j = 0; j < nr; j++)
 			vec_mat_sum += pow(gsl_matrix_get(emu->model->pca_evecs_r, i, j), 2.0) *
 				gsl_vector_get(emu->model->pca_evals_r, j) * gsl_vector_get(var_pca, j);

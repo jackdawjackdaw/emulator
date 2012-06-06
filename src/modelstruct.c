@@ -119,7 +119,6 @@ void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_d
 	int i,j;
 	double temp_value;
 	char* split_string;
-	char buffer[128];
 	gsl_vector *differences = gsl_vector_alloc(options->nmodel_points - 1);
 	double min_value, average_value;
 

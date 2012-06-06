@@ -29,7 +29,7 @@
  * applies a pca decomp to training_matrix to reduce the dimensionality
  * 
  */
-multi_modelstruct* alloc_multmodelstruct(gsl_matrix *xmodel_in, 
+multi_modelstruct* alloc_multimodelstruct(gsl_matrix *xmodel_in, 
 																				 gsl_matrix *training_matrix_in, 
 																				 int cov_fn_index, 
 																				 int regression_order, double varfrac)
@@ -67,7 +67,7 @@ multi_modelstruct* alloc_multmodelstruct(gsl_matrix *xmodel_in,
 		nthetas = nparams + 2;
 	}
 	
-	multi_modelstruct * model = (multi_modelstruct*)malloc(sizeof(multi_modelstruct));
+	multi_modelstruct * model = (multi_modelstruct*)MallocChecked(sizeof(multi_modelstruct));
 
 	// fill in
 	model->nt = nt;
@@ -112,7 +112,7 @@ void gen_pca_model_array(multi_modelstruct *m)
 	int i;
 	gsl_vector_view col_view; 
 	// alloc the array of nr model structs
-	m->pca_model_array = (modelstruct**)malloc(sizeof(modelstruct*)*nr);
+	m->pca_model_array = (modelstruct**)MallocChecked(sizeof(modelstruct*)*nr);
 	// fill in the modelstructs correctly
 	for(i = 0; i < nr; i++){
 		col_view = gsl_matrix_column(m->pca_zmatrix, i);
@@ -302,7 +302,7 @@ void dump_multi_modelstruct(FILE* fptr, multi_modelstruct *m){
  * loads a multivariate modelstructure from fptr
  */
 multi_modelstruct *load_multi_modelstruct(FILE* fptr){
-	multi_modelstruct *m = (multi_modelstruct*)malloc(sizeof(multi_modelstruct));
+	multi_modelstruct *m = (multi_modelstruct*)MallocChecked(sizeof(multi_modelstruct));
 	int i,j;
 	int nt, nr;
 	int nparams, nmodel_points;
@@ -330,7 +330,7 @@ multi_modelstruct *load_multi_modelstruct(FILE* fptr){
 	m->xmodel = gsl_matrix_alloc(nmodel_points, nparams);
 	m->training_matrix = gsl_matrix_alloc(nmodel_points, nt);
 	m->training_mean = gsl_vector_alloc(nt); // do we need this? (yes!)
-	m->pca_model_array = (modelstruct**)malloc(sizeof(modelstruct*)*nr);
+	m->pca_model_array = (modelstruct**)MallocChecked(sizeof(modelstruct*)*nr);
 	m->pca_evals_r = gsl_vector_alloc(nr);
 	m->pca_evecs_r = gsl_matrix_alloc(nt, nr);
 	m->pca_zmatrix = gsl_matrix_alloc(nmodel_points, nr);

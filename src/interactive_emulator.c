@@ -28,10 +28,14 @@ LICENSE:
   <http://www.gnu.org/licenses/gpl-3.0-standalone.html>.
 
 USE:
-  useage:
+  useage: 
     interactive_emulator estimate_thetas INPUT_MODEL_FILE MODEL_SNAPSHOT_FILE [OPTIONS]
   or
     interactive_emulator interactive_mode MODEL_SNAPSHOT_FILE
+  or (for models with multiple y value)
+    interactive_emulator estimate_thetas_multi INPUT_MODEL_FILE_MULTI MODEL_SNAPSHOT_FILE_MULTI [OPTIONS]
+  or 
+    interactive_emulator interactive_mode_multi MODEL_SNAPSHOT_FILE_MULTI [OPTIONS]
 
   INPUT_MODEL_FILE can be "-" to read from standard input.
 
@@ -59,7 +63,7 @@ INPUT_MODEL_FILE FORMAT:
     X[0,nparams-1]
     X[1,0]
     ...
-    X[nmodel_points,nparams-1]
+    X[nmodel_points-1,nparams-1]
     y[0]
     ...
     y[nmodel_points-1]
@@ -70,6 +74,30 @@ INPUT_MODEL_FILE FORMAT:
 
   You don't have to use newlines to separate values.  If fscanf(fp,
   "%lf%*c", ptr) can read the value, it will work.
+
+INPUT_MODEL_FILE_MULTI FORMAT:
+  Models with multivariate output values y = y_1...y_t which we will think of as rows of a matrix
+  BEGIN EXAMPLE
+   nt
+   nparams 
+   nmodel_points
+    X[0,0]
+    ...
+    X[0,nparams-1]
+    X[1,0]
+    ...
+    X[nmodel_points-1,nparams-1]
+    y[0, 0]
+    y[0, 1]
+    ...
+    y[0, t-1]
+    ...
+    y[1, 1]
+    ... 
+    y[nmodel_points-1, t-1]
+   END EXAMPLE
+   
+   nt, nparams and nmodel_points should be positive ints, X_ij and Y_i,j are read as doubles
 
 BUGS:
   Writing MODEL_SNAPSHOT_FILE to stdout is not allowed because
@@ -107,8 +135,10 @@ BIGGEST BUG:
 #include <string.h>
 
 #include "main.h"
-#include "resultstruct.h"
+//#include "resultstruct.h" /** this is not useful is it? */
 #include "emulator_struct.h"
+#include "multi_modelstruct.h"
+#include "multivar_support.h"
 #include "libEmu/maxmultimin.h"
 
 /********************************************************************/
@@ -177,6 +207,50 @@ int open_model_file(char * input_filename,
 	return 1;
 }
 
+
+/*********************************************************************
+Reads a file containing xmodel and training_matrix info and create
+data structures to hold that information.
+@param input_filename: name of file to open.
+  can be "-" or "stdin" to represent standard input
+@param xmodel_ptr: returns a newly allocated gsl_matrix (nmodel_points x nparams)
+@param training_matrix_ptr: returns a newly allocated gsl_matrix (nmodel_points x nt)
+*********************************************************************/
+int open_model_file_multivar(char * input_filename,
+		gsl_matrix ** xmodel_ptr, gsl_matrix ** training_matrix_ptr) {
+	FILE * input_file;
+	if ((0 == strcmp(input_filename, "-")) || (0 == strcmp(input_filename, "stdin")))
+		input_file = stdin;
+	else
+		input_file = fopen(input_filename, "r");
+	if (input_file == NULL)
+		return 0; /* failure */
+	int i, j, nt, nparams, nmodel_points;
+	fscanf(input_file,"%d%*c", & nt);
+	fscanf(input_file,"%d%*c", & nparams);
+	fscanf(input_file,"%d%*c", & nmodel_points);
+	gsl_matrix * xmodel = gsl_matrix_alloc(nmodel_points, nparams);
+	gsl_matrix * training_matrix = gsl_matrix_alloc(nmodel_points, nt);
+	
+	for (i = 0; i < nmodel_points; i++)
+		for (j = 0; j < nparams; j++)
+			fscanf(input_file, "%lf%*c", gsl_matrix_ptr(xmodel,i,j));
+	for (i = 0; i < nmodel_points; i++)
+		for(j = 0; j < nt; j++)
+			fscanf(input_file, "%lf%*c", gsl_matrix_ptr(training_matrix, i, j));
+	
+	if (input_file != stdin)
+		fclose(input_file);
+	*xmodel_ptr = xmodel;
+	*training_matrix_ptr = training_matrix;
+	return 1;
+}
+
+
+
+
+
+
 /*********************************************************************
 Return true only if the beginning of s1 matches s2.
 *********************************************************************/
@@ -187,6 +261,47 @@ Return true only if the beginning of s1 matches s2.
 Return true only if s1 equals s2.
 *********************************************************************/
 #define str_equal(s1,s2) (strcmp ((s1), (s2)) == 0)
+
+/**
+ * read out the cov-fn and regression order from argc and argv
+ */
+void parse_arguments_interactive(int* cov_fn_index, int* regression_order, int argc, char ** argv){
+	argc -= 2;
+	argv += 2;
+	while (argc > 0) {
+		if (starts_with(argv[0], "--covariance_fn=")) {
+			if (starts_with(&(argv[0][16]), "POWER_EXPONENTIAL")) {
+				*cov_fn_index = POWEREXPCOVFN; /* 1 */
+			} else if (starts_with(&(argv[0][16]), "MATERN32")) {
+				*cov_fn_index = MATERN32; /* 2 */
+			} else if (starts_with(&(argv[0][16]), "MATERN52")) {
+				*cov_fn_index = MATERN52;  /* 3 */
+			} else {
+				fprintf(stderr, "Unknown covariance_function \"%s\".\n", &(argv[0][16]));
+				exit(perr(useage));
+			}
+		} else if (starts_with(argv[0], "--regression_order=")) {
+			if (str_equal(&(argv[0][19]), "0")) {
+				*regression_order = 0;
+			} else if (str_equal(&(argv[0][19]), "1")) {
+				*regression_order = 1;
+			} else if (str_equal(&(argv[0][19]), "2")) {
+				*regression_order = 2;
+			} else if (str_equal(&(argv[0][19]), "3")) {
+				*regression_order = 3;
+			} else {
+				fprintf(stderr, "Invalid regression_order: \"%s\"\n", &(argv[0][19]));
+				exit(perr(useage));
+			}
+		}
+		else {
+			fprintf(stderr, "invalid option: \"%s\"\n", argv[0]);
+			exit(perr(useage));
+		}
+		argc--;
+		argv++;
+	}
+}
 
 
 /*********************************************************************
@@ -215,48 +330,19 @@ int estimate_thetas (int argc, char ** argv) {
 
 	int cov_fn_index = POWEREXPCOVFN; /* POWEREXPCOVFN: 1, MATERN32: 2, MATERN52: 3 */
 	int regression_order = 0; /* 0, 1, 2, or 3 */
-	argc -= 2;
-	argv += 2;
-	while (argc > 0) {
-		if (starts_with(argv[0], "--covariance_fn=")) {
-			if (starts_with(&(argv[0][16]), "POWER_EXPONENTIAL")) {
-				cov_fn_index = POWEREXPCOVFN; /* 1 */
-			} else if (starts_with(&(argv[0][16]), "MATERN32")) {
-				cov_fn_index = MATERN32; /* 2 */
-			} else if (starts_with(&(argv[0][16]), "MATERN52")) {
-				cov_fn_index = MATERN52;  /* 3 */
-			} else {
-				fprintf(stderr, "Unknown covariance_function \"%s\".\n", &(argv[0][16]));
-				return perr(useage);
-			}
-		} else if (starts_with(argv[0], "--regression_order=")) {
-			if (str_equal(&(argv[0][19]), "0")) {
-				regression_order = 0;
-			} else if (str_equal(&(argv[0][19]), "1")) {
-				regression_order = 1;
-			} else if (str_equal(&(argv[0][19]), "2")) {
-				regression_order = 2;
-			} else if (str_equal(&(argv[0][19]), "3")) {
-				regression_order = 3;
-			} else {
-				fprintf(stderr, "Invalid regression_order: \"%s\"\n", &(argv[0][19]));
-				return perr(useage);
-			}
-		}
-		else {
-			fprintf(stderr, "invalid option: \"%s\"\n", argv[0]);
-			return perr(useage);
-		}
-		argc--;
-		argv++;
-	}
+	
+	parse_arguments_interactive(&cov_fn_index, &regression_order, argc, argv);
 
+	// debug
+	fprintf(stderr, "# cov_fn_index %d\n# regression_order %d\n", cov_fn_index, regression_order);
+	
 	modelstruct * model = alloc_modelstruct_2(xmodel, training_vector,
 		cov_fn_index, regression_order);
 
 	/* actually do the estimation using libEmu */
 	estimate_thetas_threaded(model, model->options);
-
+	
+	
 	/* write to file */
 	dump_modelstruct_2(outfp, model);
 	fclose(outfp);
@@ -266,6 +352,50 @@ int estimate_thetas (int argc, char ** argv) {
 	free_modelstruct_2(model);
 	return 0;
 }
+
+/**
+ * if main called with "estimate_thetas_multi"
+ */
+int estimate_thetas_multi (int argc, char ** argv) {
+	gsl_matrix *xmodel;
+	gsl_matrix *training_matrix;
+	double varfrac = 0.95; // this could be set by an arg
+
+	if (argc < 2)
+		return perr("Not enough arguments\n");
+
+	if (! open_model_file_multivar(argv[0], &xmodel, &training_matrix))
+		return perr("File read failed.");
+
+	
+	FILE * outfp = fopen(argv[1], "w");
+	if (outfp == NULL)
+		return perr("Opening output file failed.");
+
+	int cov_fn_index = POWEREXPCOVFN; /* POWEREXPCOVFN: 1, MATERN32: 2, MATERN52: 3 */
+	int regression_order = 0; /* 0, 1, 2, or 3 */
+	
+	parse_arguments_interactive(&cov_fn_index, &regression_order, argc, argv);
+
+	/* allocate the multi-model, do the pca decomp
+	 * this is a little chatty on stderr
+	 */
+	multi_modelstruct * model = alloc_multimodelstruct(xmodel, training_matrix,
+																										 cov_fn_index, regression_order, varfrac);
+
+	/* actually do the estimation using libEmu and write to file! */
+	estimate_multi(model, outfp);
+
+	fclose(outfp);
+
+	gsl_matrix_free(xmodel);
+	gsl_vector_free(training_matrix);
+	free_multimodelstruct(model);
+	return EXIT_SUCCESS;
+}
+
+
+
 
 /*********************************************************************
 If main called with "interactive_mode" argument, this happens.
@@ -336,9 +466,18 @@ main
 int main (int argc, char ** argv) {
 	if (argc < 3)
 		return perr(useage);
+	
 	if (0 == strcmp(argv[1], "estimate_thetas"))
 		return estimate_thetas(argc - 2, argv + 2);
 	if (0 == strcmp(argv[1], "interactive_mode"))
 		return interactive_mode(argc - 2, argv + 2);
+	/**
+	 * ccs, added some multivar support, the command line passing is going to get a bit cranky soon 
+	 */
+	if (0 == strcmp(argv[1], "estimate_thetas_multi"))
+		return estimate_thetas_multi(argc - 2, argv + 2);
+	if (0 == strcmp(argv[1], "interactive_mode_multi"))
+		return interactive_mode_multi(argc - 2, argv + 2);
+	
 	return perr(useage);
 }

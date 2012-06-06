@@ -59,8 +59,8 @@ typedef struct multi_modelstruct{
 	
 } multi_modelstruct;
 
-multi_modelstruct* alloc_multmodelstruct(gsl_matrix *xmodel_in, gsl_matrix *training_matrix_in, int cov_fn_index, 
-																				 int regression_order, double varfrac);
+multi_modelstruct* alloc_multimodelstruct(gsl_matrix *xmodel_in, gsl_matrix *training_matrix_in, 
+																				 int cov_fn_index, int regression_order, double varfrac);
 
 void gen_pca_decomp(multi_modelstruct *m, double vfrac);
 void gen_pca_model_array(multi_modelstruct *m);
