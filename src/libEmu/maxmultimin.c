@@ -461,7 +461,9 @@ void gradFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in, gsl_vect
 		gsl_vector_free(theta_local);
 
 		// if the fn cannot be evaluated we return GSL_NAN?
-		return(GSL_NAN); // umm, should maybe jump out instead?
+		//return(GSL_NAN); // umm, should maybe jump out instead?
+		// FIXME: do somthing to indicate failure.
+		return; //void function.
 	}
 	gsl_set_error_handler(temp_handler);
 

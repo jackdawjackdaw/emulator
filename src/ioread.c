@@ -144,3 +144,27 @@ void free_char_array(char** array,  int ly){
 	}
 	free(array);
 }
+
+
+/**
+ * Read a ASCII-encoded integer from a FILE.
+ * 
+ * @param fp FILE* pointer
+ * @param ip where to store the integer.  Will store a bogus value on error.
+ */
+void scan_int(FILE * fp, int * ip) {
+	if (1 != fscanf(fp,"%d%*c", ip))
+		*ip = -32768; /* error value */
+}
+
+/**
+ * Read a ASCII-encoded double from a FILE.
+ * 
+ * @param fp FILE* pointer
+ * @param dp where to store the number.  Will store a bogus value on error.
+ */
+void scan_double(FILE * fp, double * dp) {
+	if (1 != fscanf(fp,"%lf%*c", dp))
+		*dp = -1.0e38; /* error value */
+}
+

@@ -2,6 +2,7 @@
 #include "assert.h"
 #include "math.h"
 #include "modelstruct.h"
+#include "ioread.h"
 #include "libEmu/regression.h"
 #include "libEmu/emulator.h"
 #include "libEmu/maxmultimin.h"
@@ -77,7 +78,6 @@ void load_modelstruct(FILE* fptr, modelstruct* the_model, optstruct* opts){
 	int nmp = opts->nmodel_points;
 	int nthetas = opts->nthetas;
 	int i,j;
-	double temp;
 	
 	// allocate everything first
 	the_model->xmodel = gsl_matrix_alloc(nmp, nparams);
@@ -88,24 +88,20 @@ void load_modelstruct(FILE* fptr, modelstruct* the_model, optstruct* opts){
 
 	for(i = 0; i < nmp; i++){
 		for(j = 0; j < nparams; j++){
-			fscanf(fptr, "%lf ", &temp);
-			gsl_matrix_set(the_model->xmodel, i, j, temp);
+			scan_double(fptr,gsl_matrix_ptr(the_model->xmodel, i, j));
 		}
 	}
 
 	for(i = 0; i < nmp; i++){
-		fscanf(fptr, "%lf ", &temp);
-		gsl_vector_set(the_model->training_vector, i, temp);
+		scan_double(fptr,gsl_vector_ptr(the_model->training_vector, i));
 	}
 	
 	for(i = 0; i < nthetas; i++){
-		fscanf(fptr, "%lf ", &temp);
-		gsl_vector_set(the_model->thetas, i, temp);
+		scan_double(fptr,gsl_vector_ptr(the_model->thetas, i));
 	}
 	
 	for(i = 0; i < nparams; i++){
-		fscanf(fptr, "%lf ", &temp);
-		gsl_vector_set(the_model->sample_scales, i, temp);
+		scan_double(fptr,gsl_vector_ptr(the_model->sample_scales, i));
 	}
 
 }
@@ -397,44 +393,45 @@ modelstruct* load_modelstruct_2(FILE *fptr) {
 	int i,j;
 	int nparams, nmodel_points, nthetas;
 
-	fscanf(fptr, "%d%*c", & nthetas);
-	fscanf(fptr, "%d%*c", & nparams);
-	fscanf(fptr, "%d%*c", & nmodel_points);
+	
+	scan_int(fptr, & nthetas);
+	scan_int(fptr, & nparams);
+	scan_int(fptr, & nmodel_points);
 
 	model->options->nparams = nparams;
 	model->options->nmodel_points = nmodel_points;
 	model->options->nthetas = nthetas;
 
-	fscanf(fptr, "%d%*c", &(model->options->nemulate_points));
-	fscanf(fptr, "%d%*c", &(model->options->regression_order));
-	fscanf(fptr, "%d%*c", &(model->options->nregression_fns));
-	fscanf(fptr, "%d%*c", &(model->options->fixed_nugget_mode));
-	fscanf(fptr, "%lf%*c", &(model->options->fixed_nugget));
-	fscanf(fptr, "%d%*c", &(model->options->cov_fn_index));
-	fscanf(fptr, "%lf%*c", &(model->options->use_data_scales));
+	scan_int(fptr, &(model->options->nemulate_points));
+	scan_int(fptr, &(model->options->regression_order));
+	scan_int(fptr, &(model->options->nregression_fns));
+	scan_int(fptr, &(model->options->fixed_nugget_mode));
+	scan_double(fptr, &(model->options->fixed_nugget));
+	scan_int(fptr, &(model->options->cov_fn_index));
+	scan_int(fptr, &(model->options->use_data_scales));
 
 	model->options->grad_ranges = gsl_matrix_alloc(nthetas, 2);
 	for(i = 0; i < nthetas; i++) {
-		fscanf(fptr, "%lf%*c", gsl_matrix_ptr(model->options->grad_ranges,i,0));
-		fscanf(fptr, "%lf%*c", gsl_matrix_ptr(model->options->grad_ranges,i,1));
+		scan_double(fptr, gsl_matrix_ptr(model->options->grad_ranges,i,0));
+		scan_double(fptr, gsl_matrix_ptr(model->options->grad_ranges,i,1));
 	}
 
 	model->xmodel = gsl_matrix_alloc(nmodel_points, nparams);
 	for(i = 0; i < nmodel_points; i++)
 		for(j = 0; j < nparams; j++)
-			fscanf(fptr, "%lf%*c", gsl_matrix_ptr(model->xmodel, i, j));
+			scan_double(fptr, gsl_matrix_ptr(model->xmodel, i, j));
 
 	model->training_vector = gsl_vector_alloc(nmodel_points);
 	for(i = 0; i < nmodel_points; i++)
-		fscanf(fptr, "%lf%*c", gsl_vector_ptr(model->training_vector, i));
+		scan_double(fptr, gsl_vector_ptr(model->training_vector, i));
 
 	model->thetas = gsl_vector_alloc(nthetas);
 	for(i = 0; i < nthetas; i++)
-		fscanf(fptr, "%lf%*c", gsl_vector_ptr(model->thetas, i));
+		scan_double(fptr, gsl_vector_ptr(model->thetas, i));
 
 	model->sample_scales = gsl_vector_alloc(nparams);
 	for(i = 0; i < nparams; i++)
-		fscanf(fptr, "%lf%*c", gsl_vector_ptr(model->sample_scales, i));
+		scan_double(fptr, gsl_vector_ptr(model->sample_scales, i));
 
 	set_global_ptrs(model);
 	return model;

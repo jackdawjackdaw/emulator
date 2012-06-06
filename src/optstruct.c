@@ -1,6 +1,7 @@
 #include "assert.h"
 #include "optstruct.h"
 #include "string.h"
+#include "ioread.h"
 #include "libEmu/maxmultimin.h"
 
 void free_optstruct(optstruct *opts){
@@ -268,26 +269,29 @@ void dump_optstruct(FILE *fptr, optstruct* opts){
 void load_optstruct(FILE *fptr, optstruct* opts){
 	int i; 
 	double rlow, rhigh;
-	fscanf(fptr, "%d", &opts->nthetas);
-	fscanf(fptr, "%d", &opts->nthetas);
-	fscanf(fptr, "%d", &opts->nparams);
-	fscanf(fptr, "%d", &opts->nmodel_points);
-	fscanf(fptr, "%d", &opts->nemulate_points);
-	fscanf(fptr, "%d", &opts->regression_order);
-	fscanf(fptr, "%d", &opts->nregression_fns);
-	fscanf(fptr, "%d", &opts->fixed_nugget_mode);
-	fscanf(fptr, "%lf", &opts->fixed_nugget);
-	fscanf(fptr, "%d", &opts->cov_fn_index);
-	fscanf(fptr, "%d", &opts->use_data_scales);
+	scan_int(fptr, &opts->nthetas);
+	scan_int(fptr, &opts->nthetas);
+	scan_int(fptr, &opts->nparams);
+	scan_int(fptr, &opts->nmodel_points);
+	scan_int(fptr, &opts->nemulate_points);
+	scan_int(fptr, &opts->regression_order);
+	scan_int(fptr, &opts->nregression_fns);
+	scan_int(fptr, &opts->fixed_nugget_mode);
+	scan_double(fptr, &opts->fixed_nugget);
+	scan_int(fptr, &opts->cov_fn_index);
+	scan_int(fptr, &opts->use_data_scales);
 	
 	
 	// allocate the grad_ranges matrix
 	opts->grad_ranges = gsl_matrix_alloc(opts->nthetas, 2);
 
 	for(i = 0; i < opts->nthetas; i++){
-		fscanf(fptr, "%lf\t%lf", &rlow, &rhigh);
-		gsl_matrix_set(opts->grad_ranges, i, 0, rlow);
-		gsl_matrix_set(opts->grad_ranges, i, 1, rhigh);
+		if (2 != fscanf(fptr, "%lf\t%lf", 
+										gsl_matrix_ptr(opts->grad_ranges, i, 0),
+										gsl_matrix_ptr(opts->grad_ranges, i, 1))) {
+			gsl_matrix_set(opts->grad_ranges, i, 0, -1.0e-38);
+			gsl_matrix_set(opts->grad_ranges, i, 1, -1.0e-38);
+		}
 	}
 	
 }

@@ -129,7 +129,8 @@ unsigned long int get_seed(void){
 		//fprintf(stderr,"Got seed %u from gettimeofday()\n", seed);
 	}
 	else {
-		fread(&seed, sizeof(seed), 1, devrandom);
+		if (fread(&seed, sizeof(seed), 1, devrandom) < 1)
+			fprintf(stderr, "Error reading from /dev/random\n");
 		//fprintf(stderr, "Got seed %u from /dev/random\n", seed);
 		fclose(devrandom);
 	}
@@ -149,7 +150,8 @@ unsigned long int get_seed_noblock(void){
 		//fprintf(stderr,"Got seed %u from gettimeofday()\n", seed);
 	}
 	else {
-		fread(&seed, sizeof(seed), 1, devrandom);
+		if (fread(&seed, sizeof(seed), 1, devrandom) < 1)
+			fprintf(stderr, "Error reading from /dev/urandom\n");
 		//fprintf(stderr, "Got seed %u from /dev/random\n", seed);
 		fclose(devrandom);
 	}

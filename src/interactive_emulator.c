@@ -159,15 +159,15 @@ int open_model_file(char * input_filename,
 	if (input_file == NULL)
 		return 0; /* failure */
 	int i, j, nparams, nmodel_points;
-	fscanf(input_file,"%d%*c", & nparams);
-	fscanf(input_file,"%d%*c", & nmodel_points);
+	scan_int(input_file, & nparams);
+	scan_int(input_file, & nmodel_points);
 	gsl_matrix * xmodel = gsl_matrix_alloc(nmodel_points, nparams);
 	gsl_vector * training_vector = gsl_vector_alloc(nmodel_points);
 	for (i = 0; i < nmodel_points; i++)
 		for (j = 0; j < nparams; j++)
-			fscanf(input_file, "%lf%*c", gsl_matrix_ptr(xmodel,i,j));
+			scan_double(input_file, gsl_matrix_ptr(xmodel,i,j));
 	for (i = 0; i < nmodel_points; i++)
-		fscanf(input_file, "%lf%*c", gsl_vector_ptr(training_vector, i));
+		scan_double(input_file, gsl_vector_ptr(training_vector, i));
 	if (input_file != stdin)
 		fclose(input_file);
 	*xmodel_ptr = xmodel;
