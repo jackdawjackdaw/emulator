@@ -1,12 +1,19 @@
 #include "multi_modelstruct.h"
 #include "multivar_support.h"
-#include "assert.h"
+
+#include <math.h>
+#include <assert.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_blas.h>
 
 /** 
- * \todo this all needs to be checked carefully
+ * ccs, 05.06.2012
+ * \todo this all needs to be checked carefully against an example that works in R
+ * \todo valgrind for mem-leaks
+ * \bug no error checking in linalg
+ * \bug no error checking in alloc
+ * \bug is there error checking in file handles?
  */
 
 /**
@@ -22,22 +29,22 @@
  * applies a pca decomp to training_matrix to reduce the dimensionality
  * 
  */
-multi_modelstruct* alloc_multmodelstruct(gsl_matrix *model_in, 
+multi_modelstruct* alloc_multmodelstruct(gsl_matrix *xmodel_in, 
 																				 gsl_matrix *training_matrix_in, 
 																				 int cov_fn_index, 
 																				 int regression_order, double varfrac)
 {
-	assert(training_matrix->size1 == xmodel->size1);
-	assert(training_matrix->size1 > 0);
-	assert(training_matrix->size2 > 0);
-	assert(xmodel->size2 > 0);
+	assert(training_matrix_in->size1 == xmodel_in->size1);
+	assert(training_matrix_in->size1 > 0);
+	assert(training_matrix_in->size2 > 0);
+	assert(xmodel_in->size2 > 0);
 	
 
-	int i,j;
+	int i;
 	double mean_temp = 0.0;
-	int nt = training_matrix->size2;
-	int nmodel_points = xmodel->size1;
-	int nparams = xmodel->size2;
+	int nt = training_matrix_in->size2;
+	int nmodel_points = xmodel_in->size1;
+	int nparams = xmodel_in->size2;
 	gsl_vector_view col_view;
 	
 
@@ -60,11 +67,11 @@ multi_modelstruct* alloc_multmodelstruct(gsl_matrix *model_in,
 		nthetas = nparams + 2;
 	}
 	
-	multi_modelstruct * model = (multi_modelstruct**)malloc(sizeof(multi_modelstruct));
+	multi_modelstruct * model = (multi_modelstruct*)malloc(sizeof(multi_modelstruct));
 
 	// fill in
 	model->nt = nt;
-	mdoel->nr = 0; // init at zero
+	model->nr = 0; // init at zero
 	model->nmodel_points = nmodel_points;
 	model->nparams = nparams;
 	model->xmodel = xmodel_in;
@@ -146,7 +153,7 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	gsl_matrix *y_cov_mat = gsl_matrix_alloc(m->nmodel_points, nt);
 	
 	gsl_vector *evals_temp = gsl_vector_alloc(nt);
-	gsl_matrix *evec_temp = gsl_matrix_alloc(nt,nt);
+	gsl_matrix *evecs_temp = gsl_matrix_alloc(nt,nt);
 	
 	gsl_eigen_symmv_workspace *ework = gsl_eigen_symmv_alloc(nt);
 	
@@ -184,18 +191,18 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	//m->pca_eigenvalues = evals_temp;
 	//m->pca_eigenvectors = evecs_temp;
 	
-	total_variance = vector_elt_sum(m->pca_eigenvalues, nt)
+	total_variance = vector_elt_sum(evals_temp, nt);
 
 	i=0;
 	while( frac < vfrac || i < nt){
-		frac = (1.0/total_variance) * vector_elt_sum(m->pca_eigenvalues, i);
+		frac = (1.0/total_variance) * vector_elt_sum(evals_temp, i);
 		i++;
 	}
 	m->nr = i;
 	m->pca_evals_r = gsl_vector_alloc(m->nr);
-	m->pca_evecs_r = gsl_vector_alloc(m->nt, m->nr);
+	m->pca_evecs_r = gsl_matrix_alloc(m->nt, m->nr);
 	// debug...
-	fprintf(stderr, "# nr: ", i, " frac: ", frac, "\n");
+	fprintf(stderr, "# nr: %d frac: %lf\n", i, frac);
 	
 	for(i = 0; i < m->nr; i++){
 		gsl_vector_set(m->pca_evals_r, i, gsl_vector_get(evals_temp, i));
@@ -203,18 +210,24 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 		gsl_matrix_set_col(m->pca_evecs_r, i, &col_view.vector);
 	}
 		
+	/**
+	 * if i have weaknesses, don't let them blind me now
+	 */
+
 	// fill in pca_zmatrix
 	m->pca_zmatrix = gsl_matrix_alloc(m->nmodel_points, m->nr);
 	// zmat: (nmodel_points x nr) = (nmodel_points x nt) * ( nt x nr ) 
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, y_sub_mat, m->pca_evals_r, 0.0, m->pca_zmatrix);
+	/** — Function: int gsl_blas_dgemm (CBLAS_TRANSPOSE_t TransA, CBLAS_TRANSPOSE_t TransB, double alpha, const gsl_matrix * A, const gsl_matrix * B, double beta, gsl_matrix * C)  (always forget this one)*/
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0,  y_sub_mat, m->pca_evecs_r, 0.0, m->pca_zmatrix);
+	
 	gsl_matrix_free(y_temp_mat);
 	y_temp_mat = gsl_matrix_alloc(m->nr, m->nr);
 	for(i = 0; i < m->nr; i++) // scale the diagonal by the evalue */
-		gsl_matrix_set(y_temp_mat, i, i, 1.0/(sqrt(gsl_vector_get(m->pca_evecs_r, i))));
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, m->pca_zmatrix, y_temp_mat, 0.0, m->pca_zmatrix);
+		gsl_matrix_set(y_temp_mat, i, i, 1.0/(sqrt(gsl_vector_get(m->pca_evals_r, i))));
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m->pca_zmatrix, y_temp_mat, 0.0, m->pca_zmatrix);
 
 	gsl_vector_free(evals_temp);
-	gsl_matrix_free(evec_temp);
+	gsl_matrix_free(evecs_temp);
 
 	gsl_eigen_symmv_free(ework);
 	gsl_matrix_free(y_sub_mat);
@@ -228,9 +241,10 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
  * so we dump a lot of the same info, but this is probably ok, the advantage is that each section defining
  * a model can be pulled out and worked on separately...
  */
-void dump_multi_modelstruct(multi_modelstruct *m, FILE* fptr){
+void dump_multi_modelstruct(FILE* fptr, multi_modelstruct *m){
 	assert(fptr);
 
+	int i,j;
 	int nt = m->nt;
 	int nr = m->nr;
 	int nparams = m->nparams;
@@ -266,7 +280,7 @@ void dump_multi_modelstruct(multi_modelstruct *m, FILE* fptr){
 
 	for(i = 0; i < nt; i++){
 		for(j = 0; j < nr; j++)
-			fprintf(fptr, "%.17lf ", gsl_matrix_get(m->pca_evecs_R, i, j));
+			fprintf(fptr, "%.17lf ", gsl_matrix_get(m->pca_evecs_r, i, j));
 		fprintf(fptr, "\n");
 	}
 
@@ -279,7 +293,7 @@ void dump_multi_modelstruct(multi_modelstruct *m, FILE* fptr){
 	// now the pca_model_array
 	// these could go in separate files...
 	for(i = 0; i < nr; i++){
-		dump_modelstruct_2(&(m->pca_model_array[i]), fptr);
+		dump_modelstruct_2(fptr, m->pca_model_array[i]);
 	}
 	
 }
@@ -316,7 +330,7 @@ multi_modelstruct *load_multi_modelstruct(FILE* fptr){
 	m->xmodel = gsl_matrix_alloc(nmodel_points, nparams);
 	m->training_matrix = gsl_matrix_alloc(nmodel_points, nt);
 	m->training_mean = gsl_vector_alloc(nt); // do we need this? (yes!)
-	m->pca_model_array = (modelstruct*)malloc(sizeof(modelstruct)*nr);
+	m->pca_model_array = (modelstruct**)malloc(sizeof(modelstruct*)*nr);
 	m->pca_evals_r = gsl_vector_alloc(nr);
 	m->pca_evecs_r = gsl_matrix_alloc(nt, nr);
 	m->pca_zmatrix = gsl_matrix_alloc(nmodel_points, nr);
@@ -336,14 +350,14 @@ multi_modelstruct *load_multi_modelstruct(FILE* fptr){
 
 	for(i = 0; i < nt; i++)
 		for(j = 0; j < nr; j++)
-			fscanf(fptr, "%lf%*c", gsl_matrix_ptr(m->pca_evecs_R, i, j));
+			fscanf(fptr, "%lf%*c", gsl_matrix_ptr(m->pca_evecs_r, i, j));
 
 	for(i = 0; i < nmodel_points; i++)
 		for(j = 0; j < nr; j++)
 			fscanf(fptr, "%lf%*c", gsl_matrix_ptr(m->pca_zmatrix, i, j));
 	
 	for(i = 0; i < nr; i++)
-		load_modelstruct_2(&(m->pca_model_array[i]), fptr);
+		m->pca_model_array[i] = load_modelstruct_2(fptr);
 
 	/* fill in the mean vector */
 	for(i = 0; i < nt; i++){
@@ -352,7 +366,7 @@ multi_modelstruct *load_multi_modelstruct(FILE* fptr){
 		gsl_vector_set(m->training_mean, i, (mean_temp/((double)nmodel_points)) );
 	}
 
-	
+	return m;
 }
 
 /**
@@ -360,11 +374,12 @@ multi_modelstruct *load_multi_modelstruct(FILE* fptr){
  */
 double vector_elt_sum(gsl_vector* vec, int nstop)
 {
-	assert(nstop <= vec->size1);
+	assert(nstop > 0); 
+	assert(nstop <= vec->size);
 	int i;
 	double sum = 0.0;
 	for(i = 0; i < nstop; i++){
-		sum += gsl_vector_get(i);
+		sum += gsl_vector_get(vec, i);
 	}
 	return(sum);
 }
@@ -378,11 +393,13 @@ void free_multimodelstruct(multi_modelstruct *m)
 	int i;
 	gsl_matrix_free(m->xmodel);
 	gsl_matrix_free(m->training_matrix);
+	gsl_vector_free(m->training_mean);
 	for(i = 0; i < m->nr; i++){
 		free_modelstruct_2(m->pca_model_array[i]);
 		free_modelstruct(m->pca_model_array[i]);
 	}
 	free(m->pca_model_array);
-	gsl_matrix_free(m->pca_eigenvalues);
-	gsl_matrix_free(m->pca_eigenvectors);
+	gsl_vector_free(m->pca_evals_r);
+	gsl_matrix_free(m->pca_evecs_r);
+	gsl_matrix_free(m->pca_zmatrix);
 }

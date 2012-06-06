@@ -12,7 +12,7 @@ add_subdirectory("./libRbind")
 
 MESSAGE("link libs: ${libs}")
 
-set(common_SOURCES ioread useful optstruct resultstruct modelstruct bin_support)
+set(common_SOURCES ioread useful optstruct resultstruct modelstruct multi_modelstruct multivar_support bin_support)
 set(emulator_SOURCES emulator ${common_SOURCES}) 
 set(estimator_SOURCES estimator ${common_SOURCES})
 set(interactive_SOURCES interactive_emulator ${common_SOURCES} emulator_struct)

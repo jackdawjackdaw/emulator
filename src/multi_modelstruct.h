@@ -2,7 +2,7 @@
 #define __INC_MULTIMODELSTRUCT__
 
 
-
+#include "modelstruct.h"
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 
@@ -59,12 +59,13 @@ typedef struct multi_modelstruct{
 	
 } multi_modelstruct;
 
-multi_modelstruct* alloc_multmodelstruct(gsl_matrix *model_in, gsl_matrix *training_matrix_in, int cov_fn_index, int regression_order);
+multi_modelstruct* alloc_multmodelstruct(gsl_matrix *xmodel_in, gsl_matrix *training_matrix_in, int cov_fn_index, 
+																				 int regression_order, double varfrac);
 
-void gen_pca_decomp(multi_modelstruct *m);
+void gen_pca_decomp(multi_modelstruct *m, double vfrac);
 void gen_pca_model_array(multi_modelstruct *m);
 
-void dump_multi_modelstruct(multi_modelstruct *m, FILE* fptr);
+void dump_multi_modelstruct(FILE* fptr, multi_modelstruct *m );
 multi_modelstruct *load_multi_modelstruct(FILE* fptr);
 
 
