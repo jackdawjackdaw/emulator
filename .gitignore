@@ -14,3 +14,9 @@ docs
 #*.txt
 # junk fron scons i guess?
 *.sconsign.dblite
+
+## default build directory
+build_emulator/
+
+## Created for some reason by cmake.
+src/buildConfig.h
