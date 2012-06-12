@@ -3,7 +3,7 @@ samples <- read.table("./sample_locations.dat")
 emu.mean <- read.table("emu_mean.dat")
 emu.var <- read.table("emu_var.dat")
 
-model <- read.table("input_model_file.dat", skip=2)
+model <- read.table("input_model_file.dat", skip=3)
 
 plot(samples$V1, emu.mean$V1, type="l", col="blue", ylim=c(-0.1,1.5), xlab="x", ylab="y")
 points(t(model), pch=19)
