@@ -47,7 +47,7 @@ USE:
     --regression_order=1
     --regression_order=2
     --regression_order=3
-    --covariance_fqn=POWER_EXPONENTIAL
+    --covariance_fn=POWER_EXPONENTIAL
     --covariance_fn=MATERN32
     --covariance_fn=MATERN52
   The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.
@@ -184,6 +184,11 @@ int open_model_file(char * input_filename,
 	fscanf(input_file,"%d%*c", & number_outputs);
 	fscanf(input_file,"%d%*c", & number_params);
 	fscanf(input_file,"%d%*c", & number_model_points);
+
+	assert(number_outputs > 0);
+	assert(number_params > 0);
+	assert(number_model_points > 0);
+
 	gsl_matrix * xmodel = gsl_matrix_alloc(number_model_points, number_params);
 	gsl_matrix * training_matrix = gsl_matrix_alloc(number_model_points, number_outputs);
 	
@@ -289,13 +294,18 @@ int estimate_thetas(int argc, char ** argv) {
 		xmodel, training_matrix,
 		cov_fn_index, regression_order, varfrac);
 
+
+	// debugging
+	//dump_multi_modelstruct(outfp, model);
+	//fflush(outfp);
+
 	/* actually do the estimation using libEmu and write to file! */
 	estimate_multi(model, outfp);
 
 	fclose(outfp);
 
-	gsl_matrix_free(xmodel);
-	gsl_matrix_free(training_matrix);
+	//gsl_matrix_free(xmodel);
+	//gsl_matrix_free(training_matrix);
 	free_multimodelstruct(model);
 	return EXIT_SUCCESS;
 }
@@ -367,8 +377,10 @@ int interactive_mode (int argc, char** argv) {
 		}
 		fflush(interactive_output);
 	}
+
 	free_multi_emulator(the_multi_emulator);
-	free_multimodelstruct(model);
+	// this is causing segfaults, i guess i dont understand the allocation pattern here properly
+	//free_multimodelstruct(model);
 	gsl_vector_free(the_point);
 	gsl_vector_free(the_mean);
 	gsl_vector_free(the_variance);

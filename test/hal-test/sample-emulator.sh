@@ -25,7 +25,7 @@ if [ -f temp.dat ]; then
 		fi
 
 ## and clear up
-		rm temp.dat
+		#rm temp.dat
 fi
 
 ## the R script plot-results.R will then make a nice plot if you want

@@ -55,7 +55,8 @@ int get_number_cpus(void){
  * setup the params_array structure, this is an array of estimate_thetas_params structs which 
  * each contain a copy of the  modelstruct and an opstruct, to be passed to each thread.
  */
-void setup_params(struct estimate_thetas_params *params_array, modelstruct* the_model, optstruct* options, int nthreads, int max_tries){
+void setup_params(struct estimate_thetas_params *params_array, modelstruct* the_model, optstruct* options, int nthreads, int max_tries)
+{
 	int i;
 	for(i = 0; i < nthreads; i++){
 		copy_optstruct(params_array[i].options, options);
@@ -89,7 +90,9 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * further issues with R hanging after calling estimateThetas a second time
 	 * 
 	 */
+
 	int nthreads = get_number_cpus();
+	//int nthreads = 1;
 
 	/* force each thread to do at least one of the tries */
 	if(ntries < nthreads){
