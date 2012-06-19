@@ -55,7 +55,8 @@ USE:
   These options will be saved in MODEL_SNAPSHOT_FILE.
 
 INPUT_MODEL_FILE (With multi-output) FORMAT:
-  Models with multivariate output values y = y_1...y_t which we will think of as rows of a matrix
+  Models with multivariate output values y = y_1...y_t which we will think of as rows of a matrix, in the following spec
+  number_outputs = t
   BEGIN EXAMPLE
     number_outputs
     number_params 
@@ -290,14 +291,23 @@ int estimate_thetas(int argc, char ** argv) {
 	 * this is a little chatty on stderr
 	 */
 
-	multi_modelstruct * model = alloc_multimodelstruct(
+	multi_modelstruct * model = NULL;
+	model = alloc_multimodelstruct(
 		xmodel, training_matrix,
 		cov_fn_index, regression_order, varfrac);
 
+	if(model == NULL)
+		return perr("Failed to allocated multi_modelstruct.\n");
 
-	// debugging
-	//dump_multi_modelstruct(outfp, model);
-	//fflush(outfp);
+
+	// ccs:debugging
+	#ifdef DEBUGPCA
+	dump_multi_modelstruct(outfp, model);
+	fflush(outfp);
+	fclose(outfp);
+	free_multimodelstruct(model);
+	exit(1);
+	#endif
 
 	/* actually do the estimation using libEmu and write to file! */
 	estimate_multi(model, outfp);

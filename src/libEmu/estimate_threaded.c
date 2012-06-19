@@ -91,8 +91,8 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * 
 	 */
 
-	int nthreads = get_number_cpus();
-	//int nthreads = 1;
+	//int nthreads = get_number_cpus();
+	int nthreads = 1;
 
 	/* force each thread to do at least one of the tries */
 	if(ntries < nthreads){

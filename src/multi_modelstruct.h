@@ -39,6 +39,8 @@ typedef struct multi_modelstruct{
 	gsl_vector *training_mean; 
 	
 	/** array of (r) pca decomposed models
+	 * 
+	 * pointers from this back to xmodel, is this bad?
 	 */
 	modelstruct** pca_model_array;
 	

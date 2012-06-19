@@ -15,6 +15,11 @@
  * \bug no error checking in linalg
  * \bug no error checking in alloc
  * \bug is there error checking in file handles?
+ *
+ * ccs, 19.06.2012
+ * if you allocate a multi_modelstruct m
+ * then m->pca_model_array[i]->xmodel == m->xmodel
+ * the value in the pca_model_array is just a pointer to m, do we really want this?
  */
 
 /**
@@ -119,6 +124,10 @@ void gen_pca_model_array(multi_modelstruct *m)
 	int i;
 	gsl_vector_view col_view; 
 	gsl_vector* temp_train_vector = gsl_vector_alloc(m->nmodel_points);
+	//gsl_matrix* temp_xmodel = gsl_matrix_alloc(m->nmodel_points, m->nparams);
+
+	//gsl_matrix_mempcy(temp_xmodel, m->xmodel);
+	
 	// alloc the array of nr model structs
 	//m->pca_model_array = (modelstruct**)MallocChecked(sizeof(modelstruct*)*nr);
 	m->pca_model_array = (modelstruct**)malloc(sizeof(modelstruct*)*nr);
@@ -126,6 +135,7 @@ void gen_pca_model_array(multi_modelstruct *m)
 	for(i = 0; i < nr; i++){
 		col_view = gsl_matrix_column(m->pca_zmatrix, i);
 		gsl_vector_memcpy(temp_train_vector, &(col_view.vector));
+
 		// this isn't copying in the training vector correctly for somereason
 		m->pca_model_array[i] = alloc_modelstruct_2(m->xmodel, temp_train_vector,
 																								m->cov_fn_index, m->regression_order);
@@ -161,6 +171,7 @@ void gen_pca_model_array(multi_modelstruct *m)
  */
 void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 {
+	FILE *fptr; // for debug output
 	int i,j;
 	int nt = m->nt;
 	int retval;
@@ -219,8 +230,29 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	 */
 	//m->pca_eigenvalues = evals_temp;
 	//m->pca_eigenvectors = evecs_temp;
+
 	
 	total_variance = vector_elt_sum(evals_temp, nt);
+
+	
+	#ifdef DEBUGPCA
+	/**
+	 * debug output
+	 */
+	fptr = fopen("pca-debug.dat","w");
+	fprintf(fptr, "# evals:\n");
+	for(i = 0; i < nt; i++)
+		fprintf(fptr, "%lf\n", gsl_vector_get(evals_temp, i) / total_variance);
+	
+	fprintf(fptr, "# evecs:\n");
+	for(j = 0; j < nt; j++){
+		for(i = 0; i < nt; i++)
+			fprintf(fptr, "%lf ", gsl_matrix_get(evecs_temp, i, j));
+		fprintf(fptr, "\n");
+	}
+	fclose(fptr);
+	#endif
+
 
 	i=0;
 	while( frac < vfrac || (i+1) < nt){
@@ -441,6 +473,8 @@ void free_multimodelstruct(multi_modelstruct *m)
 		//free_modelstruct(m->pca_model_array[i]);
 	}
 	free(m->pca_model_array);
+	gsl_matrix_free(m->xmodel);
+	gsl_matrix_free(m->training_matrix);
 	gsl_vector_free(m->pca_evals_r);
 	gsl_matrix_free(m->pca_evecs_r);
 	gsl_matrix_free(m->pca_zmatrix);

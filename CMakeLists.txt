@@ -64,12 +64,13 @@ SET(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 set(CMAKE_BUILD_TYPE debug)
 
 if(APPLE)
-	SET(CMAKE_C_FLAGS "-std=gnu99 -O2 -DAPPLE")
-	SET(CMAKE_C_FLAGS_DEBUG "-std=gnu99 -O0 -g -pg -Wall -Wextra -pedantic -DAPPLE")
+	SET(CMAKE_C_FLAGS "-std=gnu99 -DAPPLE")
+	SET(CMAKE_C_FLAGS_DEBUG "-O0 -g -pg -Wall -Wextra -pedantic -DAPPLE")
 else()
-	SET(CMAKE_C_FLAGS "-std=gnu99 -O2")
-	SET(CMAKE_C_FLAGS_DEBUG "-std=gnu99 -O0 -g -pg -Wall -Wextra -pedantic")
+	SET(CMAKE_C_FLAGS "-std=gnu99")
+	SET(CMAKE_C_FLAGS_DEBUG "-O0 -g -pg -Wall -Wextra -pedantic")
 endif(APPLE)
+
 
 
 
@@ -84,6 +85,7 @@ MESSAGE("C Compiler: ${CMAKE_C_COMPILER}")
 if(${CMAKE_BUILD_TYPE} MATCHES "debug")
  MESSAGE("C DEBUG FLAGS: ${CMAKE_C_FLAGS_DEBUG}")
 else()
+ set(CMAKE_C_FLAGS $CMAKE_C_FLAGS "-02")
  MESSAGE("C FLAGS: ${CMAKE_C_FLAGS}")
 endif(${CMAKE_BUILD_TYPE} MATCHES "debug")
 

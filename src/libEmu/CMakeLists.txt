@@ -24,6 +24,10 @@ IF(APPLE)
 	SET(EXTRA_LIBS "-undefined dynamic_lookup -single_module -multiply_defined suppress -Wl,-framework -Wl,CoreFoundation")
 ENDIF(APPLE)
 
+if(${CMAKE_BUILD_TYPE} MATCHES "debug")
+	set(CMAKE_C_FLAGS "-g -O0 -fPIC")
+endif(${CMAKE_BUILD_TYPE} MATCHES "debug")
+
 
 
 ADD_LIBRARY(Emu SHARED ${emudeps})
