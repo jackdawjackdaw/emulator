@@ -68,7 +68,10 @@ multi_modelstruct* alloc_multimodelstruct(gsl_matrix *xmodel_in,
 		nthetas = nparams + 2;
 	}
 	
-	multi_modelstruct * model = (multi_modelstruct*)MallocChecked(sizeof(multi_modelstruct));
+	// this doesn't seem to be allocating correctly, seems to be a broken defn of MallocChecked
+	// strangely, code will build in this case...
+	//multi_modelstruct * model = (multi_modelstruct*)MallocChecked(sizeof(multi_modelstruct));
+	multi_modelstruct * model = (multi_modelstruct*)malloc(sizeof(multi_modelstruct));
 
 	// fill in
 	model->nt = nt;
@@ -117,7 +120,8 @@ void gen_pca_model_array(multi_modelstruct *m)
 	gsl_vector_view col_view; 
 	gsl_vector* temp_train_vector = gsl_vector_alloc(m->nmodel_points);
 	// alloc the array of nr model structs
-	m->pca_model_array = (modelstruct**)MallocChecked(sizeof(modelstruct*)*nr);
+	//m->pca_model_array = (modelstruct**)MallocChecked(sizeof(modelstruct*)*nr);
+	m->pca_model_array = (modelstruct**)malloc(sizeof(modelstruct*)*nr);
 	// fill in the modelstructs correctly
 	for(i = 0; i < nr; i++){
 		col_view = gsl_matrix_column(m->pca_zmatrix, i);
@@ -161,6 +165,7 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	int nt = m->nt;
 	int retval;
 	double total_variance = 0.0, frac  = 0.0;
+	gsl_matrix *pca_zmatrix_temp;
 	gsl_matrix *y_sub_mat = gsl_matrix_alloc(m->nmodel_points, nt);
 	gsl_matrix *y_temp_mat = gsl_matrix_alloc(m->nmodel_points, nt);
 
@@ -242,6 +247,7 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 
 	// fill in pca_zmatrix
 	m->pca_zmatrix = gsl_matrix_alloc(m->nmodel_points, m->nr);
+	pca_zmatrix_temp = gsl_matrix_alloc(m->nmodel_points, m->nr);
 	// zmat: (nmodel_points x nr) = (nmodel_points x nt) * ( nt x nr ) 
 	/** — Function: int gsl_blas_dgemm (CBLAS_TRANSPOSE_t TransA, CBLAS_TRANSPOSE_t TransB, double alpha, const gsl_matrix * A, const gsl_matrix * B, double beta, gsl_matrix * C)  (always forget this one)*/
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0,  y_sub_mat, m->pca_evecs_r, 0.0, m->pca_zmatrix);
@@ -253,14 +259,17 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 		gsl_matrix_set(y_temp_mat, i, i, 1.0/(sqrt(gsl_vector_get(m->pca_evals_r, i))));
 
 	//print_matrix(y_temp_mat, m->nr, m->nr);
-
-	gsl_matrix_memcpy(y_sub_mat, m->pca_zmatrix);
-	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, y_sub_mat, y_temp_mat, 0.0, m->pca_zmatrix);
+	
+	// if nr != nt this won't work!
+	//gsl_matrix_memcpy(y_sub_mat, m->pca_zmatrix);
+	gsl_matrix_memcpy(pca_zmatrix_temp, m->pca_zmatrix);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, pca_zmatrix_temp, y_temp_mat, 0.0, m->pca_zmatrix);
 
 	//print_matrix(m->pca_zmatrix, m->nmodel_points, m->nr);
 
 	gsl_vector_free(evals_temp);
 	gsl_matrix_free(evecs_temp);
+	gsl_matrix_free(pca_zmatrix_temp);
 
 	gsl_eigen_symmv_free(ework);
 	gsl_matrix_free(y_sub_mat);
@@ -335,7 +344,7 @@ void dump_multi_modelstruct(FILE* fptr, multi_modelstruct *m){
  * loads a multivariate modelstructure from fptr
  */
 multi_modelstruct *load_multi_modelstruct(FILE* fptr){
-	multi_modelstruct *m = (multi_modelstruct*)MallocChecked(sizeof(multi_modelstruct));
+	multi_modelstruct *m = (multi_modelstruct*)malloc(sizeof(multi_modelstruct));
 	int i,j;
 	int nt, nr;
 	int nparams, nmodel_points;
@@ -363,7 +372,7 @@ multi_modelstruct *load_multi_modelstruct(FILE* fptr){
 	m->xmodel = gsl_matrix_alloc(nmodel_points, nparams);
 	m->training_matrix = gsl_matrix_alloc(nmodel_points, nt);
 	m->training_mean = gsl_vector_alloc(nt); // do we need this? (yes!)
-	m->pca_model_array = (modelstruct**)MallocChecked(sizeof(modelstruct*)*nr);
+	m->pca_model_array = (modelstruct**)malloc(sizeof(modelstruct*)*nr);
 	m->pca_evals_r = gsl_vector_alloc(nr);
 	m->pca_evecs_r = gsl_matrix_alloc(nt, nr);
 	m->pca_zmatrix = gsl_matrix_alloc(nmodel_points, nr);
