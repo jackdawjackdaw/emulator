@@ -100,6 +100,8 @@ typedef struct modelstruct{
 
 #include "optstruct.h"
 
+
+
 void alloc_modelstruct(modelstruct* the_model, optstruct* options);
 void free_modelstruct(modelstruct* the_model);
 void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_data);	
@@ -113,6 +115,9 @@ modelstruct * alloc_modelstruct_2(gsl_matrix* xmodel, gsl_vector* training_vecto
 void free_modelstruct_2(modelstruct * model);
 void dump_modelstruct_2(FILE *fptr, modelstruct* the_model);
 modelstruct* load_modelstruct_2(FILE *fptr);
+
+void set_global_ptrs(modelstruct * model);
+gsl_vector * fill_sample_scales_vec(gsl_matrix* xmodel);
 
 
 #endif

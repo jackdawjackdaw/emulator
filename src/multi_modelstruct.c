@@ -449,7 +449,7 @@ multi_modelstruct *load_multi_modelstruct(FILE* fptr){
 double vector_elt_sum(gsl_vector* vec, int nstop)
 {
 	assert(nstop >= 0); 
-	assert(nstop <= vec->size);
+	assert((unsigned)nstop <= vec->size);
 	int i;
 	double sum = 0.0;
 	for(i = 0; i < nstop; i++){

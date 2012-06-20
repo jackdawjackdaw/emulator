@@ -120,7 +120,7 @@ BIGGEST BUG:
 #include <string.h>
 
 #include "main.h"
-//#include "resultstruct.h" /** this is not useful is it? */
+#include "modelstruct.h"
 #include "emulator_struct.h"
 #include "multi_modelstruct.h"
 #include "multivar_support.h"

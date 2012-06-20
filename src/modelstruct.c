@@ -179,7 +179,8 @@ void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_d
 copied from src/libRbind/rbind.c
 Fills in model->sample_scales vector, based on model->xmodel.
 *********************************************************************/
-gsl_vector * fill_sample_scales(gsl_matrix* xmodel) {
+gsl_vector * fill_sample_scales_vec(gsl_matrix* xmodel)
+{
 	if (xmodel == NULL)
 		return NULL;
 	int i, j;
@@ -210,42 +211,44 @@ Set some global variables: makeHVector, covariance_fn, and
 makeGradMatLength.  Copied from optstruct.c setup_cov_fn() and
 setup_regression().
 *********************************************************************/
-void set_global_ptrs(modelstruct * model) {
+void set_global_ptrs(modelstruct * model)
+
+{
 	switch (model->options->regression_order) {
 	case 1:
-		makeHVector = &(makeHVector_linear);
+		//makeHVector = &(makeHVector_linear);
 		model->makeHVector = &(makeHVector_linear);
 		break;
 	case 2:
-		makeHVector = &(makeHVector_quadratic);
+		//makeHVector = &(makeHVector_quadratic);
 		model->makeHVector = &(makeHVector_quadratic);
 		break;
 	case 3:
-		makeHVector = &(makeHVector_cubic);
+		//makeHVector = &(makeHVector_cubic);
 		model->makeHVector = &(makeHVector_cubic);
 		break;
 	default:
-		makeHVector = &(makeHVector_trivial);
+		//makeHVector = &(makeHVector_trivial);
 		model->makeHVector = &(makeHVector_trivial);
 	}
 	switch(model->options->cov_fn_index){
 	case MATERN32:
 		model->covariance_fn = &(covariance_fn_matern_three);
 		model->makeGradMatLength = &(derivative_l_matern_three);
-		covariance_fn = &(covariance_fn_matern_three);
-		makeGradMatLength = &(derivative_l_matern_three);
+		/* covariance_fn = &(covariance_fn_matern_three); */
+		/* makeGradMatLength = &(derivative_l_matern_three); */
 		break;
 	case MATERN52:
 		model->covariance_fn = &(covariance_fn_matern_five);
 		model->makeGradMatLength = &(derivative_l_matern_five);
-		covariance_fn = &(covariance_fn_matern_five);
-		makeGradMatLength = &(derivative_l_matern_five);
+		/* covariance_fn = &(covariance_fn_matern_five); */
+		/* makeGradMatLength = &(derivative_l_matern_five); */
 		break;
 	default:
 		model->covariance_fn = &(covariance_fn_gaussian);
 		model->makeGradMatLength = &(derivative_l_gauss);
-		covariance_fn = &(covariance_fn_gaussian);
-		makeGradMatLength = &(derivative_l_gauss);
+		/* covariance_fn = &(covariance_fn_gaussian); */
+		/* makeGradMatLength = &(derivative_l_gauss); */
 	}
 }
 
@@ -308,6 +311,11 @@ modelstruct * alloc_modelstruct_2(
 	model->options->regression_order = regression_order;
 	model->options->grad_ranges = gsl_matrix_alloc(nthetas, 2);
 	model->options->nregression_fns = 1 + (regression_order * nparams);
+	// set grad ranges using the data scales
+	model->options->use_data_scales = 1;
+	// do we want to fix the nugger to be +- 20%?, no
+	model->options->fixed_nugget_mode = 0;
+	model->options->fixed_nugget= 0;
 
 
 	/* Set some global variables: makeHVector, covariance_fn, and makeGradMatLength */
@@ -326,7 +334,7 @@ modelstruct * alloc_modelstruct_2(
 	model->training_vector = training_vector;
 	model->thetas = gsl_vector_alloc(nthetas);
 
-	model->sample_scales = fill_sample_scales(model->xmodel);
+	model->sample_scales = fill_sample_scales_vec(model->xmodel);
 
 	setup_optimization_ranges(model->options, model);
 	return model;
