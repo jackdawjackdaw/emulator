@@ -2,7 +2,8 @@
 ## ccs, generate samples from the trained model
 ##
 ## binpath reaches into build, is this a bad idea?
-binpath=../../build/src/interactive_emulator
+#binpath=../../build/src/interactive_emulator
+binpath=interactive_emulator
 $binpath interactive_mode univariate_snapshot_file < sample_locations.dat > temp.dat
 ## now strip out the even/odd lines
 awk '(NR % 2 == 0 && NR > 5)' temp.dat > emu_mean.dat
