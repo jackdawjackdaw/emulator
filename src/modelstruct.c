@@ -315,7 +315,8 @@ modelstruct * alloc_modelstruct_2(
 	 */
 	set_global_ptrs(model);
 
-	
+
+	/** this leaks sometimes */
 	model->xmodel = gsl_matrix_alloc(nmodel_points, nparams);
 	
 	/* alloc_modelstruct replacement code */
