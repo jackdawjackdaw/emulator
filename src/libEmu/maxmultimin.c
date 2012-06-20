@@ -1,4 +1,10 @@
 #include "maxmultimin.h"
+#include "estimate_threaded.h"
+#include "regression.h"
+#include "emulator.h"
+#include "estimator-fns.h"
+#include "../useful.h"
+
 
 /**
  * @file
@@ -11,16 +17,12 @@
  * these are provided by the gsl, and include simplex (nelder-mead) and
  * lbfgs methods. 
  * 
- * This is currently experimental work but it is desirable as it removes dependences upon
- * fortran!
- * 
  * we want to interface with estimate_threaded, so we expose the function:
  * maxWithMultimin(struct estimate_thetas_params *params)
  * 
  * when optimization has finished params->the_model->thetas is set to the winning 
  * set and params->best_value should be set to the loglikelihood of this set
  * 
- * there's a lot of duplication here...
  */
 
 /**
@@ -61,15 +63,19 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 	double *tempVec = malloc(sizeof(double)*nthetas);
 	double sigma = 0.0;
 	pthread_t self = pthread_self(); // this is your thread id
-
+	
 	// init our vectors
 	gsl_vector_set_zero(xBest);
 	gsl_vector_set_zero(xFinal);
-	//set_random_init_value(params->random_number, xInit, params->options->grad_ranges, nthetas);
+	
 
+	//set_random_init_value(params->random_number, xInit, params->options->grad_ranges, nthetas);
 	// generate the regression details for our params object
 	params->h_matrix = gsl_matrix_alloc(nmodel_points, nregression_fns);
-	makeHMatrix(params->h_matrix, params->the_model->xmodel,nmodel_points, nparams, nregression_fns);
+
+	// use the fnptr in params->the_model->makeHVector
+	makeHMatrix_fnptr(params->h_matrix, params->the_model->xmodel,nmodel_points, nparams, nregression_fns, 
+										params->the_model->makeHVector);
 
 	/* printf("max_tries = %d\n", params->max_tries); */
 	while(tries < params->max_tries) {
@@ -154,7 +160,8 @@ double estimateSigmaFull(gsl_vector *thetas, void* params_in){
 	for(i = 1; i < nthetas; ++i)
 		gsl_vector_set(theta_local, i, gsl_vector_get(thetas, i-1));
 
-	makeCovMatrix(cmatrix, xmodel, theta_local, nmodel_points, nthetas, nparams);
+	makeCovMatrix_fnptr(cmatrix, xmodel, theta_local, nmodel_points, nthetas, nparams, 
+											params->the_model->covariance_fn);
 
 	temp_handler = gsl_set_error_handler_off();
 	cholesky_test = gsl_linalg_cholesky_decomp(cmatrix);
@@ -233,7 +240,7 @@ double estimateSigma(gsl_matrix* cinverse, void* params_in){
 	estimateBeta(beta_vector, h_matrix, cinverse,  yt_local, nmodel_points, nregression_fns);
 	for(i = 0; i < nmodel_points; i++){
 		xmodel_row = gsl_matrix_row(xmodel, i);
-		makeHVector(h_vector, &xmodel_row.vector, nparams);
+		params->the_model->makeHVector(h_vector, &xmodel_row.vector, nparams);
 		//print_vector_quiet(h_vector, nregression_fns);
 		gsl_blas_ddot(beta_vector, h_vector, &estimated_mean_val);
 		gsl_vector_set(estimated_mean, i, estimated_mean_val);
@@ -302,7 +309,9 @@ double evalFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in){
 	
 		
 	// make the covariance matrix 
-	makeCovMatrix(covariance_matrix, params->the_model->xmodel, theta_local, nmodel_points, nthetas, nparams);
+	makeCovMatrix_fnptr(covariance_matrix, params->the_model->xmodel, theta_local,
+											nmodel_points, nthetas, nparams, params->the_model->covariance_fn);
+	
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 
 	//print_matrix(temp_matrix, params->options->nmodel_points, params->options->nmodel_points);
@@ -362,7 +371,8 @@ double evalFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in){
 															params->the_model->training_vector, 
 															theta_local, 
 															params->h_matrix, nmodel_points, 
-															nthetas, nparams, params->options->nregression_fns);
+															nthetas, nparams, params->options->nregression_fns, 
+															params->the_model->makeHVector);
 		
 	
 	/* printf("evalfn: %g\t", -1*temp_val); */
@@ -428,7 +438,8 @@ void gradFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in, gsl_vect
 		gsl_vector_set(theta_local, i, gsl_vector_get(theta_vec_less_amp, i-1));
 	
 	// using the random initial conditions! (xold not thetas)
-	makeCovMatrix(covariance_matrix, params->the_model->xmodel, theta_local, nmpoints, nthetas, nparams);
+	makeCovMatrix_fnptr(covariance_matrix, params->the_model->xmodel, theta_local,
+											nmpoints, nthetas, nparams, params->the_model->covariance_fn);
 	gsl_matrix_memcpy(temp_matrix, covariance_matrix);
 
 	/* printf("#thetas: "); */
@@ -461,7 +472,7 @@ void gradFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in, gsl_vect
 		gsl_vector_free(theta_local);
 
 		// if the fn cannot be evaluated we return GSL_NAN?
-		return(GSL_NAN); // umm, should maybe jump out instead?
+		exit(EXIT_FAILURE); // umm, should maybe jump out instead?
 	}
 	gsl_set_error_handler(temp_handler);
 
@@ -497,7 +508,7 @@ void gradFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in, gsl_vect
 	gsl_vector_set(grad_vec, 0, grad_temp);
 	
 	for(i = 2; i < nthetas; i++){
-		makeGradMatLength(temp_matrix, params->the_model->xmodel, gsl_vector_get(theta_local, i) , i, nmpoints, nparams);
+		params->the_model->makeGradMatLength(temp_matrix, params->the_model->xmodel, gsl_vector_get(theta_local, i) , i, nmpoints, nparams);
 		gsl_matrix_scale(temp_matrix, amp);
 		/* printf("#dC/dtheta_2\n"); */
 		/* print_matrix(temp_matrix, nmpoints, nmpoints); */

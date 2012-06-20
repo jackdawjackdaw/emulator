@@ -291,6 +291,7 @@ int estimate_thetas(int argc, char ** argv) {
 	 * this is a little chatty on stderr
 	 */
 
+
 	multi_modelstruct * model = NULL;
 	model = alloc_multimodelstruct(
 		xmodel, training_matrix,
@@ -309,7 +310,19 @@ int estimate_thetas(int argc, char ** argv) {
 	exit(1);
 	#endif
 
+
+	covariance_fn = NULL;
+	makeHVector = NULL;
+	set_global_ptrs(model->pca_model_array[0]);
+	
 	/* actually do the estimation using libEmu and write to file! */
+	/** ccs:
+	 * \bug on os-x this will segfault
+	 * tested on linux: 2.6.32-5 (debian host on vm-ware) and 2.6.32-220.7.1 (grads-81) 
+	 * and it works ok.
+	 * 
+	 * the global ptrs seem to be broken on os-x, do they need to be static?
+	 */
 	estimate_multi(model, outfp);
 
 	fclose(outfp);

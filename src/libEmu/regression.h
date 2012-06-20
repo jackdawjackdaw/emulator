@@ -7,6 +7,7 @@
  * creating hmatrix, a done once kind of job, slap together hvectors for each of the design points
  */
 
+#include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h> 
@@ -27,10 +28,12 @@
  * 
  * this pointer is set to one of the fns in this file by optstruct.c:setup_regression
  */
+
 void (*makeHVector)(gsl_vector *h_vector, gsl_vector *x_location, int nparams);
 
 
 //void makeHVector(gsl_vector *h_vector, gsl_vector *x_location, int nparams);
+
 void makeHMatrix(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, int nparams, int nregresion_fns);
 
 void makeHMatrix_fnptr(gsl_matrix *h_matrix, gsl_matrix *xmodel, int nmodel_points, int nparams, int nregression_fns,

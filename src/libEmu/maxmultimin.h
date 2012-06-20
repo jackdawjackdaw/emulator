@@ -1,17 +1,14 @@
 #ifndef _INC_MAXMULTIMIN_
 #define _INC_MAXMULTIMIN_
 
-#include "estimate_threaded.h"
-#include "pthread.h" // for debug info
-#include "regression.h"
-#include "emulator.h"
-#include "estimator-fns.h"
-#include "../useful.h"
+#include <pthread.h> // for debug info
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_multimin.h>
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_rng.h>
 
-
-#include "gsl/gsl_vector.h"
-#include "gsl/gsl_multimin.h"
-#include "gsl/gsl_errno.h"
+struct estimate_thetas_params;
 
 /**
  * compute the gradient matrix for the length setting theta values

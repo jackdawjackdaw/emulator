@@ -102,7 +102,7 @@ void emulateAtPointList(modelstruct *the_model, gsl_matrix* point_list, optstruc
 
 	
 	// create the covariance matrix and save a copy in temp_matrix
-	makeCovMatrix(c_matrix, the_model->xmodel, the_model->thetas,options->nmodel_points, options->nthetas, options->nparams);
+	makeCovMatrix_fnptr(c_matrix, the_model->xmodel, the_model->thetas,options->nmodel_points, options->nthetas, options->nparams, the_model->covariance_fn);
 	gsl_matrix_memcpy(temp_matrix, c_matrix);
 	
 	chol_inverse_cov_matrix(options, temp_matrix, cinverse, &determinant_c);

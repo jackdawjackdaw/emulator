@@ -5,13 +5,12 @@
 #include <gsl/gsl_linalg.h> 
 #include <gsl/gsl_sf.h>
 
-#include "regression.h"
 
 /**
  * the fn ptr to the covariance function, this is the most called function in libEmu
  * you can change this when you setup the optstruct.
  */
-double (*covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int);
+double (*covariance_fn)(gsl_vector*, gsl_vector*, gsl_vector*, int, int) ;
 
 void print_matrix(gsl_matrix* m, int nx, int ny);
 

@@ -1,6 +1,6 @@
 #include "estimate_threaded.h"
 #include "maxmultimin.h"
-
+#include "../useful.h"
 
 #define SCREWUPVALUE -20000
 
@@ -111,7 +111,6 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 
 	pthread_t *threads;
 	struct estimate_thetas_params *params;
-
 
 	threads = MallocChecked(sizeof(pthread_t)*nthreads);
 	params = MallocChecked(sizeof(struct estimate_thetas_params)*nthreads);

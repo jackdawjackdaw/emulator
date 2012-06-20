@@ -465,12 +465,10 @@ double vector_elt_sum(gsl_vector* vec, int nstop)
 void free_multimodelstruct(multi_modelstruct *m)
 {
 	int i;
-	//gsl_matrix_free(m->xmodel);
-	//gsl_matrix_free(m->training_matrix);
 	gsl_vector_free(m->training_mean);
 	for(i = 0; i < m->nr; i++){
 		free_modelstruct_2(m->pca_model_array[i]);
-		//free_modelstruct(m->pca_model_array[i]);
+		gsl_matrix_free(m->pca_model_array[i]->xmodel);
 	}
 	free(m->pca_model_array);
 	gsl_matrix_free(m->xmodel);

@@ -35,6 +35,11 @@ void copy_modelstruct(modelstruct* dst, modelstruct* src){
 	gsl_vector_memcpy(dst->training_vector, src->training_vector);
 	gsl_vector_memcpy(dst->thetas, src->thetas);
 	gsl_vector_memcpy(dst->sample_scales, src->sample_scales);
+	// copy the fn ptrs too
+	dst->makeHVector = src->makeHVector;
+	dst->covariance_fn = src->covariance_fn;
+	dst->makeGradMatLength = src->makeGradMatLength;
+	
 }
 	
 
@@ -311,8 +316,11 @@ modelstruct * alloc_modelstruct_2(
 	set_global_ptrs(model);
 
 	
+	model->xmodel = gsl_matrix_alloc(nmodel_points, nparams);
+	
 	/* alloc_modelstruct replacement code */
-	model->xmodel = xmodel;
+	//model->xmodel = xmodel;
+	gsl_matrix_memcpy(model->xmodel, xmodel);
 	model->training_vector = training_vector;
 	model->thetas = gsl_vector_alloc(nthetas);
 
@@ -336,6 +344,8 @@ void free_modelstruct_2(modelstruct * model) {
 	gsl_vector_free(model->thetas);
 	gsl_vector_free(model->sample_scales);
 	gsl_matrix_free(model->options->grad_ranges);
+	//gsl_matrix_free(model->xmodel);
+	//gsl_matrix_free(model->training_vector);
 	free((void *)(model->options));
 	free((void *)model);
 }
@@ -410,7 +420,7 @@ modelstruct* load_modelstruct_2(FILE *fptr) {
 	fscanf(fptr, "%d%*c", &(model->options->fixed_nugget_mode));
 	fscanf(fptr, "%lf%*c", &(model->options->fixed_nugget));
 	fscanf(fptr, "%d%*c", &(model->options->cov_fn_index));
-	fscanf(fptr, "%lf%*c", &(model->options->use_data_scales));
+	fscanf(fptr, "%d%*c", &(model->options->use_data_scales));
 
 	model->options->grad_ranges = gsl_matrix_alloc(nthetas, 2);
 	for(i = 0; i < nthetas; i++) {

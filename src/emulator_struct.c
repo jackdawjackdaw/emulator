@@ -132,7 +132,7 @@ void emulate_point(emulator_struct* e, gsl_vector * point,  double * mean, doubl
 	
 	(*mean) = makeEmulatedMean(e->cinverse, e->model->training_vector,
 		kplus, h_vector, e->h_matrix, e->beta_vector, e->nmodel_points);
-	double kappa = covariance_fn(point, point, e->model->thetas, e->nthetas, e->nparams);
+	double kappa = e->model->covariance_fn(point, point, e->model->thetas, e->nthetas, e->nparams);
 	(*variance) = makeEmulatedVariance(e->cinverse, kplus, h_vector,
 		e->h_matrix, kappa, e->nmodel_points, e->nregression_fns);
 	gsl_vector_free(kplus);

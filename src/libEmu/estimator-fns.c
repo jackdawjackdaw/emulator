@@ -1,4 +1,6 @@
 #include "estimator-fns.h"
+#include "regression.h"
+
 #include "math.h"
 /** 
  * @file 
@@ -30,7 +32,14 @@
  * @param h_matrix -> matrix of the regression vector evaluated at all the design points (xmodel)
  * @param nregression_fns the number of regression fns used (length of hvector)
  */
-double getLogLikelyhood(gsl_matrix *cinverse, double det_cmatrix,  gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, gsl_matrix *h_matrix, int nmodel_points, int nthetas, int nparams, int nregression_fns){
+
+/* double getLogLikelyhood(gsl_matrix *cinverse, double det_cmatrix,  gsl_matrix *xmodel, gsl_vector *trainingvector, gsl_vector *thetas, gsl_matrix *h_matrix, int nmodel_points, int nthetas, int nparams, int nregression_fns) */
+
+double getLogLikelyhood(gsl_matrix *cinverse, double det_cmatrix,  gsl_matrix *xmodel, 
+												gsl_vector *trainingvector, gsl_vector *thetas, gsl_matrix *h_matrix, int nmodel_points, 
+												int nthetas, int nparams, int nregression_fns, 
+												void(*makeHVector)(gsl_vector *, gsl_vector*, int))
+{
 	int i;
 	double the_likelyhood = 0.0;
 	double vector_matrix_vector_product = 0.0;
@@ -52,6 +61,7 @@ double getLogLikelyhood(gsl_matrix *cinverse, double det_cmatrix,  gsl_matrix *x
 	estimateBeta(beta_vector, h_matrix, cinverse,  trainingvector, nmodel_points, nregression_fns);
 	for(i = 0; i < nmodel_points; i++){
 		xmodel_row = gsl_matrix_row(xmodel, i);
+		// can't call this...
 		makeHVector(h_vector, &xmodel_row.vector, nparams);
 		//print_vector_quiet(h_vector, nregression_fns);
 		gsl_blas_ddot(beta_vector, h_vector, &estimated_mean_val);
