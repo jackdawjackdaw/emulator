@@ -119,8 +119,9 @@ void load_modelstruct(FILE* fptr, modelstruct* the_model, optstruct* opts){
 
 /**
  * fill a modelstruct, from a big happy array of chars from the stdin
+ * @requires: options->nmodel_points, options->nparams to be set
  */
-void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_data, int number_lines){
+void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_data){
 	int i,j;
 	double temp_value;
 	char* split_string;

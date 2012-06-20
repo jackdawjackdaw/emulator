@@ -102,7 +102,7 @@ typedef struct modelstruct{
 
 void alloc_modelstruct(modelstruct* the_model, optstruct* options);
 void free_modelstruct(modelstruct* the_model);
-void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_data, int number_lines);	
+void fill_modelstruct(modelstruct* the_model, optstruct* options, char** input_data);	
 
 void load_modelstruct(FILE* fptr, modelstruct* the_model, optstruct* opts);
 void dump_modelstruct(FILE* fptr, modelstruct* the_model, optstruct* opts);

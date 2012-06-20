@@ -42,7 +42,7 @@ void copy_resultstruct(resultstruct *dst, resultstruct *src){
  *
  * these are the points we seek the run the emulator at.
  */
-void fill_resultstruct(resultstruct* res, optstruct* options, char** input_data, int number_lines){
+void fill_resultstruct(resultstruct* res, optstruct* options, char** input_data){
 	int i,j;
 	double temp_value;
 	char* split_string;

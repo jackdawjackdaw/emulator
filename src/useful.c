@@ -6,11 +6,12 @@
 #include "useful.h"
 
 
+
 //! checks for null
 void *MallocChecked(size_t size){
 	void *r = malloc(size);
 	if( r == NULL)
-		unix_error("memory wasn't allocated");
+		perror("memory wasn't allocated");
 	return(r);
 }
 

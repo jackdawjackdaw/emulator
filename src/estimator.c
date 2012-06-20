@@ -96,7 +96,7 @@ int main (int argc, char ** argv){
 	alloc_modelstruct(&the_model, &options);
 
 	/* push the input_data into the model structure */
-	fill_modelstruct(&the_model, &options, input_data, number_lines);
+	fill_modelstruct(&the_model, &options, input_data);
 	setup_optimization_ranges(&options, &the_model);
 	
 	fprintf(stderr, "# nthetas = %d\n", options.nthetas);

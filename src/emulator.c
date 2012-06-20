@@ -78,7 +78,7 @@ int main (int argc, char **argv){
 	}
 
 	alloc_modelstruct(&the_model, &options);
-	fill_modelstruct(&the_model, &options, input_data, number_lines_training);
+	fill_modelstruct(&the_model, &options, input_data);
 	setup_optimization_ranges(&options, &the_model);
 
 	/**
@@ -106,7 +106,7 @@ int main (int argc, char **argv){
 		options.nemulate_points = number_lines_test;
 	}
 	alloc_resultstruct(&results, &options);
-	fill_resultstruct(&results, &options, test_points, number_lines_test);
+	fill_resultstruct(&results, &options, test_points);
 
 
 	// relies upon new_x which is not really well defined for arbitrary n_params, ned to figure out a way
