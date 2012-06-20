@@ -291,7 +291,6 @@ int estimate_thetas(int argc, char ** argv) {
 	 * this is a little chatty on stderr
 	 */
 
-
 	multi_modelstruct * model = NULL;
 	model = alloc_multimodelstruct(
 		xmodel, training_matrix,
@@ -300,20 +299,18 @@ int estimate_thetas(int argc, char ** argv) {
 	if(model == NULL)
 		return perr("Failed to allocated multi_modelstruct.\n");
 
-
 	// ccs:debugging
-	#ifdef DEBUGPCA
-	dump_multi_modelstruct(outfp, model);
-	fflush(outfp);
-	fclose(outfp);
-	free_multimodelstruct(model);
-	exit(1);
-	#endif
+	//#ifdef DEBUGPCA
+	//dump_multi_modelstruct(outfp, model);
+	//fflush(outfp);
+	//fclose(outfp);
+	//free_multimodelstruct(model);
+	//exit(1);
+	//#endif
 
-
-	covariance_fn = NULL;
-	makeHVector = NULL;
-	set_global_ptrs(model->pca_model_array[0]);
+	/* covariance_fn = NULL; */
+	/* makeHVector = NULL; */
+	/* set_global_ptrs(model->pca_model_array[0]); */
 	
 	/* actually do the estimation using libEmu and write to file! */
 	/** ccs:
