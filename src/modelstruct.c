@@ -35,6 +35,8 @@ void copy_modelstruct(modelstruct* dst, modelstruct* src){
 	gsl_vector_memcpy(dst->training_vector, src->training_vector);
 	gsl_vector_memcpy(dst->thetas, src->thetas);
 	gsl_vector_memcpy(dst->sample_scales, src->sample_scales);
+	dst->options = (optstruct*)malloc(sizeof(optstruct));
+	copy_optstruct(dst->options, src->options);
 	// copy the fn ptrs too
 	dst->makeHVector = src->makeHVector;
 	dst->covariance_fn = src->covariance_fn;
@@ -311,6 +313,7 @@ modelstruct * alloc_modelstruct_2(
 	model->options->regression_order = regression_order;
 	model->options->grad_ranges = gsl_matrix_alloc(nthetas, 2);
 	model->options->nregression_fns = 1 + (regression_order * nparams);
+	model->options->nemulate_points = 0;
 	// set grad ranges using the data scales
 	model->options->use_data_scales = 1;
 	// do we want to fix the nugger to be +- 20%?, no

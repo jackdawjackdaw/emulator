@@ -27,7 +27,6 @@ typedef struct multi_modelstruct{
 	 * the design (rows:nmodel_points) (cols:nparams)
 	 */
 	gsl_matrix *xmodel;
-
 	/**
 	 * the full training set in the original space
 	 * (rows:nmodel_points) (cols:nt)
