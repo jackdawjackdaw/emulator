@@ -110,11 +110,13 @@ void callEmulateMCMulti(double* point_in, int* nydims_in, double* final_mean, do
 
 void freeEmulateMCMulti(int *nydims_in);
 
+
+
 /**
  * these are INTERNAL routines, not to be called from outside 
  */
 
-
+void set_ptrs_model(modelstruct *model, optstruct *opt);
 
 #ifdef APPLE
 

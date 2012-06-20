@@ -56,7 +56,7 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 		options.fixed_nugget_mode = 0;
 		options.fixed_nugget = 0;
 	}
-
+	
 	setup_cov_fn(&options);
 	setup_regression(&options);
 
@@ -71,7 +71,10 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 
 	fill_sample_scales(&the_model, &options);
 	setup_optimization_ranges(&options, &the_model);
-
+	
+	// have to setup to fnptrs
+	set_ptrs_model(&the_model, &options);
+	
 	// actually do the estimation using libEmu
 	estimate_thetas_threaded(&the_model, &options);
 
@@ -83,6 +86,8 @@ void callEstimate(double* xmodel_in, int* nparams_in, double* training_in, int *
 	free_modelstruct(&the_model);
 	free_optstruct(&options);
 }
+
+
 
 /**
  * compute the mean and variance at a set of points (the list), for a certain emulator. 
@@ -146,6 +151,9 @@ void callEmulateAtList(double *xmodel_in, int *nparams_in, double* points_in, in
 	
 	fill_sample_scales(&the_model, &options);
 	setup_optimization_ranges(&options, &the_model); // not used
+	
+	// fix the fnptrs
+	set_ptrs_model(&the_model, &options);
 
 	//the_point_array = gsl_matrix_alloc(options.nparams, options.nemulate_points);
 	the_point_array = gsl_matrix_alloc(options.nemulate_points, options.nparams);
@@ -230,6 +238,9 @@ void callEmulateAtPt(double* xmodel_in, int* nparams_in, double* point_in, doubl
 	setup_regression(&options);
 
 	alloc_modelstruct(&the_model, &options);
+
+	// fix the fnptrs in the model
+	set_ptrs_model(&the_model, &options);
 	
 	the_point = gsl_vector_alloc(options.nparams);
 
@@ -339,6 +350,8 @@ void setupEmulateMCHelper(struct emulateMCData* emuMCData, double* xmodel_in,
 	setup_regression(options);
 
 	alloc_modelstruct(the_model, options);
+
+	set_ptrs_model(the_model, options);
 	
 	temp_matrix = gsl_matrix_alloc(options->nmodel_points, options->nmodel_points);
 
@@ -654,7 +667,7 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 	setup_regression(&options);
 
 	alloc_modelstruct(&the_model, &options);
-	
+	set_ptrs_model(&the_model, &options);	
 
 	the_point_array = gsl_matrix_alloc(nevalPts, options.nthetas);
 	convertDoubleToMatrix(the_point_array, pointList_in, options.nthetas, nevalPts);
@@ -711,6 +724,42 @@ void callEvalLhoodList(double *xmodel_in, int *nparams_in, double *pointList_in,
 	gsl_matrix_free(the_point_array);
 	free(xinput);
 }
+
+
+/**
+ * set the function pointers in the modelstruct 
+ */
+void set_ptrs_model(modelstruct *model, optstruct *opt)
+{
+	switch(opt->regression_order){
+	case 1:
+		model->makeHVector = &(makeHVector_linear);
+		break;
+	case 2:
+		model->makeHVector = &(makeHVector_quadratic);
+		break;
+	case 3:
+		model->makeHVector = &(makeHVector_cubic);
+		break;
+	default:
+		model->makeHVector = &(makeHVector_trivial);
+	}
+
+	switch(opt->cov_fn_index){
+	case MATERN32:
+		model->covariance_fn = &(covariance_fn_matern_three);
+		model->makeGradMatLength = &(derivative_l_matern_three);
+		break;
+	case MATERN52:
+		model->covariance_fn = &(covariance_fn_matern_five);
+		model->makeGradMatLength = &(derivative_l_matern_five);
+		break;
+	default:
+		model->covariance_fn = &(covariance_fn_gaussian);
+		model->makeGradMatLength = &(derivative_l_gauss);
+	}
+}
+
 
 
 /**
