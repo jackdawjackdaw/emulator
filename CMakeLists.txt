@@ -65,10 +65,10 @@ set(CMAKE_BUILD_TYPE debug)
 
 if(APPLE)
 	SET(CMAKE_C_FLAGS "-std=gnu99 -DAPPLE")
-	SET(CMAKE_C_FLAGS_DEBUG "-O0 -g -pg -Wall -Wextra -pedantic -DAPPLE")
+	SET(CMAKE_C_FLAGS_DEBUG "-O0 -std=gnu99 -g -pg -Wall -Wextra -pedantic -DAPPLE -Wno-unused")
 else()
 	SET(CMAKE_C_FLAGS "-std=gnu99")
-	SET(CMAKE_C_FLAGS_DEBUG "-O0 -g -pg -Wall -Wextra -pedantic")
+	SET(CMAKE_C_FLAGS_DEBUG "-O0 --std=gnu99 g -pg -Wall -Wextra -pedantic")
 endif(APPLE)
 
 
