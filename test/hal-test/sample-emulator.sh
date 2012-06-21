@@ -2,7 +2,8 @@
 ## ccs, generate samples from the trained model
 ##
 ## binpath reaches into build, is this a bad idea?
-binpath=../../build/src/interactive_emulator
+#binpath=../../build/src/interactive_emulator
+binpath=interactive_emulator
 modelfile=./M.dat
 samplefile=./sample_locations.dat
 
