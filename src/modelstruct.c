@@ -15,6 +15,7 @@ void alloc_modelstruct(modelstruct* the_model, optstruct* options){
 	the_model->training_vector = gsl_vector_alloc(options->nmodel_points);
 	the_model->thetas = gsl_vector_alloc(options->nthetas);
 	the_model->sample_scales = gsl_vector_alloc(options->nparams);
+	the_model->options = NULL;
 }
 
 /**
@@ -25,6 +26,7 @@ void free_modelstruct(modelstruct* the_model){
 	gsl_vector_free(the_model->training_vector);
 	gsl_vector_free(the_model->thetas);
 	gsl_vector_free(the_model->sample_scales);
+	free(the_model->options);
 }
 
 /**
@@ -35,8 +37,10 @@ void copy_modelstruct(modelstruct* dst, modelstruct* src){
 	gsl_vector_memcpy(dst->training_vector, src->training_vector);
 	gsl_vector_memcpy(dst->thetas, src->thetas);
 	gsl_vector_memcpy(dst->sample_scales, src->sample_scales);
-	dst->options = (optstruct*)malloc(sizeof(optstruct));
-	copy_optstruct(dst->options, src->options);
+	if(src->options != NULL){
+		dst->options = (optstruct*)malloc(sizeof(optstruct));
+		copy_optstruct(dst->options, src->options);
+	}
 	// copy the fn ptrs too
 	dst->makeHVector = src->makeHVector;
 	dst->covariance_fn = src->covariance_fn;
@@ -218,39 +222,39 @@ void set_global_ptrs(modelstruct * model)
 {
 	switch (model->options->regression_order) {
 	case 1:
-		//makeHVector = &(makeHVector_linear);
+		makeHVector = &(makeHVector_linear);
 		model->makeHVector = &(makeHVector_linear);
 		break;
 	case 2:
-		//makeHVector = &(makeHVector_quadratic);
+		makeHVector = &(makeHVector_quadratic);
 		model->makeHVector = &(makeHVector_quadratic);
 		break;
 	case 3:
-		//makeHVector = &(makeHVector_cubic);
+		makeHVector = &(makeHVector_cubic);
 		model->makeHVector = &(makeHVector_cubic);
 		break;
 	default:
-		//makeHVector = &(makeHVector_trivial);
+		makeHVector = &(makeHVector_trivial);
 		model->makeHVector = &(makeHVector_trivial);
 	}
 	switch(model->options->cov_fn_index){
 	case MATERN32:
 		model->covariance_fn = &(covariance_fn_matern_three);
 		model->makeGradMatLength = &(derivative_l_matern_three);
-		/* covariance_fn = &(covariance_fn_matern_three); */
-		/* makeGradMatLength = &(derivative_l_matern_three); */
+		covariance_fn = &(covariance_fn_matern_three);
+		makeGradMatLength = &(derivative_l_matern_three);
 		break;
 	case MATERN52:
 		model->covariance_fn = &(covariance_fn_matern_five);
 		model->makeGradMatLength = &(derivative_l_matern_five);
-		/* covariance_fn = &(covariance_fn_matern_five); */
-		/* makeGradMatLength = &(derivative_l_matern_five); */
+		covariance_fn = &(covariance_fn_matern_five);
+		makeGradMatLength = &(derivative_l_matern_five);
 		break;
 	default:
 		model->covariance_fn = &(covariance_fn_gaussian);
 		model->makeGradMatLength = &(derivative_l_gauss);
-		/* covariance_fn = &(covariance_fn_gaussian); */
-		/* makeGradMatLength = &(derivative_l_gauss); */
+		covariance_fn = &(covariance_fn_gaussian);
+		makeGradMatLength = &(derivative_l_gauss);
 	}
 }
 
