@@ -38,11 +38,11 @@ Interactive_emulator command line args:
   or
     interactive_emulator interactive_mode MODEL_SNAPSHOT_FILE
 
-  Most importantly the first argument should be either: "estimate_thetas" or "interactive_mode"
-	estimate_thetas will train an emulator on the given data set producing a state file
-	interactive_mode reads parameter space locations from stdin and outputs the emulator mean + variance + covariance matrix (coming soon) at these points.
+Most importantly the first argument should be either: "estimate_thetas" or "interactive_mode"
+estimate_thetas will train an emulator on the given data set producing a state file
+interactive_mode reads parameter space locations from stdin and outputs the emulator mean + variance + covariance matrix (coming soon) at these points.
 
-	Options for estimate_thetas can include:
+Options for estimate_thetas can include:
     --regression_order=0
     --regression_order=1
     --regression_order=2
@@ -50,7 +50,7 @@ Interactive_emulator command line args:
     --covariance_fn=POWER_EXPONENTIAL
     --covariance_fn=MATERN32
     --covariance_fn=MATERN52
-  The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.
+ The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.
 
 
 Interactive_emulator input data Format:
