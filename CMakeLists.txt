@@ -61,7 +61,7 @@ SET(libs ${libs} ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES})
 
 
 # make a debug release
-set(CMAKE_BUILD_TYPE debug)
+#set(CMAKE_BUILD_TYPE debug)
 
 if(APPLE)
 	SET(CMAKE_C_FLAGS "-std=gnu99 -DAPPLE")
