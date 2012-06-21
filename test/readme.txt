@@ -3,7 +3,7 @@
 Tests/Examples for interactive_emulator
 
 21.06.2012, ccs, cec24@phy.duke.edu
-substantial portions of the code by Hal.Canary
+substantial portions of the code by Hal.Canary <cs.unc.edu/~hal>,
 
 --__-- --__-- --__-- --__-- --__-- --__-- 
 
