@@ -65,10 +65,10 @@ set(CMAKE_BUILD_TYPE debug)
 
 if(APPLE)
 	SET(CMAKE_C_FLAGS "-std=gnu99 -DAPPLE")
-	SET(CMAKE_C_FLAGS_DEBUG "-O0 -std=gnu99 -g -pg -Wall -Wextra -pedantic -DAPPLE -Wno-unused")
+	SET(CMAKE_C_FLAGS_DEBUG "-O0 -std=gnu99 -g -pg -Wall -Wextra -pedantic -DAPPLE -Wno-unused -DDEBUGPCA")
 else()
 	SET(CMAKE_C_FLAGS "-std=gnu99")
-	SET(CMAKE_C_FLAGS_DEBUG "-O0 --std=gnu99 -g -pg -Wall -Wextra -pedantic")
+	SET(CMAKE_C_FLAGS_DEBUG "-O0 --std=gnu99 -g -pg -Wall -Wextra -pedantic -DDEBUGPCA")
 endif(APPLE)
 
 
@@ -85,7 +85,7 @@ MESSAGE("C Compiler: ${CMAKE_C_COMPILER}")
 if(${CMAKE_BUILD_TYPE} MATCHES "debug")
  MESSAGE("C DEBUG FLAGS: ${CMAKE_C_FLAGS_DEBUG}")
 else()
- set(CMAKE_C_FLAGS $CMAKE_C_FLAGS "-02")
+ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
  MESSAGE("C FLAGS: ${CMAKE_C_FLAGS}")
 endif(${CMAKE_BUILD_TYPE} MATCHES "debug")
 
