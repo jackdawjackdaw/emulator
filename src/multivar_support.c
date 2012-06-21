@@ -97,9 +97,10 @@ void emulate_point_multi(multi_emulator *emu, gsl_vector *the_point,
 	vec_mat_sum = 0.0;
 	for(i = 0; i < nt; i++){
 		for(j = 0; j < nr; j++)
-			vec_mat_sum += gsl_matrix_get(emu->model->pca_evecs_r, i, j) * gsl_vector_get(mean_pca, j);
+			vec_mat_sum += gsl_matrix_get(emu->model->pca_evecs_r, i, j) * sqrt(gsl_vector_get(emu->model->pca_evals_r, j))*gsl_vector_get(mean_pca, j);
 		// save the sum scaled by the sqrt of the eval
-		gsl_vector_set(temp, i, vec_mat_sum*sqrt(gsl_vector_get(emu->model->pca_evals_r, i)));
+		//gsl_vector_set(temp, i, vec_mat_sum*sqrt(gsl_vector_get(emu->model->pca_evals_r, i)));
+		gsl_vector_set(temp, i, vec_mat_sum);
 		vec_mat_sum = 0.0;
 	}
 	
