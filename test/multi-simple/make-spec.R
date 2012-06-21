@@ -1,13 +1,14 @@
+npoints.full <- 100
 nparams <- 3
 noutputs <- 6
 
 ## scale everything..
-design <- scale(read.table("./data/design_2_sorted.dat"))
+design <- scale(read.table("./data/design_2_sorted.dat"))[1:npoints.full,]
 lumfn <- scale(read.table("./data/lum_fun_outputs_2.dat"))
 metallicity <- scale(abs(read.table("./data/metallicity_MV_outputs_2.dat")))
 
 
-outputs <- cbind(lumfn, metallicity)
+outputs <- cbind(lumfn, metallicity)[1:npoints.full,]
 
 nmodelpoints <- dim(outputs)[1]
 
