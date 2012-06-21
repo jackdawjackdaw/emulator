@@ -32,10 +32,6 @@ USE:
     interactive_emulator estimate_thetas INPUT_MODEL_FILE MODEL_SNAPSHOT_FILE [OPTIONS]
   or
     interactive_emulator interactive_mode MODEL_SNAPSHOT_FILE
-  or (for models with multiple y value)
-    interactive_emulator estimate_thetas_multi INPUT_MODEL_FILE_MULTI MODEL_SNAPSHOT_FILE_MULTI [OPTIONS]
-  or 
-    interactive_emulator interactive_mode_multi MODEL_SNAPSHOT_FILE_MULTI [OPTIONS]
 
   INPUT_MODEL_FILE can be "-" to read from standard input.
 
