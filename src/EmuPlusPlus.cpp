@@ -1,4 +1,4 @@
-#include "emuplusplus.h"
+#include "EmuPlusPlus.h"
 #include <math.h>
 #include <string>
 #include <iostream>
