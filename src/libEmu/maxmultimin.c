@@ -663,7 +663,7 @@ int doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	/* fprintf(stderr, "#doOptimizeMultiMin: nthetas %d\tnmpoints %d\tnparams %d\n",  */
 	/* 				nthetas, nmpoints, nparams); */
 	
-	gsl_vector *tempTest = gsl_vector_alloc(nthetas); // get values out of the min to check on progress
+	gsl_vector *tempTest = NULL;// = gsl_vector_alloc(nthetas); // get values out of the min to check on progress
 	/*
 	 * because we're fixing the scale with the data we're actually optimizing one less
 	 * theta than in the unconstrained case
@@ -777,7 +777,7 @@ int doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	// clear up
 	gsl_multimin_fdfminimizer_free(fdfmin);
 	gsl_vector_free(thetaTemp);
-	//gsl_vector_free(tempTest);
+  //gsl_vector_free(tempTest);
 
 	return status;
 }

@@ -217,6 +217,9 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 		free_modelstruct(params[i].the_model);
 		gsl_matrix_free(params[i].options->grad_ranges);
 		gsl_matrix_free(params[i].h_matrix); // hehe was free'ing this way too early before, gives strange behaviour
+		if(params[i].the_model->options){
+			free_optstruct(params[i].the_model->options);
+		}
 		free(params[i].the_model);
 		free(params[i].options);
 	}
