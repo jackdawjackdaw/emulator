@@ -196,7 +196,7 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	// subtract out the mean 
 	for(i = 0; i < nt; i++){
 		//col_view = gsl_matrix_column(y_sub_mat, i);
-		printf("# mean: %lf\n", gsl_vector_get(m->training_mean, i));
+		printf("# y(%d) mean: %lf\n", i, gsl_vector_get(m->training_mean, i));
 		for(j = 0; j < m->nmodel_points; j++){
 			gsl_matrix_set(y_sub_mat, j, i, gsl_matrix_get(y_sub_mat, j, i) - gsl_vector_get(m->training_mean, i));
 		}
