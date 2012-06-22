@@ -24,19 +24,19 @@ set(interactive_SOURCES interactive_emulator ${common_SOURCES} emulator_struct)
 link_directories(${PROJECT_SOURCE_DIR}/src/libEmu)
 link_libraries(${LIBS} pthread)
 
-add_executable(estimator ${estimator_SOURCES})
-target_link_libraries(estimator Emu ${libs} pthread)
-add_dependencies(estimator Emu)
+# add_executable(estimator ${estimator_SOURCES})
+# target_link_libraries(estimator Emu ${libs} pthread)
+# add_dependencies(estimator Emu)
 
-add_executable(emulator ${emulator_SOURCES})
-target_link_libraries(emulator Emu ${libs} pthread)
-add_dependencies(emulator Emu)
+# add_executable(emulator ${emulator_SOURCES})
+# target_link_libraries(emulator Emu ${libs} pthread)
+# add_dependencies(emulator Emu)
 
 add_executable(interactive_emulator ${interactive_SOURCES})
 target_link_libraries(interactive_emulator Emu ${libs} pthread)
 add_dependencies(interactive_emulator Emu)
 
 
-install (TARGETS estimator emulator interactive_emulator
+install (TARGETS interactive_emulator
 				RUNTIME DESTINATION bin
 				LIBRARY DESTINATION lib)
