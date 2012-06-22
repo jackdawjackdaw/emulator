@@ -3,6 +3,7 @@ r-fns/*.png
 r-fns/*.jpg
 r-fns/ps/
 r-fns/*.pdf
+*.txt
 *.so
 *.a
 *.os
@@ -20,3 +21,9 @@ build_emulator/
 
 ## Created for some reason by cmake.
 src/buildConfig.h
+
+## additional ignores
+*TAGS
+*CMakeFiles
+## finder's little poops
+*.DS_Store
