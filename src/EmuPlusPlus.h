@@ -1,10 +1,19 @@
 #ifndef __INCLUDE_EMUPLUSPLUS__
 #define __INCLUDE_EMUPLUSPLUS__
 
-#include <string>
 
-struct multi_modelstruct;
-struct emulator_struct;
+
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_matrix.h>
+#include <string>
+#include <vector>
+
+
+#include "multi_modelstruct.h"
+#include "multivar_support.h"
+
+//struct multi_emulator;
+//struct emulator_struct;
 
 using namespace std;
 
@@ -26,15 +35,14 @@ class emulator{
 	emulator(string StateFilePath, bool PcaOnly);
 	~emulator();
 	
-	/** query the emulator either with a parameter set or with a vector
+	/** query the emulator with a vector xpoint in the parameter space
 	 * could add a method to output the means, errors and a covaraince matrix */
-	void QueryEmulator(const ParameterSet xpoint, vector<double> &Means, vector<double> &Errors);
-	void QueryEmulator(const vector<double> xpoint, vector<double> &Means, vector<double> &Errors);
+		void QueryEmulator(const vector<double> &xpoint, vector<double> &Means, vector<double> &Errors);
 
 	/**
 	 * get the emulator pca decomp
 	 */
-	void getEmulatorPCA(vector<double> pca_evals, vector< vector<double> > pca_evecs, vector<double> pca_mean);
+	void getEmulatorPCA(vector<double> *pca_evals, vector< vector<double> > *pca_evecs, vector<double> *pca_mean);
 
 	int getRegressionOrder(void){the_model->regression_order;};
 	int getCovFnIndex(void){the_model->cov_fn_index;};

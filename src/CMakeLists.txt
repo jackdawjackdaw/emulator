@@ -36,7 +36,21 @@ add_executable(interactive_emulator ${interactive_SOURCES})
 target_link_libraries(interactive_emulator Emu ${libs} pthread)
 add_dependencies(interactive_emulator Emu)
 
+## the emuplusplus library
+set(emuplusplus_SOURCES EmuPlusPlus ${common_SOURCES} emulator_struct)
+add_library(EmuPlusPlus SHARED ${emuplusplus_SOURCES})
+target_link_libraries(EmuPlusPlus Emu ${libs} pthread)
+add_dependencies(EmuPlusPlus Emu)
+
+install(TARGETS EmuPlusPlus
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib)
+
+install(FILES EmuPlusPlus.h
+	DESTINATION include)
+
 
 install (TARGETS interactive_emulator
-				RUNTIME DESTINATION bin
-				LIBRARY DESTINATION lib)
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib)
+

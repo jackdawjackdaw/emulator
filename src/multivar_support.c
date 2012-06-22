@@ -49,7 +49,9 @@ multi_emulator *alloc_multi_emulator(multi_modelstruct *m)
 	return e;
 }
 
-
+/**
+ * free allocated memory
+ */
 void free_multi_emulator(multi_emulator *e)
 {
 	int i;
@@ -59,12 +61,39 @@ void free_multi_emulator(multi_emulator *e)
 	free(e->emu_struct_array);
 }
 
+/**
+ * sample the multivariate emulator at the_point, returns values in the *PCA* space. 
+ * The returned values will be vectors of length emu->model->nr *not* emu->model->nt
+ *
+ * requires:
+ * emu has been allocated from a multi_modelstruct, and 
+ * the_mean and the_variance point to allocated gsl_vectors of length (emu->model->nr)
+ *
+ * @argument emu: a multi_emulator structure created from an estimated multi_modelstruct with alloc_multi_emulator
+ * @argument the_point: the location in parameter space (nparams) length vector
+ * @argument the_mean: the emulated mean values (nr length)
+ * @argument the_variance: the emulated variance values (nr length)
+ */
+
+void emulate_point_multi_pca(multi_emulator *emu, gsl_vector *the_point,
+												 gsl_vector *the_mean, gsl_vector *the_variance)
+{
+	int i;
+	// sample the nr emulators
+	// the results are directly fed back  into the_mean and the_variance
+	for(i = 0; i < emu->nr; i++)
+		emulate_point(emu->emu_struct_array[i], the_point, gsl_vector_ptr(the_mean, i), gsl_vector_ptr(the_variance, i));
+}
+
+
 
 /**
- * emulate the values of a point in a multivariate model
+ * emulate the values of a point in a multivariate model, returns values in the REAL Observable space. 
+ * This means that the values output here will be in the same space as the training data.
  * 
  * requries:
  * emu has been allocated from a multi_modelstruct
+ * the_mean and the_variance point to allocated gsl_vectors of length (emu->model->nt)
  * 
  * @argument emu: a multi_emulator structure created from an estimated multi_modelstruct with alloc_multi_emulator
  * @argument the_point: the location in parameter space (nparams) length vector
