@@ -464,11 +464,14 @@ int main (int argc, char ** argv) {
 	/* } */
 	/* printf("statefile: %s\n", opts->statefile); */
 
-	if (str_equal(opts->run_mode, "estimate_thetas"))
-		return estimate_thetas(opts);
-	if (str_equal(opts->run_mode, "interactive_mode"))
-		return interactive_mode(opts);
-	return perr(useage);
+	if (str_equal(opts->run_mode, "estimate_thetas")){
+		estimate_thetas(opts);
+	} else if (str_equal(opts->run_mode, "interactive_mode")) {
+		interactive_mode(opts);
+	} else{
+		free(opts);
+		return perr(useage);
+	}
 	
 	free(opts);
 	return(EXIT_SUCCESS);
