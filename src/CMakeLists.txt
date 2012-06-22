@@ -46,8 +46,9 @@ install(TARGETS EmuPlusPlus
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib)
 
-install(FILES EmuPlusPlus.h
-	DESTINATION include)
+## oh what a lot of headers
+install(FILES EmuPlusPlus.h multi_modelstruct.h multivar_support.h modelstruct.h optstruct.h emulator_struct.h
+	DESTINATION include/EmuPlusPlus)
 
 
 install (TARGETS interactive_emulator

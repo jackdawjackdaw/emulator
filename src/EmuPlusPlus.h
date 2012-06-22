@@ -8,12 +8,11 @@
 #include <string>
 #include <vector>
 
+extern "C"{
+ #include "multi_modelstruct.h"
+ #include "multivar_support.h"
+}
 
-#include "multi_modelstruct.h"
-#include "multivar_support.h"
-
-//struct multi_emulator;
-//struct emulator_struct;
 
 using namespace std;
 
@@ -47,11 +46,11 @@ class emulator{
 	int getRegressionOrder(void){the_model->regression_order;};
 	int getCovFnIndex(void){the_model->cov_fn_index;};
 
+	int number_params;
+	int number_outputs;
 	
  private:
 
-	int number_params;
-	int number_outputs;
 	
 	// if true the values are output in the pca space, otherwise they're in the real space
 	bool outputPCAValues; 

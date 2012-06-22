@@ -10,9 +10,11 @@
 #include <gsl/gsl_matrix.h>
 
 /* the c-interface to the emulator */
+extern "C"{
 #include "multivar_support.h"
 #include "modelstruct.h"
 #include "multi_modelstruct.h"
+}
 
 using namespace std;
 
@@ -211,7 +213,7 @@ void emulator::getEmulatorPCA(vector<double> *pca_evals, vector< vector<double> 
 emulator::~emulator(){
 	// free the c-structures
 	free_multi_emulator(the_emulator);
-	free_multimodelstruct(the_model); // this is a memory leaker  :(
+	//free_multimodelstruct(the_model); // this is a memory leaker  :(
 	gsl_vector_free(the_emulate_point);
 	gsl_vector_free(the_emulate_mean);
 	gsl_vector_free(the_emulate_var);
