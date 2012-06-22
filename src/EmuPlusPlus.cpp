@@ -109,9 +109,9 @@ emulator::emulator(string StateFilePath, bool PcaOnly){
 	}
 
 	if(outputPCAValues){
-		number_outputs = the_model->nt;
-	} else {
 		number_outputs = the_model->nr;
+	} else {
+		number_outputs = the_model->nt;
 	}
 
 	number_params = the_model->nparams;
@@ -141,6 +141,17 @@ void emulator::QueryEmulator(const vector<double> &xpoint, vector<double> &Means
 		exit(EXIT_FAILURE);
 	}
 
+	if(!Means.empty()){
+		cerr << "Error::QueryEmulator called with nonempty Means vector" << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	if(!Errors.empty()){
+		cerr << "Error::QueryEmulator called with nonempty Errors vector" << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	
 	// setup the gsl vectors
 	for(int i = 0; i < number_params; i++){ // copy in the xpoint cpts into the internal gsl vector
 		gsl_vector_set(the_emulate_point, i, xpoint[i]);
