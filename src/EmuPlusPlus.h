@@ -43,8 +43,8 @@ class emulator{
 	 */
 	void getEmulatorPCA(vector<double> *pca_evals, vector< vector<double> > *pca_evecs, vector<double> *pca_mean);
 
-	int getRegressionOrder(void){the_model->regression_order;};
-	int getCovFnIndex(void){the_model->cov_fn_index;};
+	int getRegressionOrder(void){return(the_model->regression_order);};
+	int getCovFnIndex(void){return(the_model->cov_fn_index);};
 
 	int number_params;
 	int number_outputs;
