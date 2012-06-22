@@ -68,7 +68,7 @@ if(APPLE)
 	SET(CMAKE_C_FLAGS_DEBUG "-O0 -std=gnu99 -g -pg -Wall -Wextra -pedantic -DAPPLE -Wno-unused -DDEBUGPCA")
 else()
 	SET(CMAKE_C_FLAGS "-std=gnu99")
-	SET(CMAKE_C_FLAGS_DEBUG "-O0 --std=gnu99 -g -pg -Wall -Wextra -pedantic -DDEBUGPCA")
+	SET(CMAKE_C_FLAGS_DEBUG "-O0 -std=gnu99 -g -pg -Wall -Wextra -pedantic -DDEBUGPCA")
 endif(APPLE)
 
 
@@ -77,7 +77,7 @@ endif(APPLE)
 if(APPLE)
 # we need to use the same compiler as R CMD SHLIB would use
 # or we're fucked
-SET(CMAKE_C_COMPILER "clang")
+#SET(CMAKE_C_COMPILER "clang")
 endif(APPLE)
 
 MESSAGE("C Compiler: ${CMAKE_C_COMPILER}")
