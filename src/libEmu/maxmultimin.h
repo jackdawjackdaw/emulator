@@ -46,7 +46,7 @@ double estimateSigma(gsl_matrix* cinverse, void* params_in);
 
 double estimateSigmaFull(gsl_vector *thetas, void* params_in);
 
-void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													
+int doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													
 												void(*gradientFn)(const gsl_vector*,void*, gsl_vector*),
 												void(*fnGradFn)(const gsl_vector*, void*, double*, gsl_vector*),
 												gsl_vector *thetaInit, gsl_vector* thetaFinal, void* args);

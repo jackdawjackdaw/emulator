@@ -280,7 +280,8 @@ int estimate_thetas(int argc, char ** argv) {
 	int cov_fn_index = POWEREXPCOVFN; /* POWEREXPCOVFN: 1, MATERN32: 2, MATERN52: 3 */
 	int regression_order = 0; /* 0, 1, 2, or 3 */
 
-	
+	printf("# cov_fn: %d\treg_order: %d\n", cov_fn_index, regression_order);
+
 	parse_arguments_interactive(&cov_fn_index, &regression_order, argc, argv);
 
 	/* allocate the multi-model, do the pca decomp
@@ -308,14 +309,6 @@ int estimate_thetas(int argc, char ** argv) {
 	/* makeHVector = NULL; */
 	/* set_global_ptrs(model->pca_model_array[0]); */
 	
-	/* actually do the estimation using libEmu and write to file! */
-	/** ccs:
-	 * \bug on os-x this will segfault
-	 * tested on linux: 2.6.32-5 (debian host on vm-ware) and 2.6.32-220.7.1 (grads-81) 
-	 * and it works ok.
-	 * 
-	 * the global ptrs seem to be broken on os-x, do they need to be static?
-	 */
 	estimate_multi(model, outfp);
 
 	fclose(outfp);
