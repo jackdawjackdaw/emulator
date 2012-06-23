@@ -486,7 +486,9 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 
 	/* note: flags followed with a colon come with an argument */
 	static const char *optString = "r:c:qh?"; 
-	
+
+	// should add a variance option for the pca_decomp
+	// and a flag to do return output in pca space
 	static const struct option longOpts[] = {
 		{ "regression_order", required_argument , NULL, 'r'},
 		{ "covariance_fn", required_argument , NULL, 'c'},
