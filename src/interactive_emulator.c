@@ -452,7 +452,11 @@ int interactive_mode (struct cmdLineOpts* cmdOpts) {
 main
 *********************************************************************/
 int main (int argc, char ** argv) {
-	
+
+	if(argc < 3) { // the minimum possible number of args is 3?
+		return perr(useage);
+	}
+		
 	struct cmdLineOpts *opts = global_opt_parse(argc, argv);
 
 	/* just to check that the options work */
