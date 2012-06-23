@@ -136,9 +136,12 @@ BIGGEST BUG:
  * to be used appropriately
  */
 struct cmdLineOpts{
-	int regOrder;  /* -r --regression_order */
-	int covFn;     /* -c --covariance_fn */
+	int regOrder;  /* -r --regression_order = */
+	int covFn;     /* -c --covariance_fn = */
 	int quietFlag; /* -q --quiet */
+	int pcaOutputFlag; /* -z --pca_output  turns on pca only output */
+	double pca_variance; /* -v --pca_variance =  fractional value for the pca decomp */
+	
 	// add additional flags as needed here
 
 	// what mode to run in
@@ -171,8 +174,11 @@ static const char useage [] =
 	"  --covariance_fn=0 (POWER_EXPONENTIAL)\n"
 	"  --covariance_fn=1 (MATERN32)\n"
 	"  --covariance_fn=2 (MATERN52)\n"
-	"General options:\n"
-	"  (-q) --quiet run without any extraneous output\n"
+	"  (-v=FRAC) --pca_variance=FRAC : sets the pca decomp to keep cpts up to variance fraction frac\n"
+	"options which incluence interactive_mode:\n"
+	"  (-q) --quiet: run without any extraneous output\n"
+	"  (-z) --pca_output: emulator output is left in the pca space\n"
+	"general options:\n"
 	"  -h -? print this dialogue\n"
 	"The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.\n";
 
@@ -314,6 +320,10 @@ int estimate_thetas(struct cmdLineOpts* cmdOpts) {
 	
 	cov_fn_index = cmdOpts->covFn;
 	regression_order = cmdOpts->regOrder;
+
+	if(cmdOpts->pca_variance <= 1.0 && cmdOpts->pca_variance > 0){
+		varfrac = cmdOpts->pca_variance; // use the option from the cmd line
+	}
 	
 	if(cov_fn_index < 0 || cov_fn_index > 3){
 		fprintf(stderr, "#ERROR cov_fn_index %d not supported\n", cov_fn_index);
@@ -336,19 +346,6 @@ int estimate_thetas(struct cmdLineOpts* cmdOpts) {
 
 	if(model == NULL)
 		return perr("Failed to allocated multi_modelstruct.\n");
-
-	// ccs:debugging
-	//#ifdef DEBUGPCA
-	//dump_multi_modelstruct(outfp, model);
-	//fflush(outfp);
-	//fclose(outfp);
-	//free_multimodelstruct(model);
-	//exit(1);
-	//#endif
-
-	/* covariance_fn = NULL; */
-	/* makeHVector = NULL; */
-	/* set_global_ptrs(model->pca_model_array[0]); */
 	
 	estimate_multi(model, outfp);
 
@@ -421,7 +418,11 @@ int interactive_mode (struct cmdLineOpts* cmdOpts) {
 		}
 		if (r < expected_r) /* probably eof, otherwise error */
 			break;
-		emulate_point_multi(the_multi_emulator, the_point, the_mean, the_variance);
+		if(cmdOpts->pcaOutputFlag == 0){ 
+			emulate_point_multi(the_multi_emulator, the_point, the_mean, the_variance);
+		} else { /* support output in the pca space */
+			emulate_point_multi_pca(the_multi_emulator, the_point, the_mean, the_variance);
+		}
 		for(i = 0; i < number_outputs; i++) {
 			#ifdef BINARY_INTERACTIVE_MODE
 				fwrite(gsl_vector_ptr(the_mean,i), sizeof(double), 1, interactive_output);
@@ -459,6 +460,8 @@ int main (int argc, char ** argv) {
 	/* printf("covfn: %d\n", opts->covFn); */
 	/* printf("quiet: %d\n", opts->quietFlag); */
 	/* printf("run_mode: %s\n", opts->run_mode); */
+	/* printf("pcaOutputFlag: %d\n", opts->pcaOutputFlag); */
+	/* printf("pca_variance: %lf\n", opts->pca_variance); */
 	/* if(opts->inputfile != NULL){ */
 	/* 	printf("inputfile: %s\n", opts->inputfile); */
 	/* } */
@@ -492,15 +495,20 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 	static const struct option longOpts[] = {
 		{ "regression_order", required_argument , NULL, 'r'},
 		{ "covariance_fn", required_argument , NULL, 'c'},
+		{ "pca_variance", required_argument, NULL , 'v'}, // set the var fraction for the pca decomp
+		{ "pca_output",  no_argument , NULL , 'z'},  // output from interactive emulator is left in pca space 
 		{ "quiet", no_argument , NULL, 'q'},
 		{ "help", no_argument , NULL, 'h'},
 		{ NULL, no_argument, NULL, 0} 
 	};
 
 	struct cmdLineOpts *opts = (struct cmdLineOpts*) malloc(sizeof(struct cmdLineOpts));
+	// init with default values
 	opts->regOrder = 0;
 	opts->covFn = 0;
 	opts->quietFlag = 0;
+	opts->pca_variance = 0.99; 
+	opts->pcaOutputFlag = 0; // if this is one, output multivar results without rotation
 	opts->run_mode = NULL;
 	opts->inputfile = NULL;
 	opts->statefile = NULL;
@@ -518,6 +526,15 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 				case 'c':
 					opts->covFn = atoi(optarg); /* this expects the cov fn to be 0,1,2? */
 					break;
+				case 'v':
+					opts->pca_variance = atof(optarg); /* expect the var to be a float < 1 > 0 */
+					if(opts->pca_variance < 0.0 || opts->pca_variance > 1.0){
+						fprintf(stderr, "# err pca_variance argument given incorrect value: %lf\n", opts->pca_variance);
+						opts->pca_variance = 0.95;
+						fprintf(stderr, "# using default value: %lf\n", opts->pca_variance);
+					}
+				case 'z':
+					opts->pcaOutputFlag = 1;
 				case 'q':
 					opts->quietFlag = 1;
 					break;
