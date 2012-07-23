@@ -32,6 +32,8 @@ USE:
     interactive_emulator estimate_thetas INPUT_MODEL_FILE MODEL_SNAPSHOT_FILE [OPTIONS]
   or
     interactive_emulator interactive_mode MODEL_SNAPSHOT_FILE
+  or 
+    interactive_emulator print_thetas MODEL_SNAPSHOT_FILE
 
   INPUT_MODEL_FILE can be "-" to read from standard input.
 

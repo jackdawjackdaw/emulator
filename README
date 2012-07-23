@@ -1,8 +1,9 @@
 Emulator
 
-C.Coleman-Smith, cec24@phy.duke.edu
+C.Coleman-Smith, cec24@phy.duke.edu,
+H.Canary, <cs.unc.edu/~hal>
 
-functions to implement Gaussian Process regression in R and C
+Gaussian Process regression in C with an R library too
 
 Brief:
 
@@ -10,7 +11,7 @@ A project to implement scalar Gaussian process regression with a variety of cova
 
 The model parameter space can take any dimension (within limits of the optimizer), output must be scalar. 
 
-Primary user interface is through R, rbind.c & EmuRbind.R. The heavy lifting takes place in libEmu.
+Primary user interface is through the interactive_emulator program
 
 Depends:
 
@@ -28,10 +29,7 @@ R<->C bindings, ~/local/include/libRbind: EmuRbind.R, rbind.h
 
 Compiling:
 
-mkdir build
-cd build; 
-cmake ..
-make install;
+./build.sh
 
 On OS-X you need to set the following environment variables:
 
@@ -41,11 +39,76 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"~/local/lib"
 Otherwise R will complain when you try and load libRbind.dylib
 
 
-HTML documentation, such as it is, can be compiled with doxygen.
 
 ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 
-Example Usage:
+Example Usage (Interactive Emulator):
+
+USE:
+  useage: 
+    interactive_emulator estimate_thetas INPUT_MODEL_FILE MODEL_SNAPSHOT_FILE [OPTIONS]
+  or
+    interactive_emulator interactive_mode MODEL_SNAPSHOT_FILE
+  or 
+    interactive_emulator print_thetas MODEL_SNAPSHOT_FILE
+
+  INPUT_MODEL_FILE can be "-" to read from standard input.
+
+  The input MODEL_SNAPSHOT_FILE for interactive_mode must match the format of
+  the output MODEL_SNAPSHOT_FILE from estimate_thetas.
+
+  Options for estimate_thetas can include:
+    --regression_order=0
+    --regression_order=1
+    --regression_order=2
+    --regression_order=3
+    --covariance_fn=0 (POWER_EXPONENTIAL)
+    --covariance_fn=1 (MATERN32)
+    --covariance_fn=2 (MATERN52)
+  The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.
+
+  These options will be saved in MODEL_SNAPSHOT_FILE.
+
+INPUT_MODEL_FILE (With multi-output) FORMAT:
+  Models with multivariate output values y = y_1...y_t which we will think of as rows of a matrix, in the following spec
+  number_outputs = t
+  BEGIN EXAMPLE
+    number_outputs
+    number_params 
+    number_model_points
+    X[0,0]
+    ...
+    X[0,number_params-1]
+    X[1,0]
+    ...
+    X[number_model_points-1,number_params-1]
+    Y[0, 0]
+    Y[0, 1]
+    ...
+    Y[0, number_outputs-1]
+    ...
+    Y[1, 1]
+    ... 
+    Y[number_model_points-1, number_outputs-1]
+   END EXAMPLE
+
+  number_outputs, number_params and number_model_points should be
+  positive integers.  X[i,j] and Y[i,j] will be read as
+  double-precision floats.
+
+Example Analysis Using Interactive Emulator: 
+ Several example analysis setups can be found in the test directory:
+ 
+ ./test/uni-simple -> a test model with a single parameter and a 1 dimensional output
+ ./test/uni-2d-param -> a test model with a 2 dimensional parameter space and a 1 dimensional output
+ ./test/multi-simple -> a test model with a 3 dimensional parameter space and a 5 dimensional output
+
+ Each example in test has a script train-emulator.sh which will build an emulator based on that particular model, the emulator can then be sampled using sample-emulator.sh and figures can be built using the enclosed R files.
+	
+
+~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
+
+Example Usage (R):
 
 The file examples/simple-regression.R generates a set of model data for a 1d model and then trains an emulator on this data. Build and install the code base, fire up an R shell and load the file with source("simple-regression.R"). 
 
