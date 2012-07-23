@@ -157,6 +157,8 @@ static const char useage [] =
 	"  interactive_emulator estimate_thetas INPUT_MODEL_FILE MODEL_SNAPSHOT_FILE [OPTIONS]\n"
 	"or\n"
 	"  interactive_emulator interactive_mode MODEL_SNAPSHOT_FILE [OPTIONS]\n"
+	"or\n"
+	"  interactive_emulator print_thetas MODEL_SNAPSHOT_FILE\n"
 	"\n"
 	"INPUT_MODEL_FILE can be \"-\" to read from standard input.\n"
 	"\n"
@@ -349,7 +351,9 @@ int estimate_thetas(struct cmdLineOpts* cmdOpts) {
 	/* covariance_fn = NULL; */
 	/* makeHVector = NULL; */
 	/* set_global_ptrs(model->pca_model_array[0]); */
-	
+
+	/**
+	 * this will write the model state file to outfp */
 	estimate_multi(model, outfp);
 
 	fclose(outfp);
@@ -443,6 +447,45 @@ int interactive_mode (struct cmdLineOpts* cmdOpts) {
 	return 0;
 }
 
+/**
+ * If main called with "print_thetas" argument this happens.
+ */
+int print_thetas(struct cmdLineOpts *cmdOpts)
+{
+	int i,j;
+	int nthetas; // number of thetas
+	int nr; // number of emulators
+	int nparams;
+
+	FILE * fp = fopen(cmdOpts->statefile,"r"); 
+	if (fp == NULL)
+		return perr("Error opening file");
+	multi_modelstruct *model = load_multi_modelstruct(fp); // load the statefile
+
+	fclose(fp);
+
+	nr = model->nr;
+	nparams = model->nparams;
+	nthetas = model->pca_model_array[0]->thetas->size;
+	
+	printf("#-- EMULATOR LENGTH SCALES (thetas) IN PCA SPACE -- #\n");
+	printf("#-- id\tScale\tNugget");
+	for(i = 0; i < nparams; i++)
+		printf("\tlength_%d", i);
+	printf(" -- #\n");
+	
+	for(i = 0; i < nr; i++){
+		printf("%d\t", i);
+		for(j = 0; j < nthetas; j++){
+			printf("%lf\t", exp(gsl_vector_get(model->pca_model_array[i]->thetas, j)));
+		}
+		printf("\n");
+	}
+
+	return 0;	
+}
+
+
 
 
 
@@ -454,25 +497,16 @@ int main (int argc, char ** argv) {
 	
 	struct cmdLineOpts *opts = global_opt_parse(argc, argv);
 
-	/* just to check that the options work */
-	/* printf("regOrder: %d\n", opts->regOrder); */
-	/* printf("covfn: %d\n", opts->covFn); */
-	/* printf("quiet: %d\n", opts->quietFlag); */
-	/* printf("run_mode: %s\n", opts->run_mode); */
-	/* if(opts->inputfile != NULL){ */
-	/* 	printf("inputfile: %s\n", opts->inputfile); */
-	/* } */
-	/* printf("statefile: %s\n", opts->statefile); */
-
 	if (str_equal(opts->run_mode, "estimate_thetas")){
 		estimate_thetas(opts);
 	} else if (str_equal(opts->run_mode, "interactive_mode")) {
 		interactive_mode(opts);
+	} else if (str_equal(opts->run_mode, "print_thetas")){
+		print_thetas(opts);
 	} else{
 		free(opts);
 		return perr(useage);
 	}
-	
 	free(opts);
 	return(EXIT_SUCCESS);
 }
@@ -508,37 +542,37 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 
 	// add more options here 
 	opt = getopt_long( argc, argv, optString, longOpts, &longIndex );
-    while( opt != -1 ) {
-        switch( opt ) {
-				case 'r':
-					opts->regOrder = atoi(optarg); 
-					break;
-				case 'c':
-					opts->covFn = atoi(optarg); /* this expects the cov fn to be 0,1,2? */
-					break;
-				case 'q':
-					opts->quietFlag = 1;
-					break;
-				case 'h':   /* fall-through is intentional */
-				case '?':
-					//display_usage();
-					exit(perr(useage));
-					break;
-				default:
-					/* You won't actually get here. */
-					break;
-				}
-				opt = getopt_long( argc, argv, optString, longOpts, &longIndex );
-    }
-
-		// set the remaining fields
-		opts->run_mode = argv[optind];
-		if(str_equal(opts->run_mode, "estimate_thetas")){
-			opts->inputfile = argv[optind+1];
-			opts->statefile = argv[optind+2];
-		} else {
-			opts->statefile = argv[optind+1];
+	while( opt != -1 ) {
+		switch( opt ) {
+		case 'r':
+			opts->regOrder = atoi(optarg); 
+			break;
+		case 'c':
+			opts->covFn = atoi(optarg); /* this expects the cov fn to be 0,1,2? */
+			break;
+		case 'q':
+			opts->quietFlag = 1;
+			break;
+		case 'h':   /* fall-through is intentional */
+		case '?':
+			//display_usage();
+			exit(perr(useage));
+		break;
+		default:
+			/* You won't actually get here. */
+			break;
 		}
+		opt = getopt_long( argc, argv, optString, longOpts, &longIndex );
+	}
 
-		return opts;
+	// set the remaining fields
+	opts->run_mode = argv[optind];
+	if(str_equal(opts->run_mode, "estimate_thetas")){
+		opts->inputfile = argv[optind+1];
+		opts->statefile = argv[optind+2];
+	} else {
+		opts->statefile = argv[optind+1];
+	}
+
+	return opts;
 }
