@@ -458,6 +458,7 @@ int print_thetas(struct cmdLineOpts *cmdOpts)
 	int nthetas; // number of thetas
 	int nr; // number of emulators
 	int nparams;
+	double vartot = 0;
 
 	FILE * fp = fopen(cmdOpts->statefile,"r"); 
 	if (fp == NULL)
@@ -470,14 +471,19 @@ int print_thetas(struct cmdLineOpts *cmdOpts)
 	nparams = model->nparams;
 	nthetas = model->pca_model_array[0]->thetas->size;
 	
-	printf("#-- EMULATOR LENGTH SCALES (thetas) IN PCA SPACE -- #\n");
-	printf("#-- id\tScale\tNugget");
+
+	printf("#-- EMULATOR LENGTH SCALES (thetas) IN PCA SPACE -- #\n");	
+	for(i = 0; i < nr ; i ++)
+		vartot += gsl_vector_get(model->pca_evals_r,i);
+
+	printf("#-- id\tpca-var\tScale\tNugget");
 	for(i = 0; i < nparams; i++)
 		printf("\tlength_%d", i);
 	printf(" -- #\n");
 	
 	for(i = 0; i < nr; i++){
 		printf("%d\t", i);
+		printf("%lf\t", gsl_vector_get(model->pca_evals_r,i)/vartot);
 		for(j = 0; j < nthetas; j++){
 			printf("%lf\t", exp(gsl_vector_get(model->pca_model_array[i]->thetas, j)));
 		}
