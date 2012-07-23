@@ -576,6 +576,7 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 				opts->pca_variance = 0.95;
 				fprintf(stderr, "# using default value: %lf\n", opts->pca_variance);
 			}
+			fprintf(stderr, "# var-frac: %lf\n", opts->pca_variance);
 		case 'z':
 			opts->pcaOutputFlag = 1;
 		case 'q':

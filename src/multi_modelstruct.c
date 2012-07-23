@@ -250,11 +250,11 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	total_variance = vector_elt_sum(evals_temp, nt);
 
 	
-	#ifdef DEBUGPCA
+#ifdef DEBUGPCA
 	fprintf(fptr, "# evals:\n");
 	for(i = 0; i < nt; i++)
 		fprintf(fptr, "%lf %lf\n", gsl_vector_get(evals_temp, i), gsl_vector_get(evals_temp, i) / total_variance);
-	
+
 	fprintf(fptr, "# evecs:\n");
 	for(j = 0; j < nt; j++){
 		for(i = 0; i < nt; i++)
@@ -265,7 +265,7 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	#endif
 
 	i=0;
-	while( frac < vfrac || (i+1) < nt){
+	while( frac < vfrac && (i+1) < nt){
 		frac = (1.0/total_variance) * vector_elt_sum(evals_temp, i);
 		i++;
 	}
