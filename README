@@ -13,19 +13,15 @@ The model parameter space can take any dimension (within limits of the optimizer
 
 Primary user interface is through the interactive_emulator program
 
+~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
+
 Depends:
 
 cmake (http://www.cmake.org/cmake/resources/software.html)
 gsl 
 R (http://www.r-project.org/) (for using the R lib)
 
-Installs: 
-
-The following files will be installed by make install
-
-standalone bins, estimator and emulator to ~/local/bin. 
-libs, libRbind &libEmu to ~/local/lib
-R<->C bindings, ~/local/include/libRbind: EmuRbind.R, rbind.h
+~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 
 Compiling:
 
@@ -38,13 +34,10 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"~/local/lib"
 
 Otherwise R will complain when you try and load libRbind.dylib
 
-
-
 ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 
-Example Usage (Interactive Emulator):
+Interactive Emulator:
 
-USE:
   useage: 
     interactive_emulator estimate_thetas INPUT_MODEL_FILE MODEL_SNAPSHOT_FILE [OPTIONS]
   or
@@ -52,6 +45,14 @@ USE:
   or 
     interactive_emulator print_thetas MODEL_SNAPSHOT_FILE
 
+  estimate_thetas -> train an emulator on a given set of model outputs, all the information needed to 
+	use the emulator is written to MODEL_SNAPSHOT_FILE
+
+	interactive_mode -> sample the emulator contained in MODEL_SNAPSHOT_FILE at a set of points given
+	on STDIN, the emulated mean and variance are output to STDOUT
+
+	print_thetas -> write out the covariance length scales for the emulator given by MODEL_SNAPSHOT_FILE
+		
   INPUT_MODEL_FILE can be "-" to read from standard input.
 
   The input MODEL_SNAPSHOT_FILE for interactive_mode must match the format of
@@ -65,6 +66,13 @@ USE:
     --covariance_fn=0 (POWER_EXPONENTIAL)
     --covariance_fn=1 (MATERN32)
     --covariance_fn=2 (MATERN52)
+	  (-v=FRAC) --pca_variance=FRAC : sets the pca decomp to keep cpts up to variance fraction frac
+	 options which incluence interactive_mode:
+	 (-q) --quiet: run without any extraneous output
+	 (-z) --pca_output: emulator output is left in the pca space
+   general options:
+	  -h -? print the help dialogue
+
   The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.
 
   These options will be saved in MODEL_SNAPSHOT_FILE.
@@ -95,6 +103,8 @@ INPUT_MODEL_FILE (With multi-output) FORMAT:
   number_outputs, number_params and number_model_points should be
   positive integers.  X[i,j] and Y[i,j] will be read as
   double-precision floats.
+
+~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 
 Example Analysis Using Interactive Emulator: 
  Several example analysis setups can be found in the test directory:
