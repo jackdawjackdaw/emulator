@@ -53,6 +53,9 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 	int nregression_fns = params->options->nregression_fns;
 	int i;
 
+	int status;
+	int success_count = 0; // count how many times the maxizmiaer actually works
+
 	double likelihood = 0.0;
 	double bestLHood = SCREWUPVALUE;
 
@@ -79,13 +82,18 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 
 	/* printf("max_tries = %d\n", params->max_tries); */
 	while(tries < params->max_tries) {
+	//while(success_count < 1){ // don't stop until the code converges?
 		set_random_init_value(params->random_number, xInit, params->options->grad_ranges, nthetas);
 		// do the actual optimization using MultiMin
 		
-		doOptimizeMultiMin(&evalFnMulti, // computes the log-likelihood 
+		status = doOptimizeMultiMin(&evalFnMulti, // computes the log-likelihood 
 											 &gradFnMulti,  // computes the gradient
 											 &evalFnGradMulti, // does both at once
 											 xInit, xFinal, (void*)params);
+		
+		if(status == GSL_SUCCESS)
+			success_count++;
+		
 		
 		/** 
 		 * need to send a theta_vector without the amplitude if you want to 
@@ -100,11 +108,10 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 		fprintPt(stdout, self);
 		printf(":L = %g:try = %d\n", likelihood, tries);
 		*/
-		 
-		if(likelihood > bestLHood && (isnan(likelihood) == 0 && isinf(likelihood) == 0)){
+
+		if(likelihood > bestLHood && (isnan(likelihood) == 0 && isinf(likelihood) == 0)) {
 			bestLHood = likelihood;
 			gsl_vector_memcpy(xBest, xFinal);
-			
 			/* fprintPt(stdout, self); */
 			/* printf(":best = %g\n", bestLikelyHood); */
 		}
@@ -120,6 +127,7 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 
 	gsl_vector_memcpy(params->the_model->thetas, xBest);
 	params->lhood_current = bestLHood;
+	params->success_count = success_count; // save the success count back to the params struct
 	
 	gsl_vector_free(xInit);
 	gsl_vector_free(xFinal);
@@ -458,9 +466,24 @@ void gradFnMulti(const gsl_vector* theta_vec_less_amp, void* params_in, gsl_vect
 		fprintf(stderr, "trying to cholesky a non postive def matrix, sorry...\n");
 		fprintf(stderr, "matrix dumped to chol-err.dat\n");
 		fptr = fopen("chol-err.dat", "w");
+
+		fprintf(fptr, "# sample scales: ");
+		for(i = 0;  i < nparams; i++)
+			fprintf(fptr, "%lf\t", gsl_vector_get(params->the_model->sample_scales, i));
+		fprintf(fptr, "\n");
+
+		fprintf(fptr, "# grad ranges: ");
+		for(i = 0;  i < nthetas; i++)
+			fprintf(fptr, "%lf %lf\n", gsl_matrix_get(params->options->grad_ranges, i, 0), gsl_matrix_get(params->options->grad_ranges, i, 1));
+		
+		fprintf(fptr, "#thetas: ");
+		for(i = 0; i < nthetas; i++)
+			fprintf(fptr, "%lf\t", gsl_vector_get(theta_local, i));
+		fprintf(fptr, "\n");
+
 		for (i = 0; i < nmpoints; ++i){
 			for (j = 0; j < nmpoints; ++j){
-				fprintf(fptr, "%lf", gsl_matrix_get(temp_matrix, i, j));				
+				fprintf(fptr, "%lf ", gsl_matrix_get(temp_matrix, i, j));				
 				}
 			fprintf(fptr, "\n");
 		}
@@ -602,13 +625,14 @@ void evalFnGradMulti(const gsl_vector* theta_vec, void* params, double* fnval, g
  * minimize the supplied functions, taking thetaInit as a starting point.
  * 
  * @return thetaFinal is set to the full ntheta {amp, nug, theta_1, theta_2,...} vector.
+ * @returns the exit code for the maximization routine
  * @param double(*fn)(...) the evaluation function
  * @param void(*gradientFn)(...) computes the gradient
  * @param void(*fnGradFn)(...) computes the grad and the fn value
  * @param thetaInit the initial location in the optimization space, nthetas long (includes amp term)
  * @param thetaFinal the final location, nthetas long (includes estimated amp term)
  */
-void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
+int doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 												void(*gradientFn)(const gsl_vector*,void*, gsl_vector*),
 												void(*fnGradFn)(const gsl_vector*, void*, double*, gsl_vector*),
 												gsl_vector *thetaInit, gsl_vector* thetaFinal, void* args){
@@ -623,22 +647,23 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	int stepcount = 0;
 	int stepmax = 30; // tune this if a huge number of steps seem to be happening
 	int i;
+	
 
 	double sigma_final = 0.0;
 
-	double stepSizeInit = 0.1;
-	double tolerance = 0.05; // sets the accuracy of the line search. 
+	double stepSizeInit = 1.5;
+	double tolerance = 0.5; // sets the accuracy of the line search. 
 	double fnValue = 0.0;
 	double norm = 0.0; // norm of the gradient
 	/*
 	 * we stop when |g| < epsAbs, not sure how to set this yet
 	 */
-	double epsAbs = 0.02; 
+	double epsAbs = 0.1; 
 
 	/* fprintf(stderr, "#doOptimizeMultiMin: nthetas %d\tnmpoints %d\tnparams %d\n",  */
 	/* 				nthetas, nmpoints, nparams); */
 	
-	gsl_vector *tempTest = gsl_vector_alloc(nthetas); // get values out of the min to check on progress
+	gsl_vector *tempTest = NULL;// = gsl_vector_alloc(nthetas); // get values out of the min to check on progress
 	/*
 	 * because we're fixing the scale with the data we're actually optimizing one less
 	 * theta than in the unconstrained case
@@ -669,8 +694,14 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	/* 				gsl_multimin_fdfminimizer_name (fdfmin), nthetas_opt); */
 
 	status = gsl_multimin_fdfminimizer_set(fdfmin, &multiminFn, thetaTemp, stepSizeInit, tolerance);
-	/* printf("set_status: %d\n", status); */
-
+	
+	#ifdef DEBUGMAXMULTIMIN
+	fprintf(stderr, "x-init: ");
+	for(i = 0; i < nthetas_opt; ++i)
+		fprintf(stderr, "%lf ", gsl_vector_get(thetaInit, i));
+	fprintf(stderr, "\n");
+	#endif
+	
 	// iterate our minimizer
 	do{
 		status = gsl_multimin_fdfminimizer_iterate(fdfmin);
@@ -684,20 +715,23 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 
 		fnValue = gsl_multimin_fdfminimizer_minimum(fdfmin);
 		tempTest = gsl_multimin_fdfminimizer_gradient(fdfmin);
+
+
+		#ifdef DEBUGMAXMULTIMIN
 		/* // output current info */
-		/* fprintf(stderr, "#(%d) f: %lf x:", stepcount, fnValue); */
-		/* for (i = 0; i < nthetas_opt; ++i) */
-		/* 	fprintf(stderr, "%lf ", gsl_vector_get(fdfmin->x, i)); */
-		/* fprintf(stderr, "#grad: "); */
-		/* for (i = 0; i < nthetas_opt; ++i) */
-		/* 	fprintf(stderr, "%lf ", gsl_vector_get(fdfmin->gradient, i)); */
+		fprintf(stderr, "#(%d) f: %lf x:", stepcount, fnValue);
+		for (i = 0; i < nthetas_opt; ++i)
+			fprintf(stderr, "%lf ", gsl_vector_get(fdfmin->x, i));
+		fprintf(stderr, "#grad: ");
+		for (i = 0; i < nthetas_opt; ++i)
+			fprintf(stderr, "%lf ", gsl_vector_get(fdfmin->gradient, i));
 		
-		/* norm = 0.0; */
-		/* for(i = 0; i < nthetas_opt; ++i){ */
-		/* 	norm+= gsl_vector_get(fdfmin->gradient,i)*gsl_vector_get(fdfmin->gradient,i); */
-		/* } */
-		/* fprintf(stderr, "norm: %g\n", sqrt(norm)); */
-		
+		norm = 0.0;
+		for(i = 0; i < nthetas_opt; ++i){
+			norm+= gsl_vector_get(fdfmin->gradient,i)*gsl_vector_get(fdfmin->gradient,i);
+		}
+		fprintf(stderr, "norm: %g\n", sqrt(norm));
+		#endif
 		
 		// this will return GSL_SUCCESS if we are done
 		status = gsl_multimin_test_gradient(fdfmin->gradient, epsAbs);
@@ -705,14 +739,18 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 		stepcount++;
 	} while(status == GSL_CONTINUE && stepcount < stepmax);
 
+
 	if(stepcount == stepmax)
-		fprintf(stderr, "#multimin: no converge at stepmax %d\n", stepmax);
-	
+		fprintf(stderr, "# (error) multimin: no converge at stepmax %d\n", stepmax);
 
 	fnValue = gsl_multimin_fdfminimizer_minimum(fdfmin);
+
+	#ifdef DEBUGMAXMULTIMIN
+	fprintf(stderr, "status: %s\n", gsl_strerror(status));
 	/* fprintf(stderr, "#multimin: best_value %lf\n", fnValue); */
+	#endif
 
-
+	
 	// get the min location
 	tempTest = gsl_multimin_fdfminimizer_x(fdfmin);
 
@@ -739,9 +777,9 @@ void doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	// clear up
 	gsl_multimin_fdfminimizer_free(fdfmin);
 	gsl_vector_free(thetaTemp);
-	//gsl_vector_free(tempTest);
+  //gsl_vector_free(tempTest);
 
-
+	return status;
 }
 
 
@@ -764,7 +802,7 @@ void set_random_init_value(gsl_rng* rand, gsl_vector* x, gsl_matrix* ranges,int 
 		range_max = gsl_matrix_get(ranges, i, 1);
 		// set the input vector to a random value in the range
 		the_value = gsl_rng_uniform(rand) * (range_max - range_min) + range_min;
-		/* printf("theta(%d) init-val:  %g\n", i, the_value); */
+		//printf("theta(%d) init-val:  %g %g %g\n", i, the_value, range_min, range_max);
 		//gsl_vector_set(x, gsl_rng_uniform(rand)*(range_max-range_min)+range_min, i);
 		gsl_vector_set(x, i, the_value);
 	}

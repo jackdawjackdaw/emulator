@@ -45,7 +45,7 @@ int get_number_cpus(void){
 	if(ncpus == -1){
 		ncpus = 1;
 	}
-	fprintf(stderr, "NCPUS: %d\n", ncpus);
+	printf("# NCPUS: %d\n", ncpus);
 	return(ncpus);
 }
 
@@ -77,7 +77,7 @@ void setup_params(struct estimate_thetas_params *params_array, modelstruct* the_
  * Spinlocks are slightly faster
  */
 void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
-	int i;
+	int i, j;
 	int rc = 0; 
 	/* thread data */
 	/* \bug
@@ -90,9 +90,13 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * further issues with R hanging after calling estimateThetas a second time
 	 * 
 	 */
-
-	//int nthreads = get_number_cpus();
-	int nthreads = 1;
+	
+	/** 
+	 * this sets the number of threads to be launched, 
+	 * by default this is the equal to total number of cpus
+	 */
+	int nthreads = get_number_cpus();
+	//int nthreads = 1;
 
 	/* force each thread to do at least one of the tries */
 	if(ntries < nthreads){
@@ -145,14 +149,16 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 
 	/* setup the thread params */
 	/**
-	 * \bug final scores seem similar across threads, why?
-	 * \todo investigate the initial conditions, does each thread get an inde rng
+	 * set the rngs for each thread, the rngs pick the initial locations for the 
+	 * maximization routine, if you want to debug things you can set nthreads=1 and 
+	 * then fix the rng seed to a given value instead of using get_seed_noblock to init it.
 	 */
 	for(i = 0; i < nthreads; i++){
 		// alloc a rng for each thread
 		params[i].random_number = gsl_rng_alloc(T);
 		// this is blocking right now (slooow)
 		gsl_rng_set(params[i].random_number, get_seed_noblock());
+		//gsl_rng_set(params[i].random_number, 3);
 	}
 	
 	#ifdef USEMUTEX
@@ -162,8 +168,6 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	pthread_spin_init(&job_counter_spin, 0);
 	pthread_spin_init(&results_spin, 0);
 	#endif
-
-
 
 	// create the threads
 	for(i = 0; i < nthreads; i++){
@@ -195,14 +199,17 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 
 	// check the local best values from the threads
 	printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
-	for(i = 0; i < nthreads; i++)
-		printf("%d\t%lf\n", i, params[i].my_best);
+	for(i = 0; i < nthreads; i++){
+		printf("thread(%d)\tlog-L: %lf\tthetas:", i, params[i].my_best);
+		for(j = 0; j < params[i].options->nthetas; j++)
+			printf("%lf ", exp(gsl_vector_get(params[i].the_model->thetas, j)));
+		printf("\n");
+	}
 	printf("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n");
-
+		
 	/* fprintf(stderr, "final best L: %g\n", best_likelyhood_val); */
 	/* fprintf(stderr, "THETAS WE WILL USE: \t"); */
 	/* print_vector_quiet(best_thetas, options->nthetas); */
-
 	
 	// tear down the thread params
 	for(i = 0; i < nthreads; i++){
@@ -210,6 +217,9 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 		free_modelstruct(params[i].the_model);
 		gsl_matrix_free(params[i].options->grad_ranges);
 		gsl_matrix_free(params[i].h_matrix); // hehe was free'ing this way too early before, gives strange behaviour
+		if(params[i].the_model->options){
+			free_optstruct(params[i].the_model->options);
+		}
 		free(params[i].the_model);
 		free(params[i].options);
 	}
@@ -301,8 +311,11 @@ void* estimate_thread_function(void* args){
 			gsl_vector_memcpy(best_thetas, params->the_model->thetas); // save them
 			// save the new best too
 			best_likelyhood_val = my_theta_val;
+			
+			printf("# ");
 			fprintPt(stdout, my_id);
 			printf(" won with %g\n",  my_theta_val);
+			
 		}
 		#ifdef USEMUTEX
 		pthread_mutex_unlock(&results_mutex);
@@ -315,7 +328,7 @@ void* estimate_thread_function(void* args){
 
 	}
 	// and relax...
-	printf("thread: ");
+	printf("# thread: ");
 	fprintPt(stdout, my_id);
 	printf(" is done\n");
 	return NULL;

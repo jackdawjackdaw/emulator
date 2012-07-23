@@ -16,7 +16,7 @@ Depends:
 
 cmake (http://www.cmake.org/cmake/resources/software.html)
 gsl 
-R (http://www.r-project.org/)
+R (http://www.r-project.org/) (for using the R lib)
 
 Installs: 
 

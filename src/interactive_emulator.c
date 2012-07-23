@@ -32,10 +32,6 @@ USE:
     interactive_emulator estimate_thetas INPUT_MODEL_FILE MODEL_SNAPSHOT_FILE [OPTIONS]
   or
     interactive_emulator interactive_mode MODEL_SNAPSHOT_FILE
-  or (for models with multiple y value)
-    interactive_emulator estimate_thetas_multi INPUT_MODEL_FILE_MULTI MODEL_SNAPSHOT_FILE_MULTI [OPTIONS]
-  or 
-    interactive_emulator interactive_mode_multi MODEL_SNAPSHOT_FILE_MULTI [OPTIONS]
 
   INPUT_MODEL_FILE can be "-" to read from standard input.
 
@@ -47,9 +43,9 @@ USE:
     --regression_order=1
     --regression_order=2
     --regression_order=3
-    --covariance_fn=POWER_EXPONENTIAL
-    --covariance_fn=MATERN32
-    --covariance_fn=MATERN52
+    --covariance_fn=0 (POWER_EXPONENTIAL)
+    --covariance_fn=1 (MATERN32)
+    --covariance_fn=2 (MATERN52)
   The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.
 
   These options will be saved in MODEL_SNAPSHOT_FILE.
@@ -104,11 +100,16 @@ BIGGEST BUG:
   trying to emulate several functions defined on the same space and
   sampled on the same training points?  We need to modify this to
   efficiently do that.
+  
+  this is somewhat supported now
+  
 
  TODO:
   - allow the design x[0,0]...x[nmodel_points,nparams-1] to be read separately from the 
   training points
-  - tests/example scripts
+  - check for scaling of design and training values, warn if they different columns have very different scales
+  - make estimation process respect the quiet flag?
+  
 
    
 *********************************************************************/
@@ -118,6 +119,8 @@ BIGGEST BUG:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
+#include <unistd.h>
 
 #include "main.h"
 #include "modelstruct.h"
@@ -126,28 +129,52 @@ BIGGEST BUG:
 #include "multivar_support.h"
 #include "libEmu/maxmultimin.h"
 
+
+
+/** 
+ * contents will be set by global_opt_parse, can be passed into estimate_thetas and interactive_mode 
+ * to be used appropriately
+ */
+struct cmdLineOpts{
+	int regOrder;  /* -r --regression_order */
+	int covFn;     /* -c --covariance_fn */
+	int quietFlag; /* -q --quiet */
+	// add additional flags as needed here
+
+	// what mode to run in
+	char* run_mode; /* arg 1 */
+	char *inputfile; /* arg 2 (maybe) */
+	// the state filename
+	char* statefile; /* arg 2 or 3 */
+} cmdLineOpts;
+
+
+struct cmdLineOpts* global_opt_parse(int argc, char** argv);
+
 /********************************************************************/
 static const char useage [] =
 	"useage:\n"
 	"  interactive_emulator estimate_thetas INPUT_MODEL_FILE MODEL_SNAPSHOT_FILE [OPTIONS]\n"
 	"or\n"
-	"  interactive_emulator interactive_mode MODEL_SNAPSHOT_FILE\n"
+	"  interactive_emulator interactive_mode MODEL_SNAPSHOT_FILE [OPTIONS]\n"
 	"\n"
 	"INPUT_MODEL_FILE can be \"-\" to read from standard input.\n"
 	"\n"
 	"The input MODEL_SNAPSHOT_FILE for interactive_mode must match the format of\n"
 	"the output MODEL_SNAPSHOT_FILE from estimate_thetas.\n"
 	"\n"
-	"Options for estimate_thetas can include:\n"
-	"  --regression_order=0\n"
-	"  --regression_order=1\n"
-	"  --regression_order=2\n"
-	"  --regression_order=3\n"
-	"  --covariance_fn=POWER_EXPONENTIAL\n"
-	"  --covariance_fn=MATERN32\n"
-	"  --covariance_fn=MATERN52\n"
+	"Options which only influence estimate_thetas:\n"
+	"  --regression_order=0 (const)\n"
+	"  --regression_order=1 (linear)\n"
+	"  --regression_order=2 (quadratic)\n"
+	"  --regression_order=3 (cubic)\n"
+	"  --covariance_fn=0 (POWER_EXPONENTIAL)\n"
+	"  --covariance_fn=1 (MATERN32)\n"
+	"  --covariance_fn=2 (MATERN52)\n"
+	"General options:\n"
+	"  (-q) --quiet run without any extraneous output\n"
+	"  -h -? print this dialogue\n"
 	"The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.\n";
-
 
 /**
  * Convienence function for exiting a function.
@@ -215,7 +242,6 @@ int open_model_file(char * input_filename,
  */
 #define starts_with(s1,s2) (strncmp ((s1), (s2), strlen(s2)) == 0)
 
-
 /**
  * Return true only if s1 equals s2.
  */
@@ -223,6 +249,8 @@ int open_model_file(char * input_filename,
 
 /**
  * read out the cov-fn and regression order from argc and argv
+ * 
+ * ccs: can we use getopt_long here?
  */
 void parse_arguments_interactive(int* cov_fn_index, int* regression_order, int argc, char ** argv){
 	argc -= 2;
@@ -266,31 +294,40 @@ void parse_arguments_interactive(int* cov_fn_index, int* regression_order, int a
 /**
  * if main called with "estimate_thetas_multi"
  */
-int estimate_thetas(int argc, char ** argv) {
+int estimate_thetas(struct cmdLineOpts* cmdOpts) {
 	gsl_matrix *xmodel = NULL;
 	gsl_matrix *training_matrix = NULL;
 	double varfrac = 0.95; // this could be set by an arg
 
-	if (argc < 2)
-		return perr("Not enough arguments\n");
+	/* if (argc < 2) */
+	/* 	return perr("Not enough arguments\n"); */
 
-	if (! open_model_file(argv[0], &xmodel, &training_matrix))
-		return perr("File read failed.");
+	if (! open_model_file(cmdOpts->inputfile, &xmodel, &training_matrix))
+		return perr("Input File read failed.");
 
-	FILE * outfp = fopen(argv[1], "w");
+	FILE * outfp = fopen(cmdOpts->statefile, "w");
 	if (outfp == NULL)
-		return perr("Opening output file failed.");
+		return perr("Opening statefile failed.");
 
 	int cov_fn_index = POWEREXPCOVFN; /* POWEREXPCOVFN: 1, MATERN32: 2, MATERN52: 3 */
 	int regression_order = 0; /* 0, 1, 2, or 3 */
-
 	
-	parse_arguments_interactive(&cov_fn_index, &regression_order, argc, argv);
+	cov_fn_index = cmdOpts->covFn;
+	regression_order = cmdOpts->regOrder;
+	
+	if(cov_fn_index < 0 || cov_fn_index > 3){
+		fprintf(stderr, "#ERROR cov_fn_index %d not supported\n", cov_fn_index);
+		exit(EXIT_FAILURE);
+	}
+
+	if(regression_order < 0 || regression_order > 3){
+		fprintf(stderr, "#ERROR regression_order %d not supported\n", cov_fn_index);
+		exit(EXIT_FAILURE);
+	}
 
 	/* allocate the multi-model, do the pca decomp
 	 * this is a little chatty on stderr
 	 */
-
 
 	multi_modelstruct * model = NULL;
 	model = alloc_multimodelstruct(
@@ -300,29 +337,19 @@ int estimate_thetas(int argc, char ** argv) {
 	if(model == NULL)
 		return perr("Failed to allocated multi_modelstruct.\n");
 
-
 	// ccs:debugging
-	#ifdef DEBUGPCA
-	dump_multi_modelstruct(outfp, model);
-	fflush(outfp);
-	fclose(outfp);
-	free_multimodelstruct(model);
-	exit(1);
-	#endif
+	//#ifdef DEBUGPCA
+	//dump_multi_modelstruct(outfp, model);
+	//fflush(outfp);
+	//fclose(outfp);
+	//free_multimodelstruct(model);
+	//exit(1);
+	//#endif
 
-
-	covariance_fn = NULL;
-	makeHVector = NULL;
-	set_global_ptrs(model->pca_model_array[0]);
+	/* covariance_fn = NULL; */
+	/* makeHVector = NULL; */
+	/* set_global_ptrs(model->pca_model_array[0]); */
 	
-	/* actually do the estimation using libEmu and write to file! */
-	/** ccs:
-	 * \bug on os-x this will segfault
-	 * tested on linux: 2.6.32-5 (debian host on vm-ware) and 2.6.32-220.7.1 (grads-81) 
-	 * and it works ok.
-	 * 
-	 * the global ptrs seem to be broken on os-x, do they need to be static?
-	 */
 	estimate_multi(model, outfp);
 
 	fclose(outfp);
@@ -337,14 +364,12 @@ int estimate_thetas(int argc, char ** argv) {
 /**
  * If main called with "interactive_mode" argument, this happens.
  */
-int interactive_mode (int argc, char** argv) {
-	(void) argc; /* cleanup compiler warning for unused parameter */
-	(void) argv; /* cleanup compiler warning for unused parameter */
+int interactive_mode (struct cmdLineOpts* cmdOpts) {
 	FILE * interactive_input = stdin;
 	FILE * interactive_output = stdout;
 	int i, r, expected_r;
 
-	FILE * fp = fopen(argv[0],"r");
+	FILE * fp = fopen(cmdOpts->statefile,"r");
 	if (fp == NULL)
 		return perr("Error opening file");
 	multi_modelstruct *model = load_multi_modelstruct(fp);
@@ -360,24 +385,32 @@ int interactive_mode (int argc, char** argv) {
 	gsl_vector *the_mean = gsl_vector_alloc(number_outputs);
 	gsl_vector *the_variance = gsl_vector_alloc(number_outputs);
 
-  #ifdef BINARY_INTERACTIVE_MODE
-		r = expected_r = sizeof(double);
-	#else
-		r = expected_r = 1;
-	#endif
-	fprintf(interactive_output,"%d\n",number_params);
-	for(i = 0; i < number_params; i++) {
-		/* FIXME we may want parameter identifiers in the future. */
-		fprintf(interactive_output,"%s%d\n","param_",i);
-	}
-	int nreturns = 2 * number_outputs ; /* FIXME - also return the joint implausibility. */
-	fprintf(interactive_output,"%d\n",nreturns);
-	for(i = 0; i < number_outputs; i++) {
-		/* FIXME we may want output identifiers in the future. */
-		fprintf(interactive_output,"%s_%d\n%s_%d\n","mean",i,"variance",i);
-	}
 
-	fflush(interactive_output);
+
+#ifdef BINARY_INTERACTIVE_MODE
+	r = expected_r = sizeof(double);
+#else
+	r = expected_r = 1;
+#endif
+
+	if(!cmdOpts->quietFlag){
+		fprintf(interactive_output,"%d\n",number_params);
+		for(i = 0; i < number_params; i++) {
+			/* FIXME we may want parameter identifiers in the future. */
+			fprintf(interactive_output,"%s%d\n","param_",i);
+		}
+
+	
+		int nreturns = 2 * number_outputs ; /* FIXME - also return the joint implausibility. */
+		fprintf(interactive_output,"%d\n",nreturns);
+		for(i = 0; i < number_outputs; i++) {
+			/* FIXME we may want output identifiers in the future. */
+			fprintf(interactive_output,"%s_%d\n%s_%d\n","mean",i,"variance",i);
+		}
+
+		fflush(interactive_output);
+	}
+	
 	while (! feof(interactive_input)) {
 		for(i =0; (i < number_params) && (r == expected_r); i++) {
 			#ifdef BINARY_INTERACTIVE_MODE
@@ -411,15 +444,101 @@ int interactive_mode (int argc, char** argv) {
 }
 
 
+
+
+
 /*********************************************************************
 main
 *********************************************************************/
 int main (int argc, char ** argv) {
-	if (argc < 3)
+	
+	struct cmdLineOpts *opts = global_opt_parse(argc, argv);
+
+	/* just to check that the options work */
+	/* printf("regOrder: %d\n", opts->regOrder); */
+	/* printf("covfn: %d\n", opts->covFn); */
+	/* printf("quiet: %d\n", opts->quietFlag); */
+	/* printf("run_mode: %s\n", opts->run_mode); */
+	/* if(opts->inputfile != NULL){ */
+	/* 	printf("inputfile: %s\n", opts->inputfile); */
+	/* } */
+	/* printf("statefile: %s\n", opts->statefile); */
+
+	if (str_equal(opts->run_mode, "estimate_thetas")){
+		estimate_thetas(opts);
+	} else if (str_equal(opts->run_mode, "interactive_mode")) {
+		interactive_mode(opts);
+	} else{
+		free(opts);
 		return perr(useage);
-	if (str_equal(argv[1], "estimate_thetas"))
-		return estimate_thetas(argc - 2, argv + 2);
-	if (str_equal(argv[1], "interactive_mode"))
-		return interactive_mode(argc - 2, argv + 2);
-	return perr(useage);
+	}
+	
+	free(opts);
+	return(EXIT_SUCCESS);
+}
+
+
+/**
+ * option parsing using getoptlong
+ */
+struct cmdLineOpts* global_opt_parse(int argc, char** argv)
+{
+
+	/* note: flags followed with a colon come with an argument */
+	static const char *optString = "r:c:qh?"; 
+	
+	static const struct option longOpts[] = {
+		{ "regression_order", required_argument , NULL, 'r'},
+		{ "covariance_fn", required_argument , NULL, 'c'},
+		{ "quiet", no_argument , NULL, 'q'},
+		{ "help", no_argument , NULL, 'h'},
+		{ NULL, no_argument, NULL, 0} 
+	};
+
+	struct cmdLineOpts *opts = (struct cmdLineOpts*) malloc(sizeof(struct cmdLineOpts));
+	opts->regOrder = 0;
+	opts->covFn = 0;
+	opts->quietFlag = 0;
+	opts->run_mode = NULL;
+	opts->inputfile = NULL;
+	opts->statefile = NULL;
+
+	int longIndex;
+	int opt;
+
+	// add more options here 
+	opt = getopt_long( argc, argv, optString, longOpts, &longIndex );
+    while( opt != -1 ) {
+        switch( opt ) {
+				case 'r':
+					opts->regOrder = atoi(optarg); 
+					break;
+				case 'c':
+					opts->covFn = atoi(optarg); /* this expects the cov fn to be 0,1,2? */
+					break;
+				case 'q':
+					opts->quietFlag = 1;
+					break;
+				case 'h':   /* fall-through is intentional */
+				case '?':
+					//display_usage();
+					exit(perr(useage));
+					break;
+				default:
+					/* You won't actually get here. */
+					break;
+				}
+				opt = getopt_long( argc, argv, optString, longOpts, &longIndex );
+    }
+
+		// set the remaining fields
+		opts->run_mode = argv[optind];
+		if(str_equal(opts->run_mode, "estimate_thetas")){
+			opts->inputfile = argv[optind+1];
+			opts->statefile = argv[optind+2];
+		} else {
+			opts->statefile = argv[optind+1];
+		}
+
+		return opts;
 }

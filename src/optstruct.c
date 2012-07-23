@@ -24,6 +24,7 @@ void copy_optstruct(optstruct *dst, optstruct* src){
 	dst->fixed_nugget = src->fixed_nugget;
 	dst->fixed_nugget_mode = src->fixed_nugget_mode;
 	
+	dst->use_data_scales = src->use_data_scales;
 	// this needs to be sized by the number of hyperparams
 	dst->grad_ranges = gsl_matrix_alloc(src->nthetas, 2);
 	gsl_matrix_memcpy(dst->grad_ranges, src->grad_ranges);
@@ -147,7 +148,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	double bigRANGE = 10.0;
 	double rangeMin = 0.0, rangeMax = 0.0;
 	double fixedNuggetLeeWay = 0.0 ;
-	double rangeMinLog = 0;
+	double rangeMinLog = 0.0001;
 
 	double rangeMinNugget = -5.0;//log(0.0011);
 	double rangeMaxNugget = -2.0;//log(0.01); //what's a sensible upper limit here?
@@ -219,22 +220,27 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 		printf("# (reset) %d ranges: %lf %lf (nugget)\n", 1, gsl_matrix_get(options->grad_ranges, 1,0), gsl_matrix_get(options->grad_ranges, 1,1));
 	}		
 
+
 	
 	/** 
 	 * print the ranges, no this is annoying
 	 */
-	/* for(i = 0; i < options->nthetas; i++){ */
-	/* 		low = gsl_matrix_get(options->grad_ranges, i, 0); */
-	/* 		high = gsl_matrix_get(options->grad_ranges, i, 1); */
+	/*
+	double low, high;
+	printf("# grad ranges (logged):\n");
+	for(i = 0; i < options->nthetas; i++){
+			low = gsl_matrix_get(options->grad_ranges, i, 0);
+			high = gsl_matrix_get(options->grad_ranges, i, 1);
 		
-	/* 	if(i == 0){ */
-	/* 		printf("# %d ranges: %lf %lf (scale)\n", i, low, high);  */
-	/* 	} if (i == 1){ */
-	/* 		printf("# %d ranges: %lf %lf (nugget)\n", i, low, high);  */
-	/* 	} else if (i > 1) { */
-	/* 		printf("# %d ranges: %lf %lf\n", i, low, high); */
-	/* 	} */
-	/* } */
+		if(i == 0){
+			printf("# %d ranges: %lf %lf (scale)\n", i, low, high);
+		} if (i == 1){
+			printf("# %d ranges: %lf %lf (nugget)\n", i, low, high);
+		} else if (i > 1) {
+			printf("# %d ranges: %lf %lf\n", i, low, high);
+		}
+	}
+	*/
 
 
 }

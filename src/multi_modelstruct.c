@@ -88,7 +88,7 @@ multi_modelstruct* alloc_multimodelstruct(gsl_matrix *xmodel_in,
 	model->training_mean = gsl_vector_alloc(nt);
 	model->regression_order = regression_order;
 	model->cov_fn_index = cov_fn_index;
-
+	
 	/* fill in the mean vector, should probably sum this more carefully... */
 	for(i = 0; i < nt; i++){
 		col_view = gsl_matrix_column(model->training_matrix, i);
@@ -196,53 +196,64 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	// subtract out the mean 
 	for(i = 0; i < nt; i++){
 		//col_view = gsl_matrix_column(y_sub_mat, i);
-		printf("# mean: %lf\n", gsl_vector_get(m->training_mean, i));
+		printf("# y(%d) mean: %lf\n", i, gsl_vector_get(m->training_mean, i));
 		for(j = 0; j < m->nmodel_points; j++){
 			gsl_matrix_set(y_sub_mat, j, i, gsl_matrix_get(y_sub_mat, j, i) - gsl_vector_get(m->training_mean, i));
 		}
-		//gsl_vector_add_constant(&col_view.vector, -1.0 * gsl_vector_get(m->training_mean, i));
 	}
 	
 	// compute the sample-variance, by multiplying y_sub_mat, with itself transposed
 	gsl_matrix_memcpy(y_temp_mat, y_sub_mat);
+	gsl_matrix_set_zero(y_cov_mat);
 
 	/** — Function: int gsl_blas_dgemm (CBLAS_TRANSPOSE_t TransA, CBLAS_TRANSPOSE_t TransB, double alpha, const gsl_matrix * A, const gsl_matrix * B, double beta, gsl_matrix * C)  (always forget this one)*/
 	/* want C (nt x nt ) so we need to do: (nt x nmodel_points) * (nmodel_points x nt) */
-	retval = gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, y_temp_mat, y_sub_mat, 0.0, y_cov_mat);
+	/** 
+	 * this is strange, the upper triangle is not obviously correct
+	 */
+	//retval = gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, y_temp_mat, y_sub_mat, 0.0, y_cov_mat);
+	retval = gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, y_sub_mat, y_temp_mat, 0.0, y_cov_mat);
 	if(retval){
 		printf("# gen_pca_decomp:gsl_blas_dgemm %s\n", gsl_strerror(retval));
 		exit(EXIT_FAILURE);
 	}
 
+	
+	gsl_matrix_scale(y_cov_mat, (1.0/((double)m->nmodel_points)));
+
+	/**
+	 * debug output
+	 */
+	#ifdef DEBUGPCA
+	fptr = fopen("pca-debug.dat","w");
+	fprintf(fptr, "# ycov:\n");
+	for(j = 0; j < nt; j++){
+		for(i = 0; i < nt; i++)
+			fprintf(fptr, "%lf ", gsl_matrix_get(y_cov_mat, i, j));
+		fprintf(fptr, "\n");
+	}
+	#endif
+
 	/** now the eigendecomp 
 	 * y_cov_mat is symmetric and better be real so we can use gsl_eigen_symmv,
-	 * note that the lower triangle of y_cov_mat is borked during this process
+	 * note that the ?upper? triangle of y_cov_mat is borked during this process
 	 * also: the evals are not sorted by order, but the evectors are in the order of the evalues.
 	 * so we need to sort the evalues and the evectors correctly before we can use them
 	 * using
 	 * — Function: int gsl_eigen_symmv_sort (gsl_vector * eval, gsl_matrix * evec, gsl_eigen_sort_t sort_type)
 	 * sort them into descending order (biggest first)
 	 */
-	gsl_eigen_symmv(y_cov_mat, evals_temp, evecs_temp, ework);
+	gsl_eigen_symmv(y_cov_mat, evals_temp, evecs_temp, ework); 
 	gsl_eigen_symmv_sort(evals_temp, evecs_temp, GSL_EIGEN_SORT_VAL_DESC);
-	/** 
-	 * now we could save them in place
-	 */
-	//m->pca_eigenvalues = evals_temp;
-	//m->pca_eigenvectors = evecs_temp;
-
-	
+	/**
+	 * eigenvectors are stored in columns of pca_evecs*/
 	total_variance = vector_elt_sum(evals_temp, nt);
 
 	
 	#ifdef DEBUGPCA
-	/**
-	 * debug output
-	 */
-	fptr = fopen("pca-debug.dat","w");
 	fprintf(fptr, "# evals:\n");
 	for(i = 0; i < nt; i++)
-		fprintf(fptr, "%lf\n", gsl_vector_get(evals_temp, i) / total_variance);
+		fprintf(fptr, "%lf %lf\n", gsl_vector_get(evals_temp, i), gsl_vector_get(evals_temp, i) / total_variance);
 	
 	fprintf(fptr, "# evecs:\n");
 	for(j = 0; j < nt; j++){
@@ -250,9 +261,8 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 			fprintf(fptr, "%lf ", gsl_matrix_get(evecs_temp, i, j));
 		fprintf(fptr, "\n");
 	}
-	fclose(fptr);
-	#endif
 
+	#endif
 
 	i=0;
 	while( frac < vfrac || (i+1) < nt){
@@ -262,7 +272,7 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	m->nr = i;
 	
 	if(nt == 1){
-		printf("# 1d case, nr=1\n");
+		//printf("# 1d case, nr=1\n");
 		m->nr = 1;
 	}
 
@@ -283,7 +293,15 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	// zmat: (nmodel_points x nr) = (nmodel_points x nt) * ( nt x nr ) 
 	/** — Function: int gsl_blas_dgemm (CBLAS_TRANSPOSE_t TransA, CBLAS_TRANSPOSE_t TransB, double alpha, const gsl_matrix * A, const gsl_matrix * B, double beta, gsl_matrix * C)  (always forget this one)*/
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0,  y_sub_mat, m->pca_evecs_r, 0.0, m->pca_zmatrix);
-	
+
+	#ifdef DEBUGPCA
+	fprintf(fptr, "# evecs R:\n");
+	for(i = 0; i < m->nt; i++){
+		for(j = 0; j < m->nr; j++)
+			fprintf(fptr, "%lf ", gsl_matrix_get(m->pca_evecs_r, i, j));
+		fprintf(fptr, "\n");
+	}
+	#endif
 	
 	gsl_matrix_free(y_temp_mat);
 	y_temp_mat = gsl_matrix_alloc(m->nr, m->nr);
@@ -297,7 +315,17 @@ void gen_pca_decomp(multi_modelstruct *m, double vfrac)
 	gsl_matrix_memcpy(pca_zmatrix_temp, m->pca_zmatrix);
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, pca_zmatrix_temp, y_temp_mat, 0.0, m->pca_zmatrix);
 
-	//print_matrix(m->pca_zmatrix, m->nmodel_points, m->nr);
+	#ifdef DEBUGPCA
+	fprintf(fptr, "# zmat:\n");
+	for(i = 0; i < 5; i++){
+		for(j = 0; j < m->nr; j++)
+			fprintf(fptr, "%lf ", gsl_matrix_get(m->pca_zmatrix, i, j));
+		fprintf(fptr, "\n");
+	}
+	fclose(fptr);
+	#endif
+
+	
 
 	gsl_vector_free(evals_temp);
 	gsl_matrix_free(evecs_temp);
