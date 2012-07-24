@@ -98,3 +98,6 @@ INSTALL_FILES("/include/libEmu/" FILES src/libEmu/emulate-fns.h src/libEmu/emula
 INSTALL_FILES("/include/libRbind/" FILES src/libRbind/rbind.h src/libRbind/EmuRbind.R 
 																	 src/libRbind/emuOverDesign.R src/libRbind/implausOverDesign.R
 																	 src/libRbind/testEst.R)
+
+## ccs, install the man page
+INSTALL(FILES interactive_emulator.1 DESTINATION "${CMAKE_INSTALL_PREFIX}/man/man1")
