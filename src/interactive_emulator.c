@@ -454,11 +454,13 @@ int interactive_mode (struct cmdLineOpts* cmdOpts) {
  */
 int print_thetas(struct cmdLineOpts *cmdOpts)
 {
-	int i,j;
+	int i,j, k;
 	int nthetas; // number of thetas
 	int nr; // number of emulators
 	int nparams;
+	int nmodel_points;
 	double vartot = 0;
+	char buffer[256];
 
 	FILE * fp = fopen(cmdOpts->statefile,"r"); 
 	if (fp == NULL)
@@ -470,6 +472,7 @@ int print_thetas(struct cmdLineOpts *cmdOpts)
 	nr = model->nr;
 	nparams = model->nparams;
 	nthetas = model->pca_model_array[0]->thetas->size;
+	nmodel_points = model->nmodel_points;
 	
 
 	printf("#-- EMULATOR LENGTH SCALES (thetas) IN PCA SPACE -- #\n");	
@@ -489,6 +492,20 @@ int print_thetas(struct cmdLineOpts *cmdOpts)
 		}
 		printf("\n");
 	}
+	
+	// this produces full debug output for each of the nr emulators
+	for(i = 0; i < nr; i++){
+		sprintf(buffer, "pca_emu_summary_%d.dat", i);
+		fp = fopen(buffer, "w");
+		for(j = 0; j < nmodel_points; j++){
+			for(k = 0; k < nparams; k++)
+				fprintf(fp, "%lf\t", gsl_matrix_get(model->pca_model_array[i]->xmodel, j, k));
+			fprintf(fp, "%lf\n", gsl_vector_get(model->pca_model_array[i]->training_vector, j));
+		}
+		fclose(fp);
+	}
+								
+		
 
 	return 0;	
 }
