@@ -1,0 +1,94 @@
+.\" Manpage for interactive_emulator
+.\" Contact cec24@phy.duke.edu to correct errors
+.TH interactive_emulator 1 "24.07.2012" "1.0" "interactive_emulator man page"
+.SH NAME
+interactive_emulator \- train, sample and query a Gaussian Process emulator
+.SH SYNOPSIS
+ interactive_emulator estimate_thetas INPUT_MODEL_FILE MODEL_SNAPSHOT_FILE [OPTIONS]
+ interactive_emulator interactive_mode MODEL_SNAPSHOT_FILE [OPTIONS]
+ interactive_emulator print_thetas MODEL_SNAPSHOT_FILE
+.SH DESCRIPTION
+interactive_emulator is an all in one program for training and sampling a gaussian process emulator. The format of the input MODEL_SNAPSHOT_FILE for interactive_mode must match the format of the output MODEL_SNAPSHOT_FILE from estimate_thetas
+.SH estimate_thetas INPUT_MODEL_FILE MODEL_SNAPSHOT_FILE [OPTIONS]
+Estimate_thetas trains an emulator on the given INPUT_MODEL_FILE producing a MODEL_SNAPSHOT_FILE that can be used for sampling the emulator at a later date. 
+.P 
+Options which influence estimate_thetas are:
+ --regression_order=0 (const)
+ \--regression_order=1 (linear)
+ \--regression_order=2 (quadratic)
+ \--regression_order=3 (cubic)
+ \--covariance_fn=0 (POWER_EXPONENTIAL)
+ \--covariance_fn=1 (MATERN32)
+ \--covariance_fn=2 (MATERN52)
+ (-v | --pca_variance=) FRAC: sets the pca decomp to keep cpts up to variance fraction FRAC
+.SH interactive_mode MODEL_SNAPSHOT_FILE [OPTIONS]
+Options which influence interactive_mode:
+ (-q | --quiet): run without any extraneous output
+ (-z | --pca_output): emulator output is left in the pca space
+.P
+The trained emulator represented by MODEL_SNAPSHOT_FILE is sampled at locations given on STDIN, as:
+.P
+ X_sample[0] ... X_sample[number_params-1]
+.P 
+Normally the number_outputs dimensional emulator mean and variance are output on STDOUT as:
+.P
+ E(Y[X_sample,0])
+ V(Y[X_sample,0])
+ E(Y[X_sample,1])
+ V(Y[X_sample,1])
+ ...
+ ...
+ E(Y[X_sample,number_outputs-1])
+ V(Y[X_sample,number_outputs-1])
+.P
+Running with with (-z | -- pca_output ) will instead produce output in the PCA space, this output will have dimension < number_outputs but it otherwise produced identically.
+.SH print_thetas MODEL_SNAPSHOT_FILE
+Output to STDOUT the length scales for the covariance function as estimated by estimate_thetas. The pca-transformed design + training data for each principle component emulator is written to pca_emu_summary_<index>.dat where index runs from 0,...,number_outputs-1.
+.P 
+The pca_emu_summary_<index>.dat files are laid out as
+ X[0, 0] X[0,1] ... X[0, nparams-1] Y_pca_<index>[0]
+ X[1, 0] X[1,1] ... X[1, nparams-1] Y_pca_<index>[1]
+ ... 
+ X[N-1, 0] X[N-1,1] ... X[N-1, nparams-1] Y_pca_<index>[N-1]
+Where N = number_model_points in the above.
+.SH INPUT_MODEL_FILE format
+An input model is specified interms of the locations in the parameter (design) space where it was sampled and the values of the model produced at these locations. 
+.I 
+ number_outputs
+The dimension of the output vector we wish to emulate, y_out = y_1...y_t
+.I 
+ number_params
+The dimension of the parameter space we are moving around in 
+.I 
+ number_model_points
+The number of samples of the model (y_out) we've taken through the number_params dimensional parameter_space.
+.P
+In the following example we label the design data as X and the training data as Y.
+  BEGIN EXAMPLE
+    number_outputs
+    number_params 
+    number_model_points
+    X[0,0]
+    ...
+    X[0,number_params-1]
+    X[1,0]
+    ...
+    X[number_model_points-1,number_params-1]
+    Y[0, 0]
+    Y[0, 1]
+    ...
+    Y[0, number_outputs-1]
+    ...
+    Y[1, 1]
+    ... 
+    Y[number_model_points-1, number_outputs-1]
+   END EXAMPLE
+.P
+number_outputs, number_params and number_model_points should be positive integers.  X[i,j] and Y[i,j] will be read as double-precision floats.
+
+.SH BUGS
+Don't believe anything this tells you without a lot of testing.
+.SH AUTHORS
+H.Canary (hal@cs.unc.edu)
+C.Coleman-Smith (cec24@phy.duke.edu)
+
