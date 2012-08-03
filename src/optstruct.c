@@ -138,13 +138,13 @@ void setup_cov_fn(optstruct *options)
  * this is not the case for the other fns, but the rest of the code may have the assumption
  * frozen into it that the ranges *are* log-scaled.
  *
- *  
- * this is called from: emulator-main.c, main.c and rbind.c
  */
 void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 {
 	int i = 0;
 
+	/** does it make sense to have the upper limit on theta be E(10.) = 22026? probably not
+	 */
 	double bigRANGE = 10.0;
 	double rangeMin = 0.0, rangeMax = 0.0;
 	double fixedNuggetLeeWay = 0.0 ;
@@ -163,7 +163,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	 */
 	if(options->cov_fn_index == POWEREXPCOVFN){
 		rangeMin = rangeMinLog;
-		rangeMax = 5;
+		rangeMax = 5; // exp(5) = 148 this is big!
 	} else {
 		rangeMin = 0;
 		rangeMax = bigRANGE;
@@ -182,8 +182,13 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 
 			if(options->cov_fn_index == POWEREXPCOVFN){
 				rangeMin = 0.5*log(gsl_vector_get(the_model->sample_scales, i-2));
+				// try stopping the max range at 25 x the lower limit...
+				rangeMax = log(25*exp(rangeMin));
+				
 				} else {
 				rangeMin = 0.5*(gsl_vector_get(the_model->sample_scales, i-2));
+				// try stopping the max range at 10 x the nyquist limit...
+				//rangeMax = *(gsl_vector_get(the_model->sample_scales, i-2));
 			}
 			
 			if(rangeMin > rangeMax){
@@ -220,12 +225,12 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 		printf("# (reset) %d ranges: %lf %lf (nugget)\n", 1, gsl_matrix_get(options->grad_ranges, 1,0), gsl_matrix_get(options->grad_ranges, 1,1));
 	}		
 
-
 	
 	/** 
-	 * print the ranges, no this is annoying
+	 * debug info
+	 * print the ranges, this is annoying
 	 */
-	/*
+	
 	double low, high;
 	printf("# grad ranges (logged):\n");
 	for(i = 0; i < options->nthetas; i++){
@@ -240,7 +245,6 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 			printf("# %d ranges: %lf %lf\n", i, low, high);
 		}
 	}
-	*/
 
 
 }
