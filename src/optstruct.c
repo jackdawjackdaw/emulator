@@ -190,7 +190,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 				// try stopping the max range at 10 x the nyquist limit...
 				//rangeMax = *(gsl_vector_get(the_model->sample_scales, i-2));
 			}
-			
+
 			if(rangeMin > rangeMax){
 				fprintf(stderr, "#ranges failed\n");
 				printf("# %d ranges: %lf %lf\n", i, rangeMin, rangeMax);
@@ -215,7 +215,7 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	}
 
 	/* overwrite the data length scales with a user supplied minimum length */
-	if(options->use_user_min_length){
+	if(options->use_user_min_length > 0){
 		// use length scales set by the data
 		for(i = 2; i < options->nthetas; i++){
 			if(options->cov_fn_index == POWEREXPCOVFN){

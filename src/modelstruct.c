@@ -321,7 +321,9 @@ modelstruct * alloc_modelstruct_2(
 	model->options->nregression_fns = 1 + (regression_order * nparams);
 	model->options->nemulate_points = 0;
 	// set grad ranges using the data scales
-	if(min_length_scale <= 0){
+	model->options->use_data_scales = 1;
+	model->options->use_user_min_length = 0;
+	if(min_length_scale <= 0.0){
 		model->options->use_data_scales = 1;
 	} else {
 		model->options->use_data_scales = 0;
