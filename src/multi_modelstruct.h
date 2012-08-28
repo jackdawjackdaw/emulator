@@ -22,6 +22,7 @@ typedef struct multi_modelstruct{
 	int nmodel_points;  // number of points in the design
 	int cov_fn_index;
 	int regression_order;
+	double min_length_scale; // (<=0) don't use a min scale (>0) min scale for cov fn
 	
 	/** 
 	 * the design (rows:nmodel_points) (cols:nparams)
@@ -61,7 +62,8 @@ typedef struct multi_modelstruct{
 } multi_modelstruct;
 
 multi_modelstruct* alloc_multimodelstruct(gsl_matrix *xmodel_in, gsl_matrix *training_matrix_in, 
-																				 int cov_fn_index, int regression_order, double varfrac);
+																					int cov_fn_index, int regression_order,
+																					double varfrac, double min_length_scale);
 
 void gen_pca_decomp(multi_modelstruct *m, double vfrac);
 void gen_pca_model_array(multi_modelstruct *m);

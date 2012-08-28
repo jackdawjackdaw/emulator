@@ -214,6 +214,35 @@ void setup_optimization_ranges(optstruct* options, modelstruct* the_model)
 	
 	}
 
+	/* overwrite the data length scales with a user supplied minimum length */
+	if(options->use_user_min_length){
+		// use length scales set by the data
+		for(i = 2; i < options->nthetas; i++){
+			if(options->cov_fn_index == POWEREXPCOVFN){
+				rangeMin = log(options->user_min_length);
+				// try stopping the max range at 25 x the lower limit...
+				rangeMax = log(25*exp(rangeMin));
+			} else {
+				rangeMin = 0.5*(options->user_min_length);
+				rangeMax = bigRANGE;
+			}
+
+			if(rangeMin > rangeMax){
+				fprintf(stderr, "#ranges failed\n");
+				printf("# %d ranges: %lf %lf\n", i, rangeMin, rangeMax);
+				printf("# sampleScale: %lf\n", gsl_vector_get(the_model->sample_scales, i-2));
+				exit(EXIT_FAILURE);
+			}
+			gsl_matrix_set(options->grad_ranges, i, 0, rangeMin);
+			gsl_matrix_set(options->grad_ranges, i, 1, rangeMax);
+		} 
+
+		if(isinf(rangeMin) == -1){
+			rangeMin = 0.00001;
+		}
+
+	}
+
 
 	if(options->fixed_nugget_mode == 1){
 		// force the nugget to be fixed_nugget +- 20%
@@ -266,6 +295,8 @@ void dump_optstruct(FILE *fptr, optstruct* opts){
 	fprintf(fptr, "%lf\n", opts->fixed_nugget);
 	fprintf(fptr, "%d\n", opts->cov_fn_index);
 	fprintf(fptr, "%d\n", opts->use_data_scales);
+	fprintf(fptr, "%d\n", opts->use_user_min_length);
+	fprintf(fptr, "%lf\n", opts->user_min_length);
 	
 	for(i = 0; i < opts->nthetas; i++)
 		fprintf(fptr, "%lf\t%lf\n", gsl_matrix_get(opts->grad_ranges, i, 0),
@@ -291,6 +322,8 @@ void load_optstruct(FILE *fptr, optstruct* opts){
 	fscanf(fptr, "%lf", &opts->fixed_nugget);
 	fscanf(fptr, "%d", &opts->cov_fn_index);
 	fscanf(fptr, "%d", &opts->use_data_scales);
+	fscanf(fptr, "%d", &opts->use_user_min_length);
+	fscanf(fptr, "%lf", &opts->user_min_length);
 	
 	
 	// allocate the grad_ranges matrix

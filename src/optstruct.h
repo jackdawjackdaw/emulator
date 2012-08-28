@@ -82,6 +82,14 @@ typedef struct optstruct{
 	// set this to not zero if you want to use the length scales set by the data
 	int use_data_scales;
 
+	/* ccs, 28.08.2012
+	 * 
+	 * set this to not zero to use a minmimal length scale set by the user
+	 * this will overwrite use_data_scales
+	 */
+	int use_user_min_length;
+	double user_min_length;
+
 	/** this holds the ranges for the optimisation routine*/
 	gsl_matrix* grad_ranges;
 

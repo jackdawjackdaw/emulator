@@ -31,6 +31,7 @@
  * @param cov_fn_index:  POWEREXPCOVFN, MATERN32, or MATERN52
  * @param regression_order:  0, 1, 2, or 3
  * @param varfrac: the minimum fractional variance that should be retained during the PCA decomp
+ * @param min_length_scale: (<=0) don't use min length scales, >0 min length scale for cov fn
  * 
  * applies a pca decomp to training_matrix to reduce the dimensionality
  * 
@@ -38,7 +39,7 @@
 multi_modelstruct* alloc_multimodelstruct(gsl_matrix *xmodel_in, 
 																				 gsl_matrix *training_matrix_in, 
 																				 int cov_fn_index, 
-																				 int regression_order, double varfrac)
+																					int regression_order, double varfrac, double min_length_scale)
 {
 	assert(training_matrix_in->size1 == xmodel_in->size1);
 	assert(training_matrix_in->size1 > 0);
@@ -88,6 +89,7 @@ multi_modelstruct* alloc_multimodelstruct(gsl_matrix *xmodel_in,
 	model->training_mean = gsl_vector_alloc(nt);
 	model->regression_order = regression_order;
 	model->cov_fn_index = cov_fn_index;
+	model->min_length_scale = min_length_scale;
 	
 	/* fill in the mean vector, should probably sum this more carefully... */
 	for(i = 0; i < nt; i++){
@@ -138,7 +140,9 @@ void gen_pca_model_array(multi_modelstruct *m)
 
 		// this isn't copying in the training vector correctly for somereason
 		m->pca_model_array[i] = alloc_modelstruct_2(m->xmodel, temp_train_vector,
-																								m->cov_fn_index, m->regression_order);
+																								m->cov_fn_index, m->regression_order,
+																								m->min_length_scale);
+
 
 		// see if brute forcing it will work
 		m->pca_model_array[i]->training_vector = gsl_vector_alloc(m->nmodel_points);

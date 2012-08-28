@@ -267,6 +267,7 @@ Allocates and populates both modelstruct and optstruct.
 @param training_vector: n-size vector containing the training values.
 @param cov_fn_index:  POWEREXPCOVFN, MATERN32, or MATERN52
 @param regression_order:  0, 1, 2, or 3
+@param min_length_scale: value <=0 (don't use it and use the data scales) or > 0 use the 
 
 Does not estimate the thetas, since that is a labor-intensive.
 
@@ -283,7 +284,8 @@ modelstruct * alloc_modelstruct_2(
 		gsl_matrix * xmodel,
 		gsl_vector * training_vector,
 		int cov_fn_index,
-		int regression_order) {
+		int regression_order,
+		double min_length_scale) {
 	assert(training_vector->size == xmodel->size1);
 	assert(training_vector->size > 0);
 	assert(xmodel->size2 > 0);
@@ -319,7 +321,13 @@ modelstruct * alloc_modelstruct_2(
 	model->options->nregression_fns = 1 + (regression_order * nparams);
 	model->options->nemulate_points = 0;
 	// set grad ranges using the data scales
-	model->options->use_data_scales = 1;
+	if(min_length_scale <= 0){
+		model->options->use_data_scales = 1;
+	} else {
+		model->options->use_data_scales = 0;
+		model->options->use_user_min_length = 1;
+		model->options->user_min_length = min_length_scale;
+	}
 	// do we want to fix the nugger to be +- 20%?, no
 	model->options->fixed_nugget_mode = 0;
 	model->options->fixed_nugget= 0;

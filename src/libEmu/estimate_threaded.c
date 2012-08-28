@@ -111,7 +111,7 @@ void estimate_thetas_threaded(modelstruct* the_model, optstruct* options){
 	 * we only care about the *best* so it doesn't matter if we just throw 
 	 * the rest out the window... 
 	 */
-	int thread_level_tries = 50; 
+	int thread_level_tries = 200; 
 
 	pthread_t *threads;
 	struct estimate_thetas_params *params;

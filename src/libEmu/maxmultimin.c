@@ -56,7 +56,7 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 	int status;
 	int success_count = 0; // count how many times the maxizmiaer actually works
 
-	double likelihood = 0.0;
+	double likelihood = SCREWUPVALUE;
 	double bestLHood = SCREWUPVALUE;
 
 	gsl_vector *xInit = gsl_vector_alloc(nthetas);
@@ -91,9 +91,8 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 											 &evalFnGradMulti, // does both at once
 											 xInit, xFinal, (void*)params);
 		
-		if(status == GSL_SUCCESS)
+		if(status == GSL_SUCCESS){
 			success_count++;
-		
 		
 		/** 
 		 * need to send a theta_vector without the amplitude if you want to 
@@ -103,7 +102,7 @@ void maxWithMultiMin(struct estimate_thetas_params *params){
 			gsl_vector_set(xTest, i, gsl_vector_get(xFinal, i+1));
 
 		likelihood = -1*evalFnMulti(xTest, (void*)params);
-		
+		}
 		/*annoying!
 		fprintPt(stdout, self);
 		printf(":L = %g:try = %d\n", likelihood, tries);
@@ -647,6 +646,8 @@ int doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	int stepcount = 0;
 	int stepmax = 30; // tune this if a huge number of steps seem to be happening
 	int i;
+
+	gsl_matrix * allowed_ranges = params->options->grad_ranges;
 	
 
 	double sigma_final = 0.0;
@@ -711,6 +712,18 @@ int doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 			// no progress on this step
 			//fprintf(stderr, "#mutimin: no progress. nsteps: %d\n", stepcount);
 			break;
+		}
+
+		// check against grad ranges
+		if(params->options->use_user_min_length){
+			for(i = 0; i < nthetas_opt; ++i){
+				if(gsl_vector_get(fdfmin->x, i) < gsl_matrix_get(allowed_ranges, i+1, 0) ||
+					 gsl_vector_get(fdfmin->x, i) > gsl_matrix_get(allowed_ranges,i+1, 1) ){
+					//fprintf(stderr, "#multimin: out of range %d %lf\n", i, gsl_vector_get(fdfmin->x, i));
+					status = GSL_ENOPROG;
+					break;
+				}
+			}
 		}
 
 		fnValue = gsl_multimin_fdfminimizer_minimum(fdfmin);
@@ -802,7 +815,9 @@ void set_random_init_value(gsl_rng* rand, gsl_vector* x, gsl_matrix* ranges,int 
 		range_max = gsl_matrix_get(ranges, i, 1);
 		// set the input vector to a random value in the range
 		the_value = gsl_rng_uniform(rand) * (range_max - range_min) + range_min;
-		//printf("theta(%d) init-val:  %g %g %g\n", i, the_value, range_min, range_max);
+		// debug
+		//if(i == 2)
+		//	printf("theta(%d) init-val:  %g %g %g\n", i, the_value, range_min, range_max);
 		//gsl_vector_set(x, gsl_rng_uniform(rand)*(range_max-range_min)+range_min, i);
 		gsl_vector_set(x, i, the_value);
 	}

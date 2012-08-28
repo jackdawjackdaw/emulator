@@ -4,5 +4,6 @@
 ## binpath reaches into build, is this a bad idea?
 #binpath=../../build/src/interactive_emulator
 binpath=interactive_emulator
-$binpath estimate_thetas input_model_file.dat univariate_snapshot_file --regression_order=1
+$binpath estimate_thetas input_model_file.dat univariate_snapshot_file --regression_order=1 --min_length_scale=0.08
+
 

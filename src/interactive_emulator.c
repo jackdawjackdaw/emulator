@@ -48,6 +48,7 @@ USE:
     --covariance_fn=0 (POWER_EXPONENTIAL)
     --covariance_fn=1 (MATERN32)
     --covariance_fn=2 (MATERN52)
+    --min_length_scale=(0.23423) sets a minimal length scale to the covariance function analysis
   The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.
 
   These options will be saved in MODEL_SNAPSHOT_FILE.
@@ -143,6 +144,8 @@ struct cmdLineOpts{
 	int quietFlag; /* -q --quiet */
 	int pcaOutputFlag; /* -z --pca_output  turns on pca only output */
 	double pca_variance; /* -v --pca_variance =  fractional value for the pca decomp */
+	int useMinFlag; /* -l --min_length_scale = minimal spatial length scale */
+	double min_length_scale;
 	
 	// add additional flags as needed here
 
@@ -179,6 +182,7 @@ static const char useage [] =
 	"  --covariance_fn=1 (MATERN32)\n"
 	"  --covariance_fn=2 (MATERN52)\n"
 	"  (-v=FRAC) --pca_variance=FRAC : sets the pca decomp to keep cpts up to variance fraction frac\n"
+	"  (-l=SCALE) --min_length_scale=FRAC : sets the min for the GP covariance scales\n"
 	"options which incluence interactive_mode:\n"
 	"  (-q) --quiet: run without any extraneous output\n"
 	"  (-z) --pca_output: emulator output is left in the pca space\n"
@@ -308,6 +312,7 @@ int estimate_thetas(struct cmdLineOpts* cmdOpts) {
 	gsl_matrix *xmodel = NULL;
 	gsl_matrix *training_matrix = NULL;
 	double varfrac = 0.95; // this could be set by an arg
+	double min_length_scale = 0.0;
 
 	/* if (argc < 2) */
 	/* 	return perr("Not enough arguments\n"); */
@@ -339,6 +344,12 @@ int estimate_thetas(struct cmdLineOpts* cmdOpts) {
 		exit(EXIT_FAILURE);
 	}
 
+	if(cmdOpts->useMinFlag){
+		min_length_scale = cmdOpts->min_length_scale;
+	} else {
+		min_length_scale = 0.0;
+	}
+	
 	/* allocate the multi-model, do the pca decomp
 	 * this is a little chatty on stderr
 	 */
@@ -346,7 +357,8 @@ int estimate_thetas(struct cmdLineOpts* cmdOpts) {
 	multi_modelstruct * model = NULL;
 	model = alloc_multimodelstruct(
 		xmodel, training_matrix,
-		cov_fn_index, regression_order, varfrac);
+		cov_fn_index, regression_order,
+		varfrac, min_length_scale);
 
 	if(model == NULL)
 		return perr("Failed to allocated multi_modelstruct.\n");
@@ -556,6 +568,7 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 		{ "regression_order", required_argument , NULL, 'r'},
 		{ "covariance_fn", required_argument , NULL, 'c'},
 		{ "pca_variance", required_argument, NULL , 'v'}, // set the var fraction for the pca decomp
+		{ "min_length_scale", required_argument, NULL, 'l'}, // set the min length scale
 		{ "pca_output",  no_argument , NULL , 'z'},  // output from interactive emulator is left in pca space 
 		{ "quiet", no_argument , NULL, 'q'},
 		{ "help", no_argument , NULL, 'h'},
@@ -572,6 +585,8 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 	opts->run_mode = NULL;
 	opts->inputfile = NULL;
 	opts->statefile = NULL;
+	opts->min_length_scale = 0.0;
+	opts->useMinFlag = 0; // 
 
 	int longIndex;
 	int opt;
@@ -594,8 +609,20 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 				fprintf(stderr, "# using default value: %lf\n", opts->pca_variance);
 			}
 			fprintf(stderr, "# var-frac: %lf\n", opts->pca_variance);
+			break;
+		case 'l':
+			opts->useMinFlag = 1;
+			opts->min_length_scale = atof(optarg);
+			if(opts->min_length_scale < 0.0 || opts->min_length_scale > 10.0){
+				fprintf(stderr, "# err min_length_scale given incorrect value: %lf\n", opts->min_length_scale);
+				opts->useMinFlag = 0;
+				fprintf(stderr, "# not using min length scale\n");
+			}
+			fprintf(stderr, "# min_length_scale: %lf\n", opts->min_length_scale);
+			break;
 		case 'z':
 			opts->pcaOutputFlag = 1;
+			break;
 		case 'q':
 			opts->quietFlag = 1;
 			break;

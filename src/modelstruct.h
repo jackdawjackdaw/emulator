@@ -111,7 +111,7 @@ void dump_modelstruct(FILE* fptr, modelstruct* the_model, optstruct* opts);
 
 void copy_modelstruct(modelstruct* dst, modelstruct* src);
 
-modelstruct * alloc_modelstruct_2(gsl_matrix* xmodel, gsl_vector* training_vector, int cov_fn_index, int regression_order);
+modelstruct * alloc_modelstruct_2(gsl_matrix* xmodel, gsl_vector* training_vector, int cov_fn_index, int regression_order, double min_length_scale);
 void free_modelstruct_2(modelstruct * model);
 void dump_modelstruct_2(FILE *fptr, modelstruct* the_model);
 modelstruct* load_modelstruct_2(FILE *fptr);
