@@ -68,6 +68,7 @@ Interactive Emulator:
     --covariance_fn=2 (MATERN52)
 	  (-v=FRAC) --pca_variance=FRAC : sets the pca decomp to keep cpts up to variance fraction frac
 	 options which incluence interactive_mode:
+	 (-X) --covmat: output the covariance matrix
 	 (-q) --quiet: run without any extraneous output
 	 (-z) --pca_output: emulator output is left in the pca space
    general options:
@@ -81,24 +82,24 @@ INPUT_MODEL_FILE (With multi-output) FORMAT:
   Models with multivariate output values y = y_1...y_t which we will think of as rows of a matrix, in the following spec
   number_outputs = t
   BEGIN EXAMPLE
-    number_outputs
-    number_params 
-    number_model_points
-    X[0,0]
-    ...
-    X[0,number_params-1]
-    X[1,0]
-    ...
-    X[number_model_points-1,number_params-1]
-    Y[0, 0]
-    Y[0, 1]
-    ...
-    Y[0, number_outputs-1]
-    ...
-    Y[1, 1]
-    ... 
-    Y[number_model_points-1, number_outputs-1]
-   END EXAMPLE
+   number_outputs
+   number_params 
+   number_model_points
+   X[0,0]
+   ...
+   X[0,number_params-1]
+   X[1,0]
+   ...
+   X[number_model_points-1,number_params-1]
+   Y[0, 0]
+   Y[0, 1]
+   ...
+   Y[0, number_outputs-1]
+   ...
+   Y[1, 1]
+   ... 
+   Y[number_model_points-1, number_outputs-1]
+  END EXAMPLE
 
   number_outputs, number_params and number_model_points should be
   positive integers.  X[i,j] and Y[i,j] will be read as
@@ -143,18 +144,18 @@ The training process conditions a Gaussian Process prior on the set {Y_t, D} suc
 
 The GP is specified in terms of a prior mean, usually chosen to be zero or given by a simple regression model of the training data, and a covariance function over the parameter space. The covariance function specifies the correlation between pairs of parameter values u_i, u_j. A power exponential form, with a nugget, is the default. 
 
-		C(u_i, u_j) = theta_0 * exp(-1/2 ( u_i - u_j) ^2 / theta_l^2) + theta_1.
+ C(u_i, u_j) = theta_0 * exp(-1/2 ( u_i - u_j) ^2 / theta_l^2) + theta_1.
 
 The covariance function itself is controlled by a set of hyper-parameters theta_i, these act as characteristic length scales in the parameter space and are a-priori unknown. The training process consists of estimating the 'best' set of length scales for the given model data set. This estimation process is done through numerical maximization of the posterior hyper parameter likelihood, a fully Bayesian treatment is also possible.
 
 Once the GP has been conditioned, and a best set of hyper parameters Theta has been obtained,  we have a posterior predictive distribution for the model output at a new location u*:
 
-		  P(Y_m(u*) | Y_t, D, Theta) = MVN(m(u*), cov(u*)),
+ P(Y_m(u*) | Y_t, D, Theta) = MVN(m(u*), cov(u*)),
 
 where the posterior mean and covariance are (for a zero prior mean)
 
-			m(u*) = C(u*)_(D)^t  C(D,D)^{-1} Y_t
-			cov(u*) = C(u*,u*) - C(u*)_(D)^t C(D,D)^{-1} C(u*)_(D).
+ m(u*) = C(u*)_(D)^t  C(D,D)^{-1} Y_t
+ cov(u*) = C(u*,u*) - C(u*)_(D)^t C(D,D)^{-1} C(u*)_(D).
 
 Here C(D,D) represents the matrix formed by evaluating the covariance function C(u_i, u_j) at each of the locations in D, the vector C(u*)_(D)  = {C(u*, u_1), C(u*, u_2),...C(u*, u_n)} is the correlation between each location in the design set and the new point. 
 
