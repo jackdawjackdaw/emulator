@@ -23,6 +23,7 @@ Options which influence estimate_thetas are:
  (-v | --pca_variance=) FRAC: sets the pca decomp to keep cpts up to variance fraction FRAC
 .SH interactive_mode MODEL_SNAPSHOT_FILE [OPTIONS]
 Options which influence interactive_mode:
+ (-X | --covmat): output estimated covariance matrix
  (-q | --quiet): run without any extraneous output
  (-z | --pca_output): emulator output is left in the pca space
 .P
@@ -41,7 +42,14 @@ Normally the number_outputs dimensional emulator mean and variance are output on
  E(Y[X_sample,number_outputs-1])
  V(Y[X_sample,number_outputs-1])
 .P
-Running with with (-z | -- pca_output ) will instead produce output in the PCA space, this output will have dimension < number_outputs but it otherwise produced identically.
+Running with with (-z | --pca_output ) will instead produce output in the PCA space, this output will have dimension < number_outputs but it otherwise produced identically.
+.P 
+Running with (-X | --covmat) will additionally print the covariance matrix for the point on STDOUT as:
+.P 
+C[Y[X_sample]_0,0] C[Y[X_sample]_0,1] ... C[Y[X_sample]_0,number_outputs-1]
+...
+... 
+C[Y[X_sample]_number_outputs-1,0] C[Y[X_sample]_number_outputs-1,1] ... C[Y[X_sample]_number_outputs-1,number_outputs-1]
 .SH print_thetas MODEL_SNAPSHOT_FILE
 Output to STDOUT the length scales for the covariance function as estimated by estimate_thetas. The pca-transformed design + training data for each principle component emulator is written to pca_emu_summary_<index>.dat where index runs from 0,...,number_outputs-1.
 .P 

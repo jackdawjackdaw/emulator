@@ -145,7 +145,7 @@ struct cmdLineOpts{
 	int covFn;     /* -c --covariance_fn = */
 	int quietFlag; /* -q --quiet */
 	int pcaOutputFlag; /* -z --pca_output  turns on pca only output */
-	int covMatFlag /* -X --covmat, turns on cov mat output */
+	int covMatFlag; /* -X --covmat, turns on cov mat output */
 	double pca_variance; /* -v --pca_variance =  fractional value for the pca decomp */
 	
 	// add additional flags as needed here

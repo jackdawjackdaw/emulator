@@ -238,7 +238,7 @@ void emulate_point_multi_covar(multi_emulator *emu, gsl_vector *the_point,
 					gsl_matrix_get(emu->model->pca_evecs_r, j, k) *
 					gsl_vector_get(emu->model->pca_evals_r, k) *  gsl_vector_get(var_pca, k);
 			}
-			gsl_matrix_set(the_covar, i, j, covar_contrib0;
+			gsl_matrix_set(the_covar, i, j, covar_contrib);
 		}
 	}
 
