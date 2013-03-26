@@ -640,6 +640,7 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 		case 'X':
 			opts->covMatFlag = 1;
 			fprintf(stderr, "# output will include covariance matrix\n");
+			break;
 		case 'h':   /* fall-through is intentional */
 		case '?':
 			//display_usage();
