@@ -46,10 +46,10 @@ Running with with (-z | --pca_output ) will instead produce output in the PCA sp
 .P 
 Running with (-X | --covmat) will additionally print the covariance matrix for the point on STDOUT as:
 .P 
-C[Y[X_sample]_0,0] C[Y[X_sample]_0,1] ... C[Y[X_sample]_0,number_outputs-1]
-...
-... 
-C[Y[X_sample]_number_outputs-1,0] C[Y[X_sample]_number_outputs-1,1] ... C[Y[X_sample]_number_outputs-1,number_outputs-1]
+ C[Y[X_sample]_0,0] C[Y[X_sample]_0,1] ... C[Y[X_sample]_0,number_outputs-1]
+ ...
+ ... 
+ C[Y[X_sample]_number_outputs-1,0] C[Y[X_sample]_number_outputs-1,1] ... C[Y[X_sample]_number_outputs-1,number_outputs-1]
 .SH print_thetas MODEL_SNAPSHOT_FILE
 Output to STDOUT the length scales for the covariance function as estimated by estimate_thetas. The pca-transformed design + training data for each principle component emulator is written to pca_emu_summary_<index>.dat where index runs from 0,...,number_outputs-1.
 .P 
