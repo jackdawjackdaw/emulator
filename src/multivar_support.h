@@ -32,6 +32,10 @@ void emulate_point_multi(multi_emulator *emu, gsl_vector *the_point,
 												 gsl_vector *the_mean, 
 												 gsl_vector *the_variance);
 
+void emulate_point_multi_covar(multi_emulator *emu, gsl_vector *the_point,
+															 gsl_vector *the_mean, gsl_vector *the_variance,
+															 gsl_matrix *the_covar);
+
 void emulate_point_multi_pca(multi_emulator *emu, gsl_vector *the_point,
 												 gsl_vector *the_mean, 
 												 gsl_vector *the_variance);

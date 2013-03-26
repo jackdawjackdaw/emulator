@@ -50,6 +50,9 @@ USE:
     --covariance_fn=2 (MATERN52)
   The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.
 
+  Options for output mode include:
+	  (-X) --covmat: also output estimated covariance matrix 
+
   These options will be saved in MODEL_SNAPSHOT_FILE.
 
 INPUT_MODEL_FILE (With multi-output) FORMAT:
@@ -142,6 +145,7 @@ struct cmdLineOpts{
 	int covFn;     /* -c --covariance_fn = */
 	int quietFlag; /* -q --quiet */
 	int pcaOutputFlag; /* -z --pca_output  turns on pca only output */
+	int covMatFlag /* -X --covmat, turns on cov mat output */
 	double pca_variance; /* -v --pca_variance =  fractional value for the pca decomp */
 	
 	// add additional flags as needed here
@@ -180,6 +184,7 @@ static const char useage [] =
 	"  --covariance_fn=2 (MATERN52)\n"
 	"  (-v=FRAC) --pca_variance=FRAC : sets the pca decomp to keep cpts up to variance fraction frac\n"
 	"options which incluence interactive_mode:\n"
+	"  (-X) --covmat: also output estimated covariance matrix \n"
 	"  (-q) --quiet: run without any extraneous output\n"
 	"  (-z) --pca_output: emulator output is left in the pca space\n"
 	"general options:\n"
@@ -187,7 +192,7 @@ static const char useage [] =
 	"The defaults are regression_order=0 and covariance_fn=POWER_EXPONENTIAL.\n";
 
 /**
- * Convienence function for exiting a function.
+ * Convenience function for exiting a function.
  */
 int perr(const char * s) {
 	fprintf(stderr,"%s\n",s);
@@ -369,7 +374,7 @@ int estimate_thetas(struct cmdLineOpts* cmdOpts) {
 int interactive_mode (struct cmdLineOpts* cmdOpts) {
 	FILE * interactive_input = stdin;
 	FILE * interactive_output = stdout;
-	int i, r, expected_r;
+	int i,j, r, expected_r;
 
 	FILE * fp = fopen(cmdOpts->statefile,"r");
 	if (fp == NULL)
@@ -387,7 +392,16 @@ int interactive_mode (struct cmdLineOpts* cmdOpts) {
 	gsl_vector *the_mean = gsl_vector_alloc(number_outputs);
 	gsl_vector *the_variance = gsl_vector_alloc(number_outputs);
 
+	gsl_matrix *the_covar = NULL;
 
+
+	if(cmdOpts->pcaOutputFlag && cmdOpts->covMatFlag) {
+		fprintf(stderr, "# ERR: pca and covmat flags set\n");
+		fprintf(stderr, "# ERR: pca output trumps, no covmat will be produced\n");
+	}
+
+	if(cmdOpts->covMatFlag)
+		the_covar = gsl_matrix_alloc(number_outputs, number_outputs);
 
 #ifdef BINARY_INTERACTIVE_MODE
 	r = expected_r = sizeof(double);
@@ -423,9 +437,15 @@ int interactive_mode (struct cmdLineOpts* cmdOpts) {
 		}
 		if (r < expected_r) /* probably eof, otherwise error */
 			break;
-		if(cmdOpts->pcaOutputFlag == 0){ 
-			emulate_point_multi(the_multi_emulator, the_point, the_mean, the_variance);
-		} else { /* support output in the pca space */
+		
+		if(cmdOpts->pcaOutputFlag == 0){
+			if(cmdOpts->covMatFlag){
+				emulate_point_multi_covar(the_multi_emulator, the_point, the_mean,
+																	the_variance, the_covar);
+			} else {
+				emulate_point_multi(the_multi_emulator, the_point, the_mean, the_variance);
+			}
+		} else { /* support output in the pca space, this trumps over covmat */
 			emulate_point_multi_pca(the_multi_emulator, the_point, the_mean, the_variance);
 		}
 		for(i = 0; i < number_outputs; i++) {
@@ -437,6 +457,17 @@ int interactive_mode (struct cmdLineOpts* cmdOpts) {
 				fprintf(interactive_output, "%.17f\n", gsl_vector_get(the_variance,i));
 			#endif
 		}
+
+		/** 
+		 * output the covariance matrix */
+		if(cmdOpts->covMatFlag){
+			for(i = 0; i < number_outputs; i++){
+				for(j = 0; j < number_outputs; j++)
+					fprintf(interactive_output, "%.17f ", gsl_matrix_get(the_covar,i, j));
+				fprintf(interactive_output, "\n");
+			}
+		}
+		
 		fflush(interactive_output);
 	}
 
@@ -446,6 +477,11 @@ int interactive_mode (struct cmdLineOpts* cmdOpts) {
 	gsl_vector_free(the_point);
 	gsl_vector_free(the_mean);
 	gsl_vector_free(the_variance);
+	
+	if(cmdOpts->covMatFlag){
+		gsl_matrix_free(the_covar);
+	}
+	
 	return 0;
 }
 
@@ -556,7 +592,8 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 		{ "regression_order", required_argument , NULL, 'r'},
 		{ "covariance_fn", required_argument , NULL, 'c'},
 		{ "pca_variance", required_argument, NULL , 'v'}, // set the var fraction for the pca decomp
-		{ "pca_output",  no_argument , NULL , 'z'},  // output from interactive emulator is left in pca space 
+		{ "pca_output",  no_argument , NULL , 'z'},  // output from interactive emulator is left in pca space
+		{ "covmat", no_argument, NULL, 'X'}, // output the full estimated covariance matrix
 		{ "quiet", no_argument , NULL, 'q'},
 		{ "help", no_argument , NULL, 'h'},
 		{ NULL, no_argument, NULL, 0} 
@@ -572,6 +609,7 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 	opts->run_mode = NULL;
 	opts->inputfile = NULL;
 	opts->statefile = NULL;
+	opts->covMatFlag = 0;
 
 	int longIndex;
 	int opt;
@@ -599,6 +637,9 @@ struct cmdLineOpts* global_opt_parse(int argc, char** argv)
 		case 'q':
 			opts->quietFlag = 1;
 			break;
+		case 'X':
+			opts->covMatFlag = 1;
+			fprintf(stderr, "# output will include covariance matrix\n");
 		case 'h':   /* fall-through is intentional */
 		case '?':
 			//display_usage();

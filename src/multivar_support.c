@@ -149,11 +149,106 @@ void emulate_point_multi(multi_emulator *emu, gsl_vector *the_point,
 		gsl_vector_set(the_variance, i, vec_mat_sum);
 		vec_mat_sum = 0.0;
 	}
-	
+
 	gsl_vector_free(mean_real);
 	gsl_vector_free(temp);
 	gsl_vector_free(mean_pca);
 	gsl_vector_free(var_pca);
 }
+
+
+/**
+ * repeats a lot of the code in emulate_point_multi, this is annoying
+ * the_covar is an nt X nt matrix
+ * 
+ * for facundo, 26.03.2013
+ */
+
+void emulate_point_multi_covar(multi_emulator *emu, gsl_vector *the_point,
+															 gsl_vector *the_mean, gsl_vector *the_variance,
+															 gsl_matrix *the_covar)
+{
+	int i, j, k;
+	int nr = emu->nr;
+	int nt = emu->nt;
+	double covar_contrib = 0.0;
+
+	double vec_mat_sum;
+	// the mean and variance in the PCA space
+	gsl_vector *mean_pca = gsl_vector_alloc(nr);
+	gsl_vector *var_pca = gsl_vector_alloc(nr); 
+
+	// first we sample the nr emulators
+	for(i = 0; i < emu->nr; i++)
+		emulate_point(emu->emu_struct_array[i], the_point, gsl_vector_ptr(mean_pca, i), gsl_vector_ptr(var_pca, i));
+
+	/**
+	 *  now we have to project back into the REAL space from the PCA space
+	 * mean_real (nt) = training_mean (nt) + pca_evec_r %*% diag(sqrt(pca_evals_R)) %*% mean_pca
+	 */
+	gsl_vector *mean_real = gsl_vector_alloc(nt);
+	gsl_vector *temp = gsl_vector_alloc(nt);
+	gsl_vector_memcpy(mean_real, emu->model->training_mean);
+
+	vec_mat_sum = 0.0;
+	for(i = 0; i < nt; i++){
+		for(j = 0; j < nr; j++)
+			vec_mat_sum += gsl_matrix_get(emu->model->pca_evecs_r, i, j) *
+				sqrt(gsl_vector_get(emu->model->pca_evals_r, j))*
+				gsl_vector_get(mean_pca, j);
+		
+		// save the sum scaled by the sqrt of the eval
+		//gsl_vector_set(temp, i, vec_mat_sum*sqrt(gsl_vector_get(emu->model->pca_evals_r, i)));
+		gsl_vector_set(temp, i, vec_mat_sum);
+		vec_mat_sum = 0.0;
+	}
+	
+	gsl_vector_add(mean_real, temp);
+	gsl_vector_memcpy(the_mean, mean_real); // save the final mean
+
+	/**
+	 * project back the variance 
+	 * yVar_i = Sum_k=0^{nr} ( U_i_k * U_i_k * lambda_k * V_k)
+	 */
+	gsl_vector_set_zero(temp);
+	vec_mat_sum = 0.0;
+	for(i = 0; i < nt; i++){
+		for(j = 0; j < nr; j++)
+			vec_mat_sum += pow(gsl_matrix_get(emu->model->pca_evecs_r, i, j), 2.0) *
+				gsl_vector_get(emu->model->pca_evals_r, j) * gsl_vector_get(var_pca, j);
+		gsl_vector_set(the_variance, i, vec_mat_sum);
+		vec_mat_sum = 0.0;
+	}
+
+	// reset the covariance
+	gsl_matrix_set_zero(the_covar);
+
+	/**
+	 * loop over points in the nt x nt covariance matrix 
+	 */
+	for(i = 0; i < nt; i++){
+		for(j = 0; j < nt; j++){
+			/**
+			 * C_ij = sum_k^{nr} [ U_i_k * U_j_k * lambda_k * V_k ]
+			 *			 
+			 * sum contributions over k */
+			covar_contrib = 0.0;
+			for(k = 0; k < nr; k++){
+				covar_contrib += gsl_matrix_get(emu->model->pca_evecs_r, i, k) *
+					gsl_matrix_get(emu->model->pca_evecs_r, j, k) *
+					gsl_vector_get(emu->model->pca_evals_r, k) *  gsl_vector_get(var_pca, k);
+			}
+			gsl_matrix_set(the_covar, i, j, covar_contrib0;
+		}
+	}
+
+
+	gsl_vector_free(mean_real);
+	gsl_vector_free(temp);
+	gsl_vector_free(mean_pca);
+	gsl_vector_free(var_pca);
+	
+}
+
 
 

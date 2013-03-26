@@ -685,6 +685,7 @@ int doOptimizeMultiMin( double(*fn)(const gsl_vector*, void*),													\
 	multiminFn.params = args;
 
 	// the multiminimizer
+	// why should we use (quasi-newton) bfgs instead of (conjugate gradeints) fr? 
 	const gsl_multimin_fdfminimizer_type *min_type = gsl_multimin_fdfminimizer_vector_bfgs2; //set this properly
 	//const gsl_multimin_fdfminimizer_type *min_type = gsl_multimin_fdfminimizer_conjugate_fr; //set this properly
 
